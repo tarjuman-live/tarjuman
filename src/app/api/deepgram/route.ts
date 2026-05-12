@@ -2,23 +2,20 @@ import { NextResponse } from "next/server";
 import { isValidLangCode } from "@/lib/utils";
 
 /**
- * Issues a single-use session token for the browser to open a WebSocket
- * against our /api/deepgram-ws proxy (defined in server.js).
+ * Issues credentials for a browser → Deepgram realtime transcription session.
  *
- * The token is stored in `globalThis.__deepgramSessionTokens` along with the
- * Deepgram-side WebSocket URL the proxy should connect to. When the browser
- * upgrades to /api/deepgram-ws, server.js validates the token, looks up the
- * stored URL, and opens an outbound `wss://api.deepgram.com/v1/listen?...`
- * connection authenticated server-side with the long-lived API key.
+ * Two modes, chosen by environment:
  *
- * Why we proxy instead of giving the browser direct credentials:
- *   In some networks the browser cannot reach wss://api.deepgram.com at all
- *   — the TLS handshake is killed by an extension, OS firewall, or ISP DPI
- *   middlebox, surfacing as a generic close code 1006 with no reason.
- *   Routing through the loopback (browser → localhost → Node → Deepgram)
- *   sidesteps every variant of that block. The Node-side connection uses
- *   the same REST-style `Authorization: Token` header that has always worked
- *   for our /v1/projects calls.
+ *   Dev (npm run dev): returns a single-use session token + a loopback WS URL
+ *   pointing at our /api/deepgram-ws proxy (defined in server.js). The proxy
+ *   authenticates with Deepgram server-side using the long-lived API key.
+ *   This sidesteps networks where the browser can't reach wss://api.deepgram.com
+ *   directly (firewall / ISP DPI / browser extension breaking the TLS handshake).
+ *
+ *   Prod (Vercel): server.js doesn't run on Vercel, so we mint a short-lived
+ *   Deepgram temporary key via the Projects API and return the direct Deepgram
+ *   WS URL. The browser opens the connection itself, passing the temp key as
+ *   the `token` WebSocket subprotocol.
  */
 
 interface SessionEntry {
@@ -47,6 +44,57 @@ function makeToken(): string {
     return crypto.randomUUID();
   }
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+// The Deepgram project ID is stable for a given API key. Discover it once
+// per serverless instance and reuse — saves a HTTP round-trip per session
+// after the first one. DEEPGRAM_PROJECT_ID env var skips discovery entirely.
+let cachedProjectId: string | null = null;
+
+async function getDeepgramProjectId(apiKey: string): Promise<string> {
+  if (process.env.DEEPGRAM_PROJECT_ID) return process.env.DEEPGRAM_PROJECT_ID;
+  if (cachedProjectId) return cachedProjectId;
+  const res = await fetch("https://api.deepgram.com/v1/projects", {
+    headers: { Authorization: `Token ${apiKey}` },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(
+      `Deepgram /v1/projects returned ${res.status}: ${await res.text().catch(() => "")}`
+    );
+  }
+  const body = (await res.json()) as { projects?: { project_id: string }[] };
+  const projectId = body.projects?.[0]?.project_id;
+  if (!projectId) throw new Error("Deepgram /v1/projects returned no projects");
+  cachedProjectId = projectId;
+  return projectId;
+}
+
+async function mintDeepgramTempKey(apiKey: string): Promise<string> {
+  const projectId = await getDeepgramProjectId(apiKey);
+  const res = await fetch(
+    `https://api.deepgram.com/v1/projects/${projectId}/keys`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Token ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        comment: "livetranscribe-session",
+        scopes: ["usage:write"],
+        time_to_live_in_seconds: 60,
+      }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(
+      `Deepgram key mint returned ${res.status}: ${await res.text().catch(() => "")}`
+    );
+  }
+  const body = (await res.json()) as { key?: string };
+  if (!body.key) throw new Error("Deepgram key mint response had no `key` field");
+  return body.key;
 }
 
 export async function GET(req: Request) {
@@ -96,8 +144,26 @@ export async function GET(req: Request) {
   });
   const deepgramUrl = `wss://api.deepgram.com/v1/listen?${dgParams.toString()}`;
 
-  // Build the proxy URL the browser will connect to. Pick ws:// vs wss://
-  // based on the request scheme so this works in production behind TLS too.
+  // Prod: the loopback proxy doesn't exist on Vercel. Mint a temp Deepgram
+  // key and let the browser open the WS to Deepgram directly.
+  const isProduction =
+    process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+
+  if (isProduction) {
+    try {
+      const tempKey = await mintDeepgramTempKey(process.env.DEEPGRAM_API_KEY);
+      return NextResponse.json({ key: tempKey, url: deepgramUrl });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return NextResponse.json(
+        { error: `Failed to mint Deepgram temp key: ${msg}` },
+        { status: 502 }
+      );
+    }
+  }
+
+  // Dev: route the browser through our loopback proxy. server.js validates
+  // the session token on upgrade and opens the upstream Deepgram WS itself.
   const proto = req.headers.get("x-forwarded-proto") === "https" ? "wss" : "ws";
   const host = req.headers.get("host") ?? "localhost:3000";
   const token = makeToken();
@@ -115,8 +181,5 @@ export async function GET(req: Request) {
     if (v.expiresAt < Date.now()) sessions.delete(k);
   }
 
-  // The shape stays `{ key, url }` so the browser hook doesn't need changes
-  // beyond removing its subprotocol logic. `key` is now the proxy session
-  // token (only the proxy will look at it); `url` is our loopback URL.
   return NextResponse.json({ key: token, url: proxyUrl });
 }

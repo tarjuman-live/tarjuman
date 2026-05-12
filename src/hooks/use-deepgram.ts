@@ -246,13 +246,21 @@ export function useDeepgram({
 
       if (cancelled || !isLive()) return;
 
-      // Step 2: open the WebSocket to our local proxy. The proxy
-      // (server.js → /api/deepgram-ws) authenticates with Deepgram
-      // server-side, so the browser carries no Deepgram credentials —
-      // just the single-use session token already embedded in `creds.url`.
-      console.log("[deepgram] opening WS to proxy:", creds.url);
+      // Step 2: open the WebSocket. Two server-side modes:
+      //   - Dev: creds.url is ws(s)://<host>/api/deepgram-ws and creds.key is
+      //     a session token already embedded in the URL. No subprotocol — the
+      //     proxy (server.js) authenticates with Deepgram itself.
+      //   - Prod: creds.url is wss://api.deepgram.com/... and creds.key is a
+      //     short-lived Deepgram temp key. Pass it as the `token` subprotocol
+      //     so the browser authenticates directly with Deepgram.
+      const isDirectDeepgram = creds.url.startsWith("wss://api.deepgram.com");
+      console.log("[deepgram] opening WS:", creds.url, {
+        direct: isDirectDeepgram,
+      });
       try {
-        ws = new WebSocket(creds.url);
+        ws = isDirectDeepgram
+          ? new WebSocket(creds.url, ["token", creds.key])
+          : new WebSocket(creds.url);
       } catch (e) {
         if (cancelled || !isLive()) return;
         setError(e instanceof Error ? e.message : String(e));
@@ -408,7 +416,9 @@ export function useDeepgram({
 
         if (handshakeRejectionBeforeFirstOpen) {
           setError(
-            `Could not reach the local Deepgram proxy (close code ${event.code}). Make sure the dev server was started with \`npm run dev\` (which uses server.js, not bare \`next dev\`). If you see \`> Ready on http://localhost:3000 (with /api/deepgram-ws proxy)\` in the terminal, the proxy is up — in that case the problem is the proxy → Deepgram leg; check the server log for [deepgram-proxy] errors.`
+            isDirectDeepgram
+              ? `Could not reach Deepgram (close code ${event.code}). The temp key may have been rejected — verify DEEPGRAM_API_KEY is set in the Vercel project env vars and that the master key has admin/keys:write scope at the Deepgram console.`
+              : `Could not reach the local Deepgram proxy (close code ${event.code}). Make sure the dev server was started with \`npm run dev\` (which uses server.js, not bare \`next dev\`). If you see \`> Ready on http://localhost:3000 (with /api/deepgram-ws proxy)\` in the terminal, the proxy is up — in that case the problem is the proxy → Deepgram leg; check the server log for [deepgram-proxy] errors.`
           );
           setConnectionState("error");
           return;
