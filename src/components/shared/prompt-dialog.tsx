@@ -74,17 +74,22 @@ export function PromptDialog({
         <Dialog.Overlay
           className="fixed inset-0 z-[200] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
           style={{
-            background: "rgba(0,0,0,0.7)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            // Light dim only — leave the heavy blur to the card so the
+            // card's backdrop-filter has interesting content to refract.
+            background: "rgba(6, 11, 24, 0.4)",
           }}
         />
         <Dialog.Content
           className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-[calc(100%-32px)] max-w-[420px] outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-150"
           style={{
-            background: COLORS.surface,
-            borderRadius: 20,
-            border: `1px solid ${COLORS.border}`,
+            // Liquid glass: translucent tint over a heavy frosted backdrop.
+            background: "rgba(20, 28, 46, 0.6)",
+            backdropFilter: "blur(28px) saturate(180%)",
+            WebkitBackdropFilter: "blur(28px) saturate(180%)",
+            borderRadius: 24,
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            boxShadow:
+              "0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.25)",
             padding: 24,
           }}
         >
@@ -116,7 +121,10 @@ export function PromptDialog({
             maxLength={maxLength}
             className="w-full h-10 px-3 rounded-lg text-[14px] outline-none transition-colors mb-5"
             style={{
-              background: COLORS.surfaceLight,
+              // Toned down against the glass card — slightly translucent so
+              // it still feels like part of the same material, but solid
+              // enough to read as the interactive surface.
+              background: "rgba(10, 16, 30, 0.7)",
               border: `1px solid ${COLORS.borderLight}`,
               color: COLORS.w,
             }}
