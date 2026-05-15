@@ -21,12 +21,35 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
 
 /**
- * Maps the raw error message from Convex Auth / Auth.js into a sentence
- * the user can act on. We try to inspect the message text since Convex
- * Auth doesn't surface a typed error code.
+ * Maps the raw error message from Convex Auth / Auth.js into a sentence the
+ * user can act on.
+ *
+ * Critical context: @convex-dev/auth throws plain `Error(...)` (NOT
+ * ConvexError) for every failure — "Account X already exists",
+ * "InvalidSecret", "InvalidAccountId", etc. Convex's server redacts plain
+ * Error messages to literal "Server Error" before they reach the browser.
+ * So the underlying-cause strings (`already exists`, `invalid credentials`,
+ * etc.) NEVER appear in `raw` for auth failures — only the redacted
+ * "Server Error". The Convex deployment logs still hold the real error
+ * for postmortem.
+ *
+ * We therefore translate "Server Error" into the most-likely cause for the
+ * current form mode. Not deterministic, but actionable.
  */
 function friendlyError(raw: string, mode: "signIn" | "signUp"): string {
   const m = raw.toLowerCase();
+
+  // Convex's redacted "Server Error" surface — by far the most common
+  // path for auth failures since the library throws plain Error.
+  if (m.includes("server error")) {
+    return mode === "signUp"
+      ? "Couldn't create your account. The email may already be registered — try signing in instead, or use a different email."
+      : "Couldn't sign in. Check your email and password, then try again. If you don't have an account yet, sign up first.";
+  }
+
+  // The cases below are kept for the rare situations where Convex Auth
+  // returns a friendly error (e.g., explicit ConvexError thrown by an
+  // OAuth provider) or for client-side network errors.
   if (m.includes("invalidaccountid") || m.includes("invalid credentials")) {
     return mode === "signIn"
       ? "Email or password is incorrect."
