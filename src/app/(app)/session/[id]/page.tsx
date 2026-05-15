@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { COLORS } from "@/lib/constants";
 import { formatDate, formatDuration, getLangName } from "@/lib/utils";
@@ -15,32 +14,15 @@ import type { Id } from "../../../../../convex/_generated/dataModel";
 
 export default function SessionDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const sessionId = params?.id ?? null;
   const session = useSession(sessionId);
 
   const [copied, setCopied] = useState(false);
-  const [hoverRename, setHoverRename] = useState(false);
-  const [hoverDelete, setHoverDelete] = useState(false);
 
-  // Convex mutations.
-  const deleteSession = useMutation(api.sessions.deleteSession);
+  // Rename / delete are intentionally not exposed on the detail page —
+  // both actions live on the history-card buttons. Keeps the detail
+  // header focused on viewing the session content.
   const saveSummaryM = useMutation(api.sessions.saveSummary);
-  const updateTitle = useMutation(api.sessions.updateTitle);
-
-  // Inline title editing state. While editing, we render an input synced to
-  // `titleDraft`; on blur or Enter we persist via storage.updateTitle. Escape
-  // cancels without saving.
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleDraft, setTitleDraft] = useState("");
-  const titleInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (editingTitle) {
-      titleInputRef.current?.focus();
-      titleInputRef.current?.select();
-    }
-  }, [editingTitle]);
 
   const normalizedSegments = useMemo(
     () =>
@@ -114,17 +96,6 @@ export default function SessionDetailPage() {
     }
   };
 
-  const handleDelete = () => {
-    if (!sessionId) return;
-    const ok = window.confirm(
-      "Delete this session? The transcript and summary will be permanently removed."
-    );
-    if (!ok) return;
-    void deleteSession({ sessionId: sessionId as Id<"sessions"> }).then(() => {
-      router.push("/history");
-    });
-  };
-
   const handleSummaryGenerated = (summary: string) => {
     if (!sessionId) return;
     void saveSummaryM({
@@ -187,26 +158,6 @@ export default function SessionDetailPage() {
 
   const title = session.title ?? "Untitled session";
 
-  const startEditTitle = () => {
-    setTitleDraft(session.title ?? "");
-    setEditingTitle(true);
-  };
-  const saveTitle = () => {
-    if (!sessionId) {
-      setEditingTitle(false);
-      return;
-    }
-    const trimmed = titleDraft.trim();
-    if (trimmed && trimmed !== session.title) {
-      void updateTitle({
-        sessionId: sessionId as Id<"sessions">,
-        title: trimmed,
-      });
-    }
-    setEditingTitle(false);
-  };
-  const cancelEditTitle = () => setEditingTitle(false);
-
   return (
     <div className="flex flex-col flex-1" style={{ paddingBottom: 60 }}>
       {/* Header */}
@@ -223,67 +174,16 @@ export default function SessionDetailPage() {
           <Icon name="back" size={18} color={COLORS.t2} />
         </Link>
         <div className="flex-1 min-w-0">
-          {editingTitle ? (
-            <input
-              ref={titleInputRef}
-              value={titleDraft}
-              onChange={(e) => setTitleDraft(e.target.value)}
-              onBlur={saveTitle}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") saveTitle();
-                if (e.key === "Escape") cancelEditTitle();
-              }}
-              maxLength={120}
-              className="w-full bg-transparent outline-none text-[15px] font-bold truncate"
-              style={{
-                color: COLORS.w,
-                borderBottom: `1px solid ${COLORS.accent}`,
-              }}
-            />
-          ) : (
-            <div
-              className="w-full text-left text-[15px] font-bold truncate"
-              style={{ color: COLORS.w }}
-            >
-              {title}
-            </div>
-          )}
+          <div
+            className="w-full text-left text-[15px] font-bold truncate"
+            style={{ color: COLORS.w }}
+          >
+            {title}
+          </div>
           <div className="text-[11px]" style={{ color: COLORS.t4 }}>
             {formatDuration(session.duration)}
           </div>
         </div>
-        {!editingTitle && (
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={startEditTitle}
-              aria-label="Rename session"
-              onMouseEnter={() => setHoverRename(true)}
-              onMouseLeave={() => setHoverRename(false)}
-              className="w-9 h-9 rounded-lg grid place-items-center cursor-pointer transition-colors"
-              style={{
-                background: hoverRename ? COLORS.surfaceLight : "transparent",
-                color: hoverRename ? COLORS.w : COLORS.t3,
-              }}
-            >
-              <Icon name="edit" size={16} color="currentColor" />
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              aria-label="Delete session"
-              onMouseEnter={() => setHoverDelete(true)}
-              onMouseLeave={() => setHoverDelete(false)}
-              className="w-9 h-9 rounded-lg grid place-items-center cursor-pointer transition-colors"
-              style={{
-                background: hoverDelete ? COLORS.redSoft : "transparent",
-                color: hoverDelete ? COLORS.red : COLORS.t3,
-              }}
-            >
-              <Icon name="trash" size={16} color="currentColor" />
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Language pair */}
