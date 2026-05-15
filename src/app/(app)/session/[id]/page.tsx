@@ -20,6 +20,8 @@ export default function SessionDetailPage() {
   const session = useSession(sessionId);
 
   const [copied, setCopied] = useState(false);
+  const [hoverRename, setHoverRename] = useState(false);
+  const [hoverDelete, setHoverDelete] = useState(false);
 
   // Convex mutations.
   const deleteSession = useMutation(api.sessions.deleteSession);
@@ -256,22 +258,29 @@ export default function SessionDetailPage() {
               type="button"
               onClick={startEditTitle}
               aria-label="Rename session"
+              onMouseEnter={() => setHoverRename(true)}
+              onMouseLeave={() => setHoverRename(false)}
               className="w-9 h-9 rounded-lg grid place-items-center cursor-pointer transition-colors"
               style={{
-                background: COLORS.surfaceLight,
-                border: `1px solid ${COLORS.borderLight}`,
+                background: hoverRename ? COLORS.surfaceLight : "transparent",
+                color: hoverRename ? COLORS.w : COLORS.t3,
               }}
             >
-              <Icon name="edit" size={16} color={COLORS.t2} />
+              <Icon name="edit" size={16} color="currentColor" />
             </button>
             <button
               type="button"
               onClick={handleDelete}
               aria-label="Delete session"
+              onMouseEnter={() => setHoverDelete(true)}
+              onMouseLeave={() => setHoverDelete(false)}
               className="w-9 h-9 rounded-lg grid place-items-center cursor-pointer transition-colors"
-              style={{ background: COLORS.redSoft }}
+              style={{
+                background: hoverDelete ? COLORS.redSoft : "transparent",
+                color: hoverDelete ? COLORS.red : COLORS.t3,
+              }}
             >
-              <Icon name="trash" size={16} color={COLORS.red} />
+              <Icon name="trash" size={16} color="currentColor" />
             </button>
           </div>
         )}
