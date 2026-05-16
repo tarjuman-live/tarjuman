@@ -32,6 +32,17 @@ export default defineSchema({
         sourceText: v.string(),
         translatedText: v.string(),
         timestamp: v.number(),
+        // Verse/hadith continuation merge. When the LLM recognizes that
+        // this segment, combined with prior context, completes a known
+        // Quran verse or authentic hadith, the parent segment carries:
+        //   - mergedFromIds: ids of consecutive earlier segments to absorb
+        //   - combinedSourceText: the full source (e.g., Arabic verse)
+        //   - combinedTranslatedText: the full translation with citation
+        // Readers build a suppressed set from `mergedFromIds` to hide the
+        // child segments and render only the parent's combined text.
+        mergedFromIds: v.optional(v.array(v.string())),
+        combinedSourceText: v.optional(v.string()),
+        combinedTranslatedText: v.optional(v.string()),
       })
     ),
     duration: v.number(),

@@ -13,6 +13,10 @@ interface NormalizedSegment {
   id: string;
   sourceText: string;
   translatedText: string;
+  /** Verse/hadith merge metadata persisted in Convex (see schema). */
+  mergedFromIds?: string[];
+  combinedSourceText?: string;
+  combinedTranslatedText?: string;
 }
 
 interface SessionBodyProps {
@@ -349,52 +353,67 @@ export function SessionBody({
         </div>
       )}
 
-      {segments.map((seg) => (
-        <div key={seg.id} className="mb-4">
-          <div
-            className="px-4 py-3 rounded-2xl mb-[6px]"
-            style={{
-              background: `${COLORS.blue}14`,
-              borderLeft: `3px solid ${COLORS.blue}66`,
-              direction: sourceRtl ? "rtl" : "ltr",
-              textAlign: sourceRtl ? "right" : "left",
-            }}
-          >
-            <div
-              style={{
-                color: COLORS.t2,
-                fontSize: sourceFontSize,
-                lineHeight: 1.7,
-                fontWeight: sourceRtl ? 500 : 400,
-              }}
-            >
-              {seg.sourceText}
-            </div>
-          </div>
-          {seg.translatedText && (
-            <div
-              className="px-4 py-3 rounded-2xl"
-              style={{
-                background: `${COLORS.accent}10`,
-                borderLeft: `3px solid ${COLORS.accent}66`,
-                direction: targetRtl ? "rtl" : "ltr",
-                textAlign: targetRtl ? "right" : "left",
-              }}
-            >
-              <div
-                style={{
-                  color: COLORS.w,
-                  fontSize: targetFontSize,
-                  lineHeight: 1.7,
-                  fontWeight: targetRtl ? 600 : 500,
-                }}
-              >
-                {seg.translatedText}
+      {/* Hide child segments that were merged into a later verse/hadith
+          parent. The parent renders the combined source + translation. */}
+      {(() => {
+        const suppressed = new Set<string>();
+        for (const s of segments) {
+          for (const childId of s.mergedFromIds ?? []) suppressed.add(childId);
+        }
+        return segments
+          .filter((s) => !suppressed.has(s.id))
+          .map((seg) => {
+            const sourceForDisplay = seg.combinedSourceText ?? seg.sourceText;
+            const translatedForDisplay =
+              seg.combinedTranslatedText ?? seg.translatedText;
+            return (
+              <div key={seg.id} className="mb-4">
+                <div
+                  className="px-4 py-3 rounded-2xl mb-[6px]"
+                  style={{
+                    background: `${COLORS.blue}14`,
+                    borderLeft: `3px solid ${COLORS.blue}66`,
+                    direction: sourceRtl ? "rtl" : "ltr",
+                    textAlign: sourceRtl ? "right" : "left",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: COLORS.t2,
+                      fontSize: sourceFontSize,
+                      lineHeight: 1.7,
+                      fontWeight: sourceRtl ? 500 : 400,
+                    }}
+                  >
+                    {sourceForDisplay}
+                  </div>
+                </div>
+                {translatedForDisplay && (
+                  <div
+                    className="px-4 py-3 rounded-2xl"
+                    style={{
+                      background: `${COLORS.accent}10`,
+                      borderLeft: `3px solid ${COLORS.accent}66`,
+                      direction: targetRtl ? "rtl" : "ltr",
+                      textAlign: targetRtl ? "right" : "left",
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: COLORS.w,
+                        fontSize: targetFontSize,
+                        lineHeight: 1.7,
+                        fontWeight: targetRtl ? 600 : 500,
+                      }}
+                    >
+                      {translatedForDisplay}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-        </div>
-      ))}
+            );
+          });
+      })()}
     </div>
   );
 }

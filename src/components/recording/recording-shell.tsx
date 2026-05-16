@@ -23,6 +23,13 @@ interface RecordingShellProps {
   reconnectAttempt: number;
   transcriptionError: string | null;
   translations?: Record<string, string>;
+  /** Verse/hadith merge data from the translator. */
+  merges?: Record<
+    string,
+    { fromIds: string[]; combinedSourceText: string; combinedTranslatedText: string }
+  >;
+  /** Set of segment ids that were merged into a parent (hide from render). */
+  suppressedIds?: Set<string>;
   /** Whether translation TTS is on. Controlled by parent via `onTtsToggle`. */
   ttsEnabled: boolean;
   onTtsToggle: () => void;
@@ -45,6 +52,8 @@ export function RecordingShell({
   reconnectAttempt,
   transcriptionError,
   translations,
+  merges,
+  suppressedIds,
   ttsEnabled,
   onTtsToggle,
   onPause,
@@ -261,6 +270,8 @@ export function RecordingShell({
         sourceLang={sourceLang}
         translations={translations}
         targetLang={targetLang}
+        merges={merges}
+        suppressedIds={suppressedIds}
         mainSpeakerOnly={mainSpeakerOnly}
       />
 

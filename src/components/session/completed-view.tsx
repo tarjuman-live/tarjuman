@@ -12,6 +12,11 @@ export interface CompletedSession {
   _id: string | null;
   segments: LiveSegment[];
   translations: Record<string, string>;
+  /** Verse/hadith merge records — keyed by parent segment id. */
+  merges?: Record<
+    string,
+    { fromIds: string[]; combinedSourceText: string; combinedTranslatedText: string }
+  >;
   durationSec: number;
   sourceLang: string;
   targetLang: string;
@@ -35,12 +40,22 @@ export function CompletedView({
     () =>
       session.segments
         .filter((s) => s.isFinal)
-        .map((s) => ({
-          id: s.id,
-          sourceText: s.text,
-          translatedText: session.translations[s.id] ?? "",
-        })),
-    [session.segments, session.translations]
+        .map((s) => {
+          const merge = session.merges?.[s.id];
+          return {
+            id: s.id,
+            sourceText: s.text,
+            translatedText: session.translations[s.id] ?? "",
+            ...(merge
+              ? {
+                  mergedFromIds: merge.fromIds,
+                  combinedSourceText: merge.combinedSourceText,
+                  combinedTranslatedText: merge.combinedTranslatedText,
+                }
+              : {}),
+          };
+        }),
+    [session.segments, session.translations, session.merges]
   );
 
   const handleCopy = async () => {

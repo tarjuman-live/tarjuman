@@ -30,6 +30,9 @@ export default function SessionDetailPage() {
         id: s.id,
         sourceText: s.sourceText,
         translatedText: s.translatedText,
+        mergedFromIds: s.mergedFromIds,
+        combinedSourceText: s.combinedSourceText,
+        combinedTranslatedText: s.combinedTranslatedText,
       })) ?? [],
     [session?.segments]
   );

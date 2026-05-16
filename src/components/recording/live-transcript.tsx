@@ -14,6 +14,16 @@ interface LiveTranscriptProps {
   translations?: Record<string, string>;
   targetLang?: string;
   mainSpeakerOnly?: boolean;
+  /**
+   * Verse/hadith merge data from the translator. Parent segments listed
+   * here render the combined source + translation; children appear in
+   * `suppressedIds` and are skipped from the render entirely.
+   */
+  merges?: Record<
+    string,
+    { fromIds: string[]; combinedSourceText: string; combinedTranslatedText: string }
+  >;
+  suppressedIds?: Set<string>;
 }
 
 const SPEAKER_COLORS = [
@@ -80,6 +90,8 @@ export function LiveTranscript({
   translations,
   targetLang,
   mainSpeakerOnly = false,
+  merges,
+  suppressedIds,
 }: LiveTranscriptProps) {
   const { scrollRef, onScroll, isStuck, scrollToBottom } =
     useStickyBottom<HTMLDivElement>(200);
@@ -106,9 +118,14 @@ export function LiveTranscript({
   }, [segments.length, isStuck]);
 
   const dominant = dominantSpeaker(segments);
-  const visibleSegments = mainSpeakerOnly
+  const speakerFiltered = mainSpeakerOnly
     ? segments.filter((s) => s.speaker === undefined || s.speaker === dominant)
     : segments;
+  // Hide child segments that were merged into a parent (verse/hadith
+  // continuation absorbed by a later card).
+  const visibleSegments = suppressedIds
+    ? speakerFiltered.filter((s) => !suppressedIds.has(s.id))
+    : speakerFiltered;
 
   const speakerSet = new Set<number>();
   for (const s of segments) {
@@ -135,7 +152,11 @@ export function LiveTranscript({
         )}
 
         {visibleSegments.map((seg) => {
-          const translated = translations?.[seg.id];
+          // Verse/hadith merge: if this is a parent, display the combined
+          // source + combined translation (children are already filtered).
+          const merge = merges?.[seg.id];
+          const sourceTextForDisplay = merge?.combinedSourceText ?? seg.text;
+          const translated = merge?.combinedTranslatedText ?? translations?.[seg.id];
           const sc = speakerColor(seg.speaker);
           return (
             <div key={seg.id} className="mb-5">
@@ -164,7 +185,7 @@ export function LiveTranscript({
                     fontWeight: sourceRtl ? 500 : 400,
                   }}
                 >
-                  {seg.text}
+                  {sourceTextForDisplay}
                 </div>
               </div>
               {translated !== undefined && (

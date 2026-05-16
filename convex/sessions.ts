@@ -20,6 +20,10 @@ const segmentValidator = v.object({
   sourceText: v.string(),
   translatedText: v.string(),
   timestamp: v.number(),
+  // See schema.ts for the verse-merge field semantics.
+  mergedFromIds: v.optional(v.array(v.string())),
+  combinedSourceText: v.optional(v.string()),
+  combinedTranslatedText: v.optional(v.string()),
 });
 
 async function requireUserId(ctx: QueryCtx): Promise<Id<"users">> {
@@ -71,6 +75,48 @@ export const addSegments = mutation({
 
     await ctx.db.patch(args.sessionId, {
       segments: [...session.segments, ...newOnes],
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Apply (or update) a verse/hadith merge directive to an already-flushed
+ * segment. Fires when the translator detects mid-recording that a later
+ * segment completes a Quran verse or hadith that started in earlier
+ * segments — those earlier segments may already be persisted, so we
+ * patch the saved array rather than re-appending.
+ *
+ * The parent segment's `combinedSourceText` + `combinedTranslatedText` +
+ * `mergedFromIds` get written; children stay as-is (reader hides them via
+ * the parent's mergedFromIds list).
+ */
+export const updateSegmentMerge = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    parentSegmentId: v.string(),
+    mergedFromIds: v.array(v.string()),
+    combinedSourceText: v.string(),
+    combinedTranslatedText: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) throw new Error("Session not found");
+    if (session.userId !== userId) throw new Error("Not your session");
+
+    const next = session.segments.map((s) =>
+      s.id === args.parentSegmentId
+        ? {
+            ...s,
+            mergedFromIds: args.mergedFromIds,
+            combinedSourceText: args.combinedSourceText,
+            combinedTranslatedText: args.combinedTranslatedText,
+          }
+        : s
+    );
+    await ctx.db.patch(args.sessionId, {
+      segments: next,
       updatedAt: Date.now(),
     });
   },

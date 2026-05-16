@@ -41,6 +41,7 @@ export default function RecordPage() {
   const resumeSessionM = useMutation(api.sessions.resumeSession);
   const completeSessionM = useMutation(api.sessions.completeSession);
   const saveSummaryM = useMutation(api.sessions.saveSummary);
+  const updateSegmentMerge = useMutation(api.sessions.updateSegmentMerge);
 
   // Default TTS to ON — the user explicitly asked for live audio. They can
   // mute it from the toggle in the recording shell; the choice persists.
@@ -166,14 +167,26 @@ export default function RecordPage() {
 
     if (ready.length === 0) return;
 
-    const stored = ready.map((seg) => ({
-      id: seg.id,
-      sourceText: seg.text,
-      translatedText: sourceTargetSame
-        ? seg.text
-        : translator.translations[seg.id] ?? "",
-      timestamp: seg.timestamp,
-    }));
+    const stored = ready.map((seg) => {
+      const merge = translator.merges[seg.id];
+      return {
+        id: seg.id,
+        sourceText: seg.text,
+        translatedText: sourceTargetSame
+          ? seg.text
+          : translator.translations[seg.id] ?? "",
+        timestamp: seg.timestamp,
+        // Include verse/hadith merge metadata on first flush when the
+        // translator returned a merge before the flush tick fires.
+        ...(merge
+          ? {
+              mergedFromIds: merge.fromIds,
+              combinedSourceText: merge.combinedSourceText,
+              combinedTranslatedText: merge.combinedTranslatedText,
+            }
+          : {}),
+      };
+    });
 
     // Fire-and-forget. Convex queues mutations and applies them in order;
     // on transient WS disconnect they retry automatically, so we don't need
@@ -181,6 +194,29 @@ export default function RecordPage() {
     void addSegments({ sessionId, segments: stored });
     for (const seg of ready) flushed.add(seg.id);
   };
+
+  // Late-merge effect: when the translator emits a merge AFTER the parent
+  // segment was already flushed to Convex, patch the saved row so the
+  // saved-session view shows the merged display.
+  const mergedFlushedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const sessionId = sessionIdRef.current;
+    if (!sessionId) return;
+    const flushed = flushedIdsRef.current;
+    const alreadyPatched = mergedFlushedRef.current;
+    for (const [parentId, merge] of Object.entries(translator.merges)) {
+      if (!flushed.has(parentId)) continue; // will be included in next flush
+      if (alreadyPatched.has(parentId)) continue;
+      alreadyPatched.add(parentId);
+      void updateSegmentMerge({
+        sessionId,
+        parentSegmentId: parentId,
+        mergedFromIds: merge.fromIds,
+        combinedSourceText: merge.combinedSourceText,
+        combinedTranslatedText: merge.combinedTranslatedText,
+      });
+    }
+  }, [translator.merges, updateSegmentMerge]);
 
   // 5s flush tick during active recording.
   useEffect(() => {
@@ -197,6 +233,7 @@ export default function RecordPage() {
       deepgram.resetTranscript();
       translator.reset();
       flushedIdsRef.current = new Set();
+      mergedFlushedRef.current = new Set();
       sessionIdRef.current = null;
       const promise = createSession({
         sourceLanguage: sourceLang,
@@ -239,6 +276,7 @@ export default function RecordPage() {
     const captured = {
       segments: deepgram.segments,
       translations: translator.translations,
+      merges: translator.merges,
       sourceLang,
       targetLang,
     };
@@ -268,6 +306,7 @@ export default function RecordPage() {
         _id: sessionId,
         segments: captured.segments,
         translations: captured.translations,
+        merges: captured.merges,
         durationSec: finalDuration,
         sourceLang: captured.sourceLang,
         targetLang: captured.targetLang,
@@ -318,6 +357,8 @@ export default function RecordPage() {
         reconnectAttempt={deepgram.reconnectAttempt}
         transcriptionError={deepgram.error}
         translations={translator.translations}
+        merges={translator.merges}
+        suppressedIds={translator.suppressedIds}
         ttsEnabled={ttsEnabled}
         onTtsToggle={toggleTts}
         onPause={handlePause}

@@ -14,8 +14,21 @@ interface TranslateRequest {
    * disambiguation only. The model is instructed never to translate or
    * include these in its output — they exist solely so a short ambiguous
    * `text` is interpreted in the surrounding flow rather than in isolation.
+   *
+   * Each entry carries the segment's stable `id` so the model can refer
+   * to specific prior segments in a verse/hadith merge directive (see the
+   * `<<<MERGE>>>` protocol below).
    */
-  context?: { sourceText: string; translatedText?: string }[];
+  context?: { id: string; sourceText: string; translatedText?: string }[];
+}
+
+interface MergeDirective {
+  /** IDs from `context` that this segment should absorb. */
+  fromIds: string[];
+  /** Full source (Arabic verse, hadith text) — children + this concatenated. */
+  combinedSourceText: string;
+  /** Full translation with the citation. */
+  combinedTranslatedText: string;
 }
 
 interface AnthropicResponse {
@@ -74,7 +87,7 @@ function buildUserMessage(opts: {
   text: string;
   sourceName: string;
   targetName: string;
-  context?: { sourceText: string; translatedText?: string }[];
+  context?: { id: string; sourceText: string; translatedText?: string }[];
 }): string {
   const { text, sourceName, targetName, context } = opts;
   const hasContext = Array.isArray(context) && context.length > 0;
@@ -84,13 +97,12 @@ function buildUserMessage(opts: {
   }
 
   const contextLines = context!
-    .map((c, i) => {
-      const idx = i + 1;
+    .map((c) => {
       const src = c.sourceText.trim();
       const tr = c.translatedText?.trim();
       return tr
-        ? `  [${idx}] ${sourceName}: ${src}\n      ${targetName}: ${tr}`
-        : `  [${idx}] ${sourceName}: ${src}`;
+        ? `  [id=${c.id}] ${sourceName}: ${src}\n             ${targetName}: ${tr}`
+        : `  [id=${c.id}] ${sourceName}: ${src}`;
     })
     .join("\n");
 
@@ -99,6 +111,62 @@ ${contextLines}
 
 Now translate ONLY this segment from ${sourceName} to ${targetName} (output the translation only):
 ${text}`;
+}
+
+// Split the model's output into the plain translation text + an optional
+// merge directive. The model writes the merge as a JSON object on the line
+// immediately after a single `<<<MERGE>>>` marker — see the system prompt.
+// If parsing the marker fails for any reason, we treat the whole output
+// as the translation and skip the merge silently.
+const MERGE_MARKER = "<<<MERGE>>>";
+
+function parseMergeDirective(
+  raw: string,
+  validContextIds: Set<string>
+): { translation: string; merge?: MergeDirective } {
+  const idx = raw.indexOf(MERGE_MARKER);
+  if (idx === -1) return { translation: raw.trim() };
+
+  const translation = raw.slice(0, idx).trim();
+  const mergeJson = raw.slice(idx + MERGE_MARKER.length).trim();
+
+  try {
+    const parsed = JSON.parse(mergeJson) as unknown;
+    if (!parsed || typeof parsed !== "object") return { translation };
+    const obj = parsed as Record<string, unknown>;
+    const fromIds = Array.isArray(obj.fromIds)
+      ? (obj.fromIds as unknown[]).filter(
+          (x): x is string => typeof x === "string"
+        )
+      : [];
+    const combinedSourceText =
+      typeof obj.combinedSourceText === "string" ? obj.combinedSourceText : "";
+    const combinedTranslatedText =
+      typeof obj.combinedTranslatedText === "string"
+        ? obj.combinedTranslatedText
+        : "";
+    if (
+      fromIds.length === 0 ||
+      !combinedSourceText ||
+      !combinedTranslatedText
+    ) {
+      return { translation };
+    }
+    // Sanity check: only honor merge ids the client actually sent as context.
+    // Defends against hallucinated ids.
+    const safeFromIds = fromIds.filter((id) => validContextIds.has(id));
+    if (safeFromIds.length === 0) return { translation };
+    return {
+      translation,
+      merge: {
+        fromIds: safeFromIds,
+        combinedSourceText,
+        combinedTranslatedText,
+      },
+    };
+  } catch {
+    return { translation };
+  }
 }
 
 // Translation system prompt. The Islamic-terminology rules are the whole
@@ -124,6 +192,30 @@ const SYSTEM_PROMPT = `You are a translation engine for a live transcription app
 - The user message may contain a "Context (prior segments)" block before the segment to translate. That context exists ONLY for disambiguation — to give you the surrounding flow when the current segment is short or ambiguous.
 - NEVER translate or include any context segment in your output. Output only the translation of the explicitly-marked current segment.
 - Use context to resolve pronouns, gendered references, continuation phrases, and to choose terminology consistent with what came before.
+
+## Verse / hadith continuation merging (IMPORTANT)
+If the current segment, COMBINED with one or more immediately-preceding context segments, completes a Quranic verse or authentic hadith you recognize with 100% certainty, emit a MERGE DIRECTIVE so the client can collapse the prior segments and this one into a single message.
+
+Format:
+1. First, output the translation of just the current segment as normal plain text (this stays the same as without a merge).
+2. Then append, on a new line, the exact marker:
+   <<<MERGE>>>
+3. Immediately after the marker, output a single-line JSON object with exactly these three keys:
+   {"fromIds":["<id1>","<id2>"],"combinedSourceText":"<full source verse/hadith>","combinedTranslatedText":"<full translation with citation>"}
+
+Rules:
+- Only merge when the combined text IS a complete, well-known Quranic verse or hadith from the six authentic Sunni collections (Bukhari, Muslim, Abu Dawud, Tirmidhi, Nasa'i, Ibn Majah). When in doubt, do NOT emit the merge — better to miss a merge than create a false one.
+- \`fromIds\` must contain only ids from the Context block. Each id was given as \`[id=<value>]\`. Use those exact strings.
+- \`fromIds\` must be IMMEDIATELY CONSECUTIVE in the context (don't skip over unrelated segments in the middle).
+- \`combinedSourceText\` is the full source-language text of the merged-from segments + the current segment concatenated with a single space.
+- \`combinedTranslatedText\` is the full target-language translation of the verse/hadith with the standard inline citation (e.g., \`[Quran Al-Ahzab:56]\` or \`[Sahih al-Bukhari, Hadith 1]\`).
+- LENGTH CAP: only emit a merge when \`combinedTranslatedText\` is under approximately 600 characters. For very long verses (e.g., Ayat al-Kursi as a whole), let them stay split for readability.
+- If you don't want to merge, simply omit the \`<<<MERGE>>>\` block — output just the plain translation as before.
+
+Example merge output (NEVER actually translate this way unless the current segment really completes a verse):
+The full English translation here with citation. [Quran X:Y]
+<<<MERGE>>>
+{"fromIds":["seg-abc-1"],"combinedSourceText":"<full Arabic>","combinedTranslatedText":"The full English translation here with citation. [Quran X:Y]"}
 
 ${ISLAMIC_TERMINOLOGY_RULES}
 
@@ -253,14 +345,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const translatedText = data.content?.find((b) => b.type === "text")?.text;
-  if (typeof translatedText !== "string") {
+  const rawText = data.content?.find((b) => b.type === "text")?.text;
+  if (typeof rawText !== "string") {
     return NextResponse.json(
       { error: "Translator returned no text" },
       { status: 502 }
     );
   }
 
-  // Trim incidental whitespace — model occasionally adds a trailing newline.
-  return NextResponse.json({ translatedText: translatedText.trim() });
+  // Split the model's output into translation + optional merge directive.
+  // Sanity-check merge ids against what the client actually sent so a
+  // hallucinated id can't break the client's segment state.
+  const validContextIds = new Set<string>(
+    (context ?? []).map((c) => c.id).filter((id): id is string => !!id)
+  );
+  const parsed = parseMergeDirective(rawText, validContextIds);
+
+  return NextResponse.json({
+    translatedText: parsed.translation,
+    ...(parsed.merge ? { merge: parsed.merge } : {}),
+  });
 }
