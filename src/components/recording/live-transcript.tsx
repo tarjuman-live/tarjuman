@@ -140,7 +140,7 @@ export function LiveTranscript({
           return (
             <div key={seg.id} className="mb-5">
               <div
-                className="px-4 py-3 rounded-[10px] mb-[6px]"
+                className="px-4 py-3 rounded-2xl mb-[6px]"
                 style={{
                   background: `${sc}14`,
                   borderLeft: `3px solid ${sc}66`,
@@ -169,7 +169,7 @@ export function LiveTranscript({
               </div>
               {translated !== undefined && (
                 <div
-                  className="px-4 py-3 rounded-[10px]"
+                  className="px-4 py-3 rounded-2xl"
                   style={{
                     background: `${COLORS.accent}10`,
                     borderLeft: `3px solid ${COLORS.accent}66`,
@@ -196,7 +196,7 @@ export function LiveTranscript({
 
         {interimText && (
           <div
-            className="px-4 py-3 rounded-[10px] opacity-50"
+            className="px-4 py-3 rounded-2xl opacity-50"
             style={{
               background: `${COLORS.blue}0D`,
               borderLeft: `3px solid ${COLORS.blue}33`,

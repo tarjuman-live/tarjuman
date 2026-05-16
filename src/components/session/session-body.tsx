@@ -163,7 +163,7 @@ export function SessionBody({
           type="button"
           onClick={handleGenerate}
           disabled={segments.length === 0}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed mb-5"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold text-sm cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed mb-5"
           style={{
             background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDk})`,
             color: "#0A0F1C",
@@ -177,7 +177,7 @@ export function SessionBody({
 
       {summary.phase === "loading" && (
         <div
-          className="px-4 py-5 rounded-xl mb-5 flex items-center gap-3"
+          className="px-4 py-5 rounded-2xl mb-5 flex items-center gap-3"
           style={{
             background: COLORS.surface,
             border: `1px solid ${COLORS.border}`,
@@ -197,7 +197,7 @@ export function SessionBody({
 
       {summary.phase === "ready" && (
         <div
-          className="px-4 py-4 rounded-xl mb-5"
+          className="px-4 py-4 rounded-2xl mb-5"
           style={{
             background: COLORS.surface,
             border: `1px solid ${COLORS.accent}30`,
@@ -309,7 +309,7 @@ export function SessionBody({
 
       {summary.phase === "error" && (
         <div
-          className="px-4 py-3 rounded-xl mb-5"
+          className="px-4 py-3 rounded-2xl mb-5"
           style={{
             background: COLORS.redSoft,
             border: `1px solid ${COLORS.red}40`,
@@ -352,7 +352,7 @@ export function SessionBody({
       {segments.map((seg) => (
         <div key={seg.id} className="mb-4">
           <div
-            className="px-4 py-3 rounded-[10px] mb-[6px]"
+            className="px-4 py-3 rounded-2xl mb-[6px]"
             style={{
               background: `${COLORS.blue}14`,
               borderLeft: `3px solid ${COLORS.blue}66`,
@@ -373,7 +373,7 @@ export function SessionBody({
           </div>
           {seg.translatedText && (
             <div
-              className="px-4 py-3 rounded-[10px]"
+              className="px-4 py-3 rounded-2xl"
               style={{
                 background: `${COLORS.accent}10`,
                 borderLeft: `3px solid ${COLORS.accent}66`,

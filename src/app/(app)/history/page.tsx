@@ -37,12 +37,13 @@ export default function HistoryPage() {
   return (
     <div className="flex flex-col flex-1 pb-[60px]">
       <div
-        className="px-5 py-4"
+        className="px-5 py-5"
         style={{ borderBottom: `1px solid ${COLORS.border}` }}
       >
-        <div className="flex items-baseline justify-between mb-3">
-          <div className="text-lg font-bold" style={{ color: COLORS.w }}>
-            History
+        <div className="section-label mb-1">History</div>
+        <div className="flex items-baseline justify-between mb-4">
+          <div className="text-2xl font-bold" style={{ color: COLORS.w }}>
+            Your sessions
           </div>
           <div className="text-[12px]" style={{ color: COLORS.t3 }}>
             {sessions === undefined
@@ -57,7 +58,7 @@ export default function HistoryPage() {
 
         {total > 0 && (
           <div
-            className="flex items-center gap-2 px-3 h-9 rounded-lg"
+            className="flex items-center gap-2 px-4 h-11 rounded-2xl"
             style={{
               background: COLORS.surface,
               border: `1px solid ${COLORS.borderLight}`,

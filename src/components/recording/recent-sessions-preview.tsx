@@ -18,26 +18,32 @@ export function RecentSessionsPreview() {
 
   return (
     <div>
-      <div
-        className="text-xs font-semibold tracking-[1px] uppercase mb-[10px]"
-        style={{ color: COLORS.t4 }}
-      >
-        Recent
-      </div>
+      <div className="section-label mb-3">Recent</div>
       {sessions.map((s) => {
         const title = s.title ?? "Untitled session";
         return (
           <Link
             key={s._id}
             href={`/session/${s._id}`}
-            className="w-full flex items-center gap-3 px-[14px] py-3 rounded-[10px] mb-1.5 cursor-pointer transition-colors"
-            style={{ background: COLORS.surface }}
+            className="w-full flex items-center gap-3 px-5 py-4 rounded-[20px] mb-[10px] cursor-pointer transition-colors"
+            style={{
+              background: COLORS.surface,
+              border: `1px solid ${COLORS.border}`,
+            }}
           >
-            <Icon name="doc" size={18} color={COLORS.t4} />
+            <div
+              className="w-10 h-10 rounded-2xl grid place-items-center flex-shrink-0"
+              style={{
+                background: COLORS.surfaceLight,
+                border: `1px solid ${COLORS.borderLight}`,
+              }}
+            >
+              <Icon name="doc" size={16} color={COLORS.t3} />
+            </div>
             <div className="flex-1 min-w-0">
               <div
-                className="text-[13px] font-semibold truncate"
-                style={{ color: COLORS.t2 }}
+                className="text-[14px] font-semibold truncate mb-0.5"
+                style={{ color: COLORS.w }}
               >
                 {title}
               </div>
@@ -48,7 +54,7 @@ export function RecentSessionsPreview() {
             </div>
             <span
               className="text-xs tabular-nums"
-              style={{ color: COLORS.t4 }}
+              style={{ color: COLORS.t3 }}
             >
               {formatDuration(s.duration)}
             </span>

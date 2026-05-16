@@ -198,7 +198,7 @@ export function RecordingShell({
       {/* Inline error banner with the actual root cause so users can act on it. */}
       {isTranscriptionError && transcriptionError && (
         <div
-          className="mx-5 mt-3 px-3 py-2 rounded-lg text-[12px]"
+          className="mx-5 mt-3 px-4 py-3 rounded-2xl text-[12px]"
           style={{
             background: COLORS.redSoft,
             border: `1px solid ${COLORS.red}40`,
@@ -206,10 +206,7 @@ export function RecordingShell({
           }}
           role="alert"
         >
-          <div
-            className="text-[11px] font-bold uppercase tracking-wider mb-1"
-            style={{ color: COLORS.red }}
-          >
+          <div className="section-label mb-1" style={{ color: COLORS.red }}>
             Transcription unavailable
           </div>
           <div style={{ color: COLORS.t2 }}>{transcriptionError}</div>

@@ -215,7 +215,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               if (fieldErrors.email)
                 setFieldErrors({ ...fieldErrors, email: undefined });
             }}
-            className="w-full h-11 px-3 rounded-lg outline-none text-[14px]"
+            className="w-full h-11 px-3 rounded-2xl outline-none text-[14px]"
             style={{
               background: COLORS.surface,
               border: `1px solid ${
@@ -253,7 +253,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 if (fieldErrors.password)
                   setFieldErrors({ ...fieldErrors, password: undefined });
               }}
-              className="w-full h-11 pl-3 pr-12 rounded-lg outline-none text-[14px]"
+              className="w-full h-11 pl-3 pr-12 rounded-2xl outline-none text-[14px]"
               style={{
                 background: COLORS.surface,
                 border: `1px solid ${
@@ -298,7 +298,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                     confirmPassword: undefined,
                   });
               }}
-              className="w-full h-11 px-3 rounded-lg outline-none text-[14px]"
+              className="w-full h-11 px-3 rounded-2xl outline-none text-[14px]"
               style={{
                 background: COLORS.surface,
                 border: `1px solid ${
@@ -314,7 +314,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         {topError && (
           <div
-            className="px-3 py-2 rounded-lg text-[12px]"
+            className="px-3 py-2 rounded-2xl text-[12px]"
             style={{
               background: COLORS.redSoft,
               border: `1px solid ${COLORS.red}40`,
@@ -329,7 +329,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <button
           type="submit"
           disabled={submitting}
-          className="h-12 rounded-xl font-bold text-sm cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-60 mt-2"
+          className="h-12 rounded-2xl font-bold text-sm cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-60 mt-2"
           style={{
             background: COLORS.accent,
             color: "#0A0F1C",
@@ -360,7 +360,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       <button
         type="button"
         onClick={handleGoogle}
-        className="h-12 rounded-xl font-semibold text-sm cursor-pointer transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
+        className="h-12 rounded-2xl font-semibold text-sm cursor-pointer transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
         style={{
           background: COLORS.surface,
           border: `1px solid ${COLORS.borderLight}`,

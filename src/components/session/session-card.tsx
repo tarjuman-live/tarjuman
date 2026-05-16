@@ -54,7 +54,7 @@ export function SessionCard({ session }: SessionCardProps) {
 
   return (
     <div
-      className="w-full flex items-stretch rounded-xl mb-2 overflow-hidden"
+      className="w-full flex items-stretch rounded-[20px] mb-[10px] overflow-hidden"
       style={{
         background: COLORS.surface,
         border: `1px solid ${COLORS.border}`,
@@ -62,10 +62,10 @@ export function SessionCard({ session }: SessionCardProps) {
     >
       <Link
         href={`/session/${session._id}`}
-        className="flex-1 flex items-start gap-3 px-4 py-3 min-w-0 cursor-pointer transition-colors"
+        className="flex-1 flex items-start gap-3 px-5 py-4 min-w-0 cursor-pointer transition-colors"
       >
         <div
-          className="w-9 h-9 rounded-lg grid place-items-center flex-shrink-0 mt-[2px]"
+          className="w-10 h-10 rounded-2xl grid place-items-center flex-shrink-0 mt-[2px]"
           style={{
             background: COLORS.surfaceLight,
             border: `1px solid ${COLORS.borderLight}`,

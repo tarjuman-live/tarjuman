@@ -116,7 +116,7 @@ export function CompletedView({
         <button
           type="button"
           onClick={handleCopy}
-          className="flex-1 h-11 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer transition-transform active:scale-[0.98]"
+          className="flex-1 h-11 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer transition-transform active:scale-[0.98]"
           style={{
             background: COLORS.surface,
             border: `1px solid ${COLORS.borderLight}`,
@@ -133,7 +133,7 @@ export function CompletedView({
         <button
           type="button"
           onClick={onNewRecording}
-          className="flex-1 h-11 rounded-xl flex items-center justify-center gap-2 text-sm font-bold cursor-pointer transition-transform active:scale-[0.98]"
+          className="flex-1 h-11 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold cursor-pointer transition-transform active:scale-[0.98]"
           style={{
             background: COLORS.accent,
             color: "#0A0F1C",
