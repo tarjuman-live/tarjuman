@@ -8,6 +8,7 @@ import { COLORS } from "@/lib/constants";
 import { isRtl } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
 import { useStickyBottom } from "@/hooks/use-sticky-bottom";
+import { renderTextWithLinks } from "@/lib/citation-renderer";
 
 interface NormalizedSegment {
   id: string;
@@ -147,7 +148,37 @@ export function SessionBody({
       });
 
       await Promise.all([readPump, drainPump]);
-      onSummaryGenerated?.(displayed);
+
+      // Sunnah.com verification pass on the completed summary text.
+      // Hadith citations get replaced with sunnah.com's canonical body +
+      // a clickable markdown link; hallucinated numbers get stripped.
+      // Falls back silently to the un-enriched text on any error or when
+      // SUNNAH_API_KEY isn't set on the server.
+      let finalText = displayed;
+      try {
+        const vRes = await fetch("/api/verify-citations", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            text: displayed,
+            targetLanguage: targetLang,
+          }),
+        });
+        if (vRes.ok) {
+          const vData = (await vRes.json().catch(() => ({}))) as {
+            text?: string;
+            skipped?: boolean;
+          };
+          if (vData.text && vData.text.length > 0) {
+            finalText = vData.text;
+            if (!vData.skipped) setSummary({ phase: "ready", text: finalText });
+          }
+        }
+      } catch {
+        /* keep displayed text as-is */
+      }
+
+      onSummaryGenerated?.(finalText);
     } catch (e) {
       setSummary({
         phase: "error",
@@ -406,7 +437,7 @@ export function SessionBody({
                         fontWeight: targetRtl ? 600 : 500,
                       }}
                     >
-                      {translatedForDisplay}
+                      {renderTextWithLinks(translatedForDisplay)}
                     </div>
                   </div>
                 )}

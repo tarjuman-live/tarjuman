@@ -4,6 +4,8 @@ import {
   ISLAMIC_FEW_SHOT_EXAMPLES,
 } from "@/lib/islamic-terminology";
 import { requireAuthFromHeader, checkRateLimit } from "@/lib/api-auth";
+import { verifyAndEnrich } from "@/lib/sunnah";
+import { verifyAndEnrichQuran } from "@/lib/quran";
 
 interface TranslateRequest {
   text: string;
@@ -505,8 +507,23 @@ export async function POST(req: NextRequest) {
   );
   const parsed = parseMergeDirective(rawText, validContextIds);
 
+  // Citation enrichment pass: verify hadith citations against sunnah.com
+  // and Quran citations against quran.com, replace text with canonical
+  // bodies + clickable markdown links. Quran is always available (public
+  // API); sunnah.com requires SUNNAH_API_KEY and silently no-ops without it.
+  const hadithEnriched = await verifyAndEnrich(parsed.translation);
+  const quranEnriched = await verifyAndEnrichQuran(hadithEnriched.text, target);
+
+  const enrichedMerge = parsed.merge
+    ? await (async () => {
+        const h = await verifyAndEnrich(parsed.merge!.combinedTranslatedText);
+        const q = await verifyAndEnrichQuran(h.text, target);
+        return { ...parsed.merge!, combinedTranslatedText: q.text };
+      })()
+    : undefined;
+
   return NextResponse.json({
-    translatedText: parsed.translation,
-    ...(parsed.merge ? { merge: parsed.merge } : {}),
+    translatedText: quranEnriched.text,
+    ...(enrichedMerge ? { merge: enrichedMerge } : {}),
   });
 }

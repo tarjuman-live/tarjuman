@@ -86,6 +86,12 @@ If you do NOT recognize the exact wording with full certainty, if you cannot pin
 
 If you recognize the hadith narration but are uncertain of the exact number, cite the collection alone: \`(Sahih al-Bukhari)\`. Never invent a number.
 
+**Server-side verification:** Your citations are verified after you respond:
+- **Hadith** citations are checked against **sunnah.com**. Verified hadith → user sees sunnah.com's canonical English + a clickable link. Hallucinated hadith numbers → citation is STRIPPED before the user sees it.
+- **Quran** citations are checked against **quran.com**. Verified verses with an English target → user sees Muhsin Khan's canonical translation + a clickable link to quran.com. Hallucinated surah:ayah numbers → citation is STRIPPED.
+
+So: when in doubt about an exact hadith number or surah:ayah, omit the citation entirely. A correctly-cited verse becomes the canonical authoritative text in the user's transcript; a wrongly-cited one disappears.
+
 **Famous formulaic phrases** that are well-known and unambiguous:
 - إنا لله وإنا إليه راجعون → "Indeed, to Allah we belong and to Him we shall return" \`(Quran Al-Baqarah:156)\`
 - بسم الله الرحمن الرحيم → "In the name of Allah, the Most Gracious, the Most Merciful" (Quranic header — citation optional)

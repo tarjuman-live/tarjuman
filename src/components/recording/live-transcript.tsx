@@ -5,6 +5,7 @@ import { COLORS } from "@/lib/constants";
 import { isRtl } from "@/lib/utils";
 import { useStickyBottom } from "@/hooks/use-sticky-bottom";
 import { Icon } from "@/components/shared/icon";
+import { renderTextWithLinks } from "@/lib/citation-renderer";
 import type { LiveSegment } from "@/types";
 
 interface LiveTranscriptProps {
@@ -213,8 +214,11 @@ export function LiveTranscript({
                       fontWeight: targetRtl ? 600 : 500,
                     }}
                   >
-                    {translated ||
-                      (translated === "" ? "…translating" : translated)}
+                    {translated
+                      ? renderTextWithLinks(translated)
+                      : translated === ""
+                        ? "…translating"
+                        : translated}
                   </div>
                 </div>
               )}
