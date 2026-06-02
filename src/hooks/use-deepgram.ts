@@ -6,6 +6,7 @@ import {
   DEEPGRAM_KEEPALIVE_INTERVAL_MS,
   RECONNECT_BACKOFF,
 } from "@/lib/constants";
+import { RollingAudioBuffer } from "@/lib/audio-buffer";
 
 export interface UseDeepgramOptions {
   /**
@@ -33,6 +34,12 @@ export interface UseDeepgramReturn {
   error: string | null;
   reconnectAttempt: number;
   resetTranscript: () => void;
+  /**
+   * Rolling buffer of recent PCM audio (mirrors what's sent to Deepgram).
+   * The translator slices the matching window per segment and sends it to
+   * OpenAI Whisper for a parallel transcription, then Claude reconciles.
+   */
+  audioBuffer: RollingAudioBuffer;
 }
 
 interface DeepgramWord {
@@ -140,6 +147,11 @@ export function useDeepgram({
   // without re-establishing the WS each time it flips.
   const pausedRef = useRef(false);
 
+  // Rolling PCM buffer mirroring what's sent to Deepgram. Lives across
+  // WS reconnects; reset on enabled=false or unmount. The translator
+  // slices this per segment for parallel Whisper transcription.
+  const audioBufferRef = useRef<RollingAudioBuffer>(new RollingAudioBuffer());
+
   // Session-wide speaker lock. Once locked, segments where the dominant
   // speaker isn't the locked speaker are dropped (per user policy: "ignore
   // side conversations"). Refs survive WS reconnects within the same session
@@ -163,12 +175,14 @@ export function useDeepgram({
       lockedSpeakerRef.current = null;
       speakerDurationsRef.current = new Map();
       sessionStartRef.current = null;
+      audioBufferRef.current.reset();
       return;
     }
 
     const myGeneration = ++generationRef.current;
     const isLive = () => generationRef.current === myGeneration;
     sessionStartRef.current = Date.now();
+    audioBufferRef.current.reset();
 
     // Closure-local state. NOT refs. This entire block is torn down on
     // the next mount, and nothing leaks into the re-mount.
@@ -323,7 +337,11 @@ export function useDeepgram({
           if (pausedRef.current) return;
           if (currentWs.readyState !== WebSocket.OPEN) return;
           const data = event.data as ArrayBuffer;
-          if (data && data.byteLength > 0) currentWs.send(data);
+          if (!data || data.byteLength === 0) return;
+          currentWs.send(data);
+          // Mirror the same frame into the rolling audio buffer so the
+          // translator can later slice it for parallel Whisper transcription.
+          audioBufferRef.current.push(new Int16Array(data));
         };
       };
 
@@ -577,5 +595,6 @@ export function useDeepgram({
     error,
     reconnectAttempt,
     resetTranscript,
+    audioBuffer: audioBufferRef.current,
   };
 }

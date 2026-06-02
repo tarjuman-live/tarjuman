@@ -3,11 +3,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthToken } from "@convex-dev/auth/react";
 import type { LiveSegment } from "@/types";
+import type { RollingAudioBuffer } from "@/lib/audio-buffer";
 
 export interface UseTranslatorOptions {
   segments: LiveSegment[];
   sourceLanguage: string;
   targetLanguage: string;
+  /**
+   * Rolling PCM audio buffer mirroring what was sent to Deepgram. When
+   * present, each finalized segment is also sent to OpenAI Whisper for a
+   * second-opinion transcription; both Arabic versions get passed to
+   * Claude which reconciles them before translating. When unset, behaves
+   * exactly like the old single-engine path.
+   */
+  audioBuffer?: RollingAudioBuffer | null;
 }
 
 export interface MergeRecord {
@@ -53,6 +62,7 @@ export function useTranslator({
   segments,
   sourceLanguage,
   targetLanguage,
+  audioBuffer,
 }: UseTranslatorOptions): UseTranslatorReturn {
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -129,6 +139,20 @@ export function useTranslator({
             "Content-Type": "application/json",
           };
           if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+
+          // Parallel-engine pass: also ask OpenAI Whisper to transcribe the
+          // same audio window. Claude will reconcile both Arabic versions
+          // before translating. Silent fallback: if anything fails (no
+          // audio buffer, slice out of range, 503 because OPENAI_API_KEY
+          // isn't set, Whisper error, timeout) we just send Deepgram alone.
+          const alternativeText = await tryWhisperAlternative({
+            seg,
+            audioBuffer,
+            sourceLanguage,
+            authToken,
+          });
+          if (cancelled) return;
+
           const res = await fetch("/api/translate", {
             method: "POST",
             headers,
@@ -137,6 +161,7 @@ export function useTranslator({
               source: sourceLanguage,
               target: targetLanguage,
               context: requestContext.length > 0 ? requestContext : undefined,
+              alternativeText,
             }),
           });
           if (cancelled) return;
@@ -218,4 +243,56 @@ export function useTranslator({
     filteredIds,
     reset,
   };
+}
+
+/**
+ * Fire-and-forget Whisper transcription of the segment's audio window.
+ * Returns the Whisper Arabic text on success, or undefined on any failure
+ * (no audio buffer, slice out of range, 503, network, timeout). Failure
+ * never blocks the primary Deepgram → Claude path.
+ *
+ * We pad the slice by 200ms on each side to catch leading/trailing words
+ * Deepgram's endpointing might have cut off.
+ */
+async function tryWhisperAlternative(opts: {
+  seg: LiveSegment;
+  audioBuffer?: RollingAudioBuffer | null;
+  sourceLanguage: string;
+  authToken: string | null | undefined;
+}): Promise<string | undefined> {
+  const { seg, audioBuffer, sourceLanguage, authToken } = opts;
+  if (!audioBuffer) return undefined;
+  const start = Math.max(0, seg.timestamp - 0.2);
+  const end = seg.timestamp + (seg.durationSec ?? 5) + 0.2;
+  // Skip very short segments — Whisper struggles with sub-second clips
+  // and they're usually noise filtered upstream anyway.
+  if (end - start < 0.5) return undefined;
+
+  let blob: Blob | null;
+  try {
+    blob = audioBuffer.sliceWav(start, end);
+  } catch {
+    return undefined;
+  }
+  if (!blob) return undefined;
+
+  try {
+    const form = new FormData();
+    form.append("file", blob, "segment.wav");
+    if (/^[a-z]{2}$/.test(sourceLanguage))
+      form.append("language", sourceLanguage);
+    const headers: Record<string, string> = {};
+    if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+    const res = await fetch("/api/transcribe", {
+      method: "POST",
+      headers,
+      body: form,
+    });
+    if (!res.ok) return undefined;
+    const data = (await res.json().catch(() => ({}))) as { text?: string };
+    const text = (data.text ?? "").trim();
+    return text.length > 0 ? text : undefined;
+  } catch {
+    return undefined;
+  }
 }

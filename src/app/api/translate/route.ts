@@ -22,6 +22,14 @@ interface TranslateRequest {
    * `<<<MERGE>>>` protocol below).
    */
   context?: { id: string; sourceText: string; translatedText?: string }[];
+  /**
+   * Second-opinion transcription of the SAME audio from a different STT
+   * engine (currently OpenAI Whisper, vs Deepgram in `text`). When
+   * present, the model is instructed to reconcile both inputs — picking
+   * the more accurate one or merging their best parts — before
+   * translating. Falsy / empty / identical-to-`text` → ignored.
+   */
+  alternativeText?: string;
 }
 
 interface MergeDirective {
@@ -216,28 +224,44 @@ function buildUserMessage(opts: {
   sourceName: string;
   targetName: string;
   context?: { id: string; sourceText: string; translatedText?: string }[];
+  alternativeText?: string;
 }): string {
-  const { text, sourceName, targetName, context } = opts;
+  const { text, sourceName, targetName, context, alternativeText } = opts;
   const hasContext = Array.isArray(context) && context.length > 0;
+  // Only treat as "two transcriptions to reconcile" when the alternative is
+  // present, non-empty, and actually differs from the primary.
+  const hasAlt =
+    typeof alternativeText === "string" &&
+    alternativeText.trim().length > 0 &&
+    alternativeText.trim() !== text.trim();
+
+  const contextBlock = hasContext
+    ? `Context (prior segments — for disambiguation only, do NOT include in your output):
+${context!
+  .map((c) => {
+    const src = c.sourceText.trim();
+    const tr = c.translatedText?.trim();
+    return tr
+      ? `  [id=${c.id}] ${sourceName}: ${src}\n             ${targetName}: ${tr}`
+      : `  [id=${c.id}] ${sourceName}: ${src}`;
+  })
+  .join("\n")}
+
+`
+    : "";
+
+  if (hasAlt) {
+    return `${contextBlock}Two STT engines transcribed the SAME ${sourceName} audio. Reconcile them — pick the more accurate one, or merge their best parts to recover words one engine missed — then translate ONLY that reconciled text to ${targetName}. Do NOT mention the reconciliation in your output. Output only the translation.
+
+Engine A (Deepgram): ${text}
+Engine B (OpenAI Whisper): ${alternativeText!.trim()}`;
+  }
 
   if (!hasContext) {
     return `Translate from ${sourceName} to ${targetName}:\n\n${text}`;
   }
 
-  const contextLines = context!
-    .map((c) => {
-      const src = c.sourceText.trim();
-      const tr = c.translatedText?.trim();
-      return tr
-        ? `  [id=${c.id}] ${sourceName}: ${src}\n             ${targetName}: ${tr}`
-        : `  [id=${c.id}] ${sourceName}: ${src}`;
-    })
-    .join("\n");
-
-  return `Context (prior segments — for disambiguation only, do NOT include in your output):
-${contextLines}
-
-Now translate ONLY this segment from ${sourceName} to ${targetName} (output the translation only):
+  return `${contextBlock}Now translate ONLY this segment from ${sourceName} to ${targetName} (output the translation only):
 ${text}`;
 }
 
@@ -389,7 +413,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { text, source, target, context } = body;
+  const { text, source, target, context, alternativeText } = body;
   if (!text || typeof text !== "string") {
     return NextResponse.json(
       { error: "Missing or invalid `text`" },
@@ -427,7 +451,14 @@ export async function POST(req: NextRequest) {
 
   // Hybrid routing: Haiku for normal speech, Sonnet for Quran/hadith content
   // where verse/hadith recognition + citation accuracy matter.
-  const model = routeModel(text, context);
+  // Auto-promote to Sonnet when we're asking Claude to reconcile two STT
+  // outputs — Haiku does mechanical translation well but the judgment call
+  // ("which transcription is more accurate?") benefits from Sonnet.
+  const hasAlternative =
+    typeof alternativeText === "string" &&
+    alternativeText.trim().length > 0 &&
+    alternativeText.trim() !== text.trim();
+  const model = hasAlternative ? MODEL_SONNET : routeModel(text, context);
   const maxTokens = model === MODEL_SONNET ? 1500 : 500;
 
   // 15s timeout. Haiku usually responds in 0.3–1.5s; Sonnet ~1–3s for short
@@ -460,6 +491,7 @@ export async function POST(req: NextRequest) {
               sourceName,
               targetName,
               context,
+              alternativeText,
             }),
           },
         ],

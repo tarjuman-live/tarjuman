@@ -90,6 +90,8 @@ const LIMITS: Record<string, LimitConfig> = {
   summarize: { capacity: 10, refillPerSec: 10 / 3600 },
   // TTS fires once per translated segment, same burst pattern as translate.
   tts: { capacity: 60, refillPerSec: 1 },
+  // Whisper transcribe fires once per finalized segment (same as translate).
+  transcribe: { capacity: 60, refillPerSec: 1 },
 };
 
 export function checkRateLimit(

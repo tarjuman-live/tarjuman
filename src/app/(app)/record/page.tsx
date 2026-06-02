@@ -107,6 +107,11 @@ export default function RecordPage() {
     segments: deepgram.segments,
     sourceLanguage: sourceLang,
     targetLanguage: targetLang,
+    // Parallel-engine pass: hand the rolling PCM buffer to the translator
+    // so each segment also gets a Whisper transcription; Claude reconciles
+    // both Arabic versions before translating. Falls back silently to
+    // Deepgram-only when OPENAI_API_KEY isn't set.
+    audioBuffer: deepgram.audioBuffer,
   });
 
   // Live audio of translations.
