@@ -29,6 +29,56 @@ function friendlyError(raw: string): string {
   return raw;
 }
 
+/**
+ * Errors from the "request code" step. Convex Auth checks the account exists
+ * BEFORE sending any code, so the dominant failure here is "no email/password
+ * account for this email" — which on a dev deployment reads `InvalidAccountId`
+ * but on production is redacted to the generic "Server Error Called by client".
+ * Both map to the same guidance: the account was probably created with Google,
+ * which has no password to reset.
+ */
+function requestStageError(raw: string): string {
+  const m = raw.toLowerCase();
+  // Check the specific, recoverable cases first so they aren't swallowed by the
+  // generic "no account" fallback below.
+  if (m.includes("rate limit") || m.includes("too many"))
+    return "Too many attempts. Wait a minute and try again.";
+  if (m.includes("network") || m.includes("fetch failed"))
+    return "Couldn't reach the server. Check your connection and try again.";
+  if (m.includes("resend rejected"))
+    return "Couldn't send the email. The Resend integration may not be configured yet — check Convex logs for the code as a dev fallback.";
+  if (
+    m.includes("invalidaccountid") ||
+    m.includes("not found") ||
+    m.includes("server error") ||
+    m.includes("called by client")
+  )
+    return "We couldn't find an email-and-password account for that email. If you signed up with “Continue with Google”, go back to sign in and use that instead.";
+  return friendlyError(raw);
+}
+
+/**
+ * Errors from the "verify code" step. A wrong or expired code also redacts to
+ * a generic server error on production, so treat unknown failures here as a
+ * bad/expired code rather than an account problem.
+ */
+function verifyStageError(raw: string): string {
+  const m = raw.toLowerCase();
+  if (m.includes("rate limit") || m.includes("too many"))
+    return "Too many attempts. Wait a minute and try again.";
+  if (m.includes("network") || m.includes("fetch failed"))
+    return "Couldn't reach the server. Check your connection and try again.";
+  if (m.includes("expired"))
+    return "That code has expired. Request a new one below.";
+  if (
+    m.includes("invalid") ||
+    m.includes("server error") ||
+    m.includes("called by client")
+  )
+    return "That code is invalid or expired. Request a new one below.";
+  return friendlyError(raw);
+}
+
 export function ForgotPasswordForm() {
   const { signIn } = useAuthActions();
   const router = useRouter();
@@ -75,7 +125,7 @@ export function ForgotPasswordForm() {
       setStage("verify");
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
-      setTopError(friendlyError(raw));
+      setTopError(requestStageError(raw));
     } finally {
       setSubmitting(false);
     }
@@ -114,7 +164,7 @@ export function ForgotPasswordForm() {
       setStage("done");
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
-      setTopError(friendlyError(raw));
+      setTopError(verifyStageError(raw));
     } finally {
       setSubmitting(false);
     }
@@ -167,6 +217,19 @@ export function ForgotPasswordForm() {
             ? "Enter the email associated with your account. We'll send a 6-digit code to reset your password."
             : `We sent a 6-digit code to ${email}. Enter it below along with your new password.`}
         </p>
+        {stage === "request" && (
+          <p className="text-[12px] mt-3" style={{ color: COLORS.t3 }}>
+            Signed up with Google? There&apos;s no password to reset — go{" "}
+            <Link
+              href="/login"
+              className="font-semibold underline"
+              style={{ color: COLORS.accent }}
+            >
+              back to sign in
+            </Link>{" "}
+            and use “Continue with Google” instead.
+          </p>
+        )}
       </div>
 
       {stage === "request" && (
