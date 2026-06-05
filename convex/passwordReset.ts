@@ -70,25 +70,30 @@ async function sendViaResend(email: string, otp: string): Promise<void> {
         `Your LiveTranscribe password reset code is ${otp}.\n\n` +
         `It expires in 15 minutes. If you didn't request a password reset, ` +
         `you can safely ignore this email.`,
+      // Email-safe layout: a full-width <table> with a dark bgcolor fills the
+      // entire message area edge-to-edge (a plain <div> leaves the client's
+      // white background showing around it). Inner fixed-width table centers
+      // the content.
       html:
-        `<div style="margin:0;padding:32px 16px;background:#0A0F1C">` +
-        `<div style="max-width:460px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">` +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:0;padding:0;background-color:#0A0F1C">` +
+        `<tr><td align="center" style="padding:40px 16px;background-color:#0A0F1C">` +
+        `<table role="presentation" width="460" cellpadding="0" cellspacing="0" border="0" style="width:460px;max-width:460px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">` +
         // Brand wordmark
-        `<div style="margin:0 0 24px">` +
-        `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2ECC71;vertical-align:middle"></span>` +
+        `<tr><td style="padding:0 0 24px">` +
+        `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:#2ECC71;vertical-align:middle"></span>` +
         `<span style="margin-left:8px;font-size:16px;font-weight:700;color:#ffffff;vertical-align:middle">LiveTranscribe</span>` +
-        `</div>` +
+        `</td></tr>` +
         // Card
-        `<div style="background:#111827;border:1px solid #1F2937;border-radius:16px;padding:32px">` +
+        `<tr><td style="background-color:#111827;border:1px solid #1F2937;border-radius:16px;padding:32px">` +
         `<h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#ffffff">Reset your password</h1>` +
         `<p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#94A3B8">Enter this 6-digit code in the app to set a new password. It expires in 15 minutes.</p>` +
-        `<div style="font-size:34px;font-weight:700;letter-spacing:10px;text-align:center;color:#2ECC71;background:#0A0F1C;border:1px solid rgba(46,204,113,0.25);border-radius:12px;padding:20px 0">${otp}</div>` +
+        `<div style="font-size:34px;font-weight:700;letter-spacing:10px;text-align:center;color:#2ECC71;background-color:#0A0F1C;border:1px solid rgba(46,204,113,0.25);border-radius:12px;padding:20px 0">${otp}</div>` +
         `<p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#64748B">If you didn't request a password reset, you can safely ignore this email — your password won't change.</p>` +
-        `</div>` +
+        `</td></tr>` +
         // Footer
-        `<p style="margin:24px 0 0;text-align:center;font-size:11px;color:#475569">LiveTranscribe · Real-time transcription &amp; translation</p>` +
-        `</div>` +
-        `</div>`,
+        `<tr><td style="padding:24px 0 0;text-align:center;font-size:11px;color:#475569">LiveTranscribe · Real-time transcription &amp; translation</td></tr>` +
+        `</table>` +
+        `</td></tr></table>`,
     }),
   });
 
