@@ -14,7 +14,8 @@ import Resend from "@auth/core/providers/resend";
  *   LOOPS_API_KEY              — your Loops API key (Settings → API)
  *   LOOPS_PASSWORD_RESET_ID    — the transactional template ID for the
  *                                 password-reset email. The template must
- *                                 reference {{otp}} as a data variable.
+ *                                 reference {{code}} as a data variable (we
+ *                                 also pass {{otp}} as an alias).
  *
  * Dev fallback: if either env var is missing, the OTP is logged to
  * Convex logs (visible at the dashboard → Logs). The reset flow still
@@ -60,7 +61,9 @@ async function sendViaLoops(email: string, otp: string): Promise<void> {
     body: JSON.stringify({
       transactionalId,
       email,
-      dataVariables: { otp },
+      // The Loops template's required data variable is `code`. We also send
+      // `otp` so the template keeps working if it's ever edited to use {{otp}}.
+      dataVariables: { code: otp, otp },
     }),
   });
 

@@ -1,5 +1,29 @@
 import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
 import { auth } from "./auth";
+
+/**
+ * Whether an email/password account exists for the given email.
+ *
+ * The forgot-password flow uses this to tell apart "no password account —
+ * probably a Google sign-in" from "account exists but the reset email failed
+ * to send." Without it, the client can only see the production-redacted
+ * "Server Error" and would guess wrong. Mirrors the exact lookup Convex Auth
+ * does on reset (provider "password" + the trimmed email), so this agrees with
+ * whether the reset would actually find the account.
+ */
+export const hasPasswordAccount = query({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    const account = await ctx.db
+      .query("authAccounts")
+      .withIndex("providerAndAccountId", (q) =>
+        q.eq("provider", "password").eq("providerAccountId", email.trim())
+      )
+      .first();
+    return account !== null;
+  },
+});
 
 /**
  * Returns the currently signed-in user's profile, or null if signed-out.

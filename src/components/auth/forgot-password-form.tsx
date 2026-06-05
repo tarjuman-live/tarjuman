@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvex } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { COLORS } from "@/lib/constants";
 import { Icon } from "@/components/shared/icon";
 
@@ -29,32 +31,24 @@ function friendlyError(raw: string): string {
   return raw;
 }
 
+/** Message shown when no email/password account exists for the entered email. */
+const NO_PASSWORD_ACCOUNT_MSG =
+  "We couldn't find an email-and-password account for that email. If you signed up with “Continue with Google”, go back to sign in and use that instead.";
+
 /**
- * Errors from the "request code" step. Convex Auth checks the account exists
- * BEFORE sending any code, so the dominant failure here is "no email/password
- * account for this email" — which on a dev deployment reads `InvalidAccountId`
- * but on production is redacted to the generic "Server Error Called by client".
- * Both map to the same guidance: the account was probably created with Google,
- * which has no password to reset.
+ * Errors from the "request code" step. By the time this runs we've already
+ * confirmed the password account exists (via hasPasswordAccount), so a failure
+ * here is a send/server problem — NOT a missing account. (On production the
+ * underlying error is redacted to a generic "Server Error", so we can't read
+ * its real cause; we know it isn't "no account" because we checked first.)
  */
 function requestStageError(raw: string): string {
   const m = raw.toLowerCase();
-  // Check the specific, recoverable cases first so they aren't swallowed by the
-  // generic "no account" fallback below.
   if (m.includes("rate limit") || m.includes("too many"))
     return "Too many attempts. Wait a minute and try again.";
   if (m.includes("network") || m.includes("fetch failed"))
     return "Couldn't reach the server. Check your connection and try again.";
-  if (m.includes("resend rejected"))
-    return "Couldn't send the email. The Resend integration may not be configured yet — check Convex logs for the code as a dev fallback.";
-  if (
-    m.includes("invalidaccountid") ||
-    m.includes("not found") ||
-    m.includes("server error") ||
-    m.includes("called by client")
-  )
-    return "We couldn't find an email-and-password account for that email. If you signed up with “Continue with Google”, go back to sign in and use that instead.";
-  return friendlyError(raw);
+  return "Couldn't send a reset code right now. Please try again in a moment.";
 }
 
 /**
@@ -81,6 +75,7 @@ function verifyStageError(raw: string): string {
 
 export function ForgotPasswordForm() {
   const { signIn } = useAuthActions();
+  const convex = useConvex();
   const router = useRouter();
 
   const [stage, setStage] = useState<Stage>("request");
@@ -115,8 +110,18 @@ export function ForgotPasswordForm() {
     }
     setSubmitting(true);
     try {
+      // First confirm a password account actually exists. This separates the
+      // "Google account / no password" case (clear, actionable message) from a
+      // genuine send failure — without relying on production-redacted errors.
+      const exists = await convex.query(api.users.hasPasswordAccount, {
+        email: email.trim(),
+      });
+      if (!exists) {
+        setTopError(NO_PASSWORD_ACCOUNT_MSG);
+        return;
+      }
       // Convex Auth's reset flow: triggers the configured `reset` provider
-      // (Resend OTP) to email the user a 6-digit code. The promise resolves
+      // (Loops OTP) to email the user a 6-digit code. The promise resolves
       // when the email is queued — not when the user receives it.
       await signIn("password", {
         email: email.trim(),
