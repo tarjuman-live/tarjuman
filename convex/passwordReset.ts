@@ -75,13 +75,13 @@ async function sendViaResend(email: string, otp: string): Promise<void> {
       // white background showing around it). Inner fixed-width table centers
       // the content.
       html:
-        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:0;padding:0;background-color:#0A0F1C">` +
-        `<tr><td align="center" style="padding:40px 16px;background-color:#0A0F1C">` +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:0;padding:0;background-color:#ffffff">` +
+        `<tr><td align="center" style="padding:40px 16px;background-color:#ffffff">` +
         `<table role="presentation" width="460" cellpadding="0" cellspacing="0" border="0" style="width:460px;max-width:460px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">` +
-        // Brand wordmark
+        // Brand wordmark (dark text so it's legible on the white background)
         `<tr><td style="padding:0 0 24px">` +
         `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:#2ECC71;vertical-align:middle"></span>` +
-        `<span style="margin-left:8px;font-size:16px;font-weight:700;color:#ffffff;vertical-align:middle">LiveTranscribe</span>` +
+        `<span style="margin-left:8px;font-size:16px;font-weight:700;color:#0F172A;vertical-align:middle">LiveTranscribe</span>` +
         `</td></tr>` +
         // Card
         `<tr><td style="background-color:#111827;border:1px solid #1F2937;border-radius:16px;padding:32px">` +
