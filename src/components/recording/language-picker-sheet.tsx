@@ -62,18 +62,25 @@ export function LanguagePickerSheet({
         <Dialog.Overlay
           className="fixed inset-0 z-[200] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
           style={{
-            background: "rgba(0,0,0,0.7)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            // Light dim only — leave the heavy blur to the sheet so the
+            // sheet's backdrop-filter has interesting content to refract.
+            background: "rgba(6, 11, 24, 0.4)",
           }}
         />
         <Dialog.Content
           className="fixed left-1/2 -translate-x-1/2 bottom-0 z-[201] w-full max-w-[480px] max-h-[70vh] flex flex-col pt-6 outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom duration-200"
           style={{
-            background: COLORS.surface,
-            borderRadius: "20px 20px 0 0",
-            border: `1px solid ${COLORS.border}`,
+            // Liquid glass: translucent tint over a heavy frosted backdrop.
+            background: "rgba(20, 28, 46, 0.6)",
+            backdropFilter: "blur(28px) saturate(180%)",
+            WebkitBackdropFilter: "blur(28px) saturate(180%)",
+            borderRadius: "24px 24px 0 0",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
             borderBottom: "none",
+            // Bottom-sheet shadow rises upward; keep the top inset highlight
+            // for the glass catch-light.
+            boxShadow:
+              "0 -24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
           }}
         >
@@ -103,7 +110,9 @@ export function LanguagePickerSheet({
             <div
               className="flex items-center gap-2 px-3 py-2 rounded-[10px]"
               style={{
-                background: COLORS.surfaceLight,
+                // Translucent so it reads as part of the glass material, not
+                // an opaque patch (matches the prompt-dialog input).
+                background: "rgba(10, 16, 30, 0.7)",
                 border: `1px solid ${COLORS.borderLight}`,
               }}
             >
