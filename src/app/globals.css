@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/* Animation utilities (animate-in/out, fade-*, slide-in-from-*, zoom-*) used
+   by the sheets and dialogs. Without this import those classes are no-ops
+   and every sheet/dialog snaps instead of animating. */
+@import "tw-animate-css";
 
 @theme {
   --color-bg: #060B18;
@@ -67,4 +71,15 @@ html {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-3);
+}
+
+/* ── Bottom-nav selection lens (see bottom-nav.tsx) ──────────────────────
+   While the lens travels between tabs it carries .nav-lens-flying: the
+   icons it passes soften behind the glass via a plain backdrop blur.
+   Deliberately NOT an SVG displacement filter — feTurbulence-style
+   "refraction" melts the icons/text into a glitchy smear. A clean blur
+   reads as glass and works in every browser. */
+.nav-lens-flying {
+  backdrop-filter: blur(6px) saturate(140%);
+  -webkit-backdrop-filter: blur(6px) saturate(140%);
 }

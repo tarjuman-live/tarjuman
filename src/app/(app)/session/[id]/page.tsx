@@ -42,7 +42,7 @@ export default function SessionDetailPage() {
     return (
       <div
         className="flex flex-col flex-1 items-center justify-center"
-        style={{ paddingBottom: 60 }}
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}
       >
         <div
           className="w-5 h-5 rounded-full border-2 animate-spin"
@@ -57,7 +57,7 @@ export default function SessionDetailPage() {
   // Not found
   if (session === null) {
     return (
-      <div className="flex flex-col flex-1" style={{ paddingBottom: 60 }}>
+      <div className="flex flex-col flex-1" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}>
         <div
           className="px-5 py-4 flex items-center gap-3"
           style={{ borderBottom: `1px solid ${COLORS.border}` }}
@@ -162,7 +162,7 @@ export default function SessionDetailPage() {
   const title = session.title ?? "Untitled session";
 
   return (
-    <div className="flex flex-col flex-1" style={{ paddingBottom: 60 }}>
+    <div className="flex flex-col flex-1" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}>
       {/* Header */}
       <div
         className="px-5 py-4 flex items-center gap-3"

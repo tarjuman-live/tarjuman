@@ -393,7 +393,7 @@ export default function RecordPage() {
 
   if (recorder.phase === "error") {
     return (
-      <div className="flex flex-col flex-1" style={{ paddingBottom: 60 }}>
+      <div className="flex flex-col flex-1" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}>
         <div
           className="px-5 py-4 flex items-center justify-between"
           style={{ borderBottom: `1px solid ${COLORS.border}` }}
@@ -419,7 +419,7 @@ export default function RecordPage() {
   }
 
   return (
-    <div className="flex flex-col flex-1" style={{ paddingBottom: 60 }}>
+    <div className="flex flex-col flex-1" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}>
       <div
         className="px-5 py-4 flex items-center justify-between"
         style={{ borderBottom: `1px solid ${COLORS.border}` }}
