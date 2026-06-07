@@ -147,11 +147,15 @@ export async function GET(req: Request) {
     // Deepgram rejects the WS handshake when this is combined with a fixed
     // `language=ar` on nova-3 — the param is deprecated in favor of
     // `language=multi`. The browser sees the rejection as close code 1006.
-    // Off-language filtering now relies on FINAL_CONFIDENCE_THRESHOLD
-    // (0.55) in use-deepgram.ts plus the speaker-lock. If we ever need
-    // strict language detection back, switch to `language=multi` and add
-    // per-result language filtering — separate task with its own accuracy
-    // verification on Arabic.
+    // `language=multi` itself is NOT an option for the primary use case:
+    // nova-3 multilingual covers en/es/fr/de/hi/it/ja/nl/ru/pt only —
+    // Arabic is monolingual-only (verified against Deepgram docs, 2026-06).
+    // Off-language filtering is therefore layered downstream:
+    //   1. FINAL_CONFIDENCE_THRESHOLD (0.55) + speaker-lock + interim
+    //      confidence floor in use-deepgram.ts
+    //   2. Whisper auto-detected-language drop in use-translator.ts
+    //      (the second STT engine runs unhinted and reports the real language)
+    //   3. script-ratio + LLM transliteration/noise verdict in /api/translate
   });
   const deepgramUrl = `wss://api.deepgram.com/v1/listen?${dgParams.toString()}`;
 

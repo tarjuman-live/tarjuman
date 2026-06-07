@@ -5,6 +5,16 @@ import { useAuthToken } from "@convex-dev/auth/react";
 import type { LiveSegment } from "@/types";
 import type { RollingAudioBuffer } from "@/lib/audio-buffer";
 
+/**
+ * When Whisper's auto-detected language disagrees with the session source,
+ * the segment is dropped as off-language bleed — UNLESS Deepgram reported
+ * at least this confidence, in which case Deepgram is trusted and Claude
+ * reconciles the two transcriptions as usual. Real source-language speech
+ * through a PA scores 0.8+ routinely; forced-language hallucination of
+ * off-language audio almost never does.
+ */
+const OFF_LANGUAGE_TRUST_DEEPGRAM_ABOVE = 0.8;
+
 export interface UseTranslatorOptions {
   segments: LiveSegment[];
   sourceLanguage: string;
@@ -141,17 +151,47 @@ export function useTranslator({
           if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
 
           // Parallel-engine pass: also ask OpenAI Whisper to transcribe the
-          // same audio window. Claude will reconcile both Arabic versions
-          // before translating. Silent fallback: if anything fails (no
-          // audio buffer, slice out of range, 503 because OPENAI_API_KEY
-          // isn't set, Whisper error, timeout) we just send Deepgram alone.
-          const alternativeText = await tryWhisperAlternative({
+          // same audio window (unhinted, so it auto-detects the language).
+          // Claude will reconcile both versions before translating. Silent
+          // fallback: if anything fails (no audio buffer, slice out of
+          // range, 503 because OPENAI_API_KEY isn't set, Whisper error,
+          // timeout) we just send Deepgram alone.
+          const whisper = await tryWhisperAlternative({
             seg,
             audioBuffer,
-            sourceLanguage,
             authToken,
           });
           if (cancelled) return;
+
+          // Off-language drop. Deepgram is forced to the session's source
+          // language, so non-source speech (e.g. English chatter in an
+          // Arabic session) comes back as confident-looking transliterated
+          // gibberish. Whisper's auto-detection is the second opinion: when
+          // it heard a different language AND Deepgram itself wasn't highly
+          // confident, suppress the segment entirely. The Deepgram-confidence
+          // guard protects real source speech from a Whisper misdetection on
+          // a short noisy clip — genuine hallucinated finals rarely clear 0.8.
+          const whisperLang = whisper?.language;
+          if (
+            whisperLang &&
+            /^[a-z]{2}$/.test(whisperLang) &&
+            whisperLang !== sourceLanguage.toLowerCase() &&
+            (seg.confidence ?? 0) < OFF_LANGUAGE_TRUST_DEEPGRAM_ABOVE
+          ) {
+            console.log(
+              `[translator] dropped off-language segment (whisper=${whisperLang}, source=${sourceLanguage}, dg-conf=${(
+                seg.confidence ?? 0
+              ).toFixed(2)}): "${seg.text.slice(0, 60)}"`
+            );
+            setFilteredIds((prev) => {
+              if (prev.has(seg.id)) return prev;
+              const next = new Set(prev);
+              next.add(seg.id);
+              return next;
+            });
+            return;
+          }
+          const alternativeText = whisper?.text;
 
           const res = await fetch("/api/translate", {
             method: "POST",
@@ -247,9 +287,15 @@ export function useTranslator({
 
 /**
  * Fire-and-forget Whisper transcription of the segment's audio window.
- * Returns the Whisper Arabic text on success, or undefined on any failure
- * (no audio buffer, slice out of range, 503, network, timeout). Failure
- * never blocks the primary Deepgram → Claude path.
+ * Returns the Whisper text + detected language on success, or undefined on
+ * any failure (no audio buffer, slice out of range, 503, network, timeout).
+ * Failure never blocks the primary Deepgram → Claude path.
+ *
+ * No language hint is sent — Whisper auto-detects. That detection is the
+ * app's only real language-ID signal: Deepgram runs with a forced
+ * `language=` and transliterates off-language speech instead of flagging
+ * it, so an unhinted Whisper is what lets us drop English bleed in an
+ * Arabic session (see the off-language drop in the effect above).
  *
  * We pad the slice by 200ms on each side to catch leading/trailing words
  * Deepgram's endpointing might have cut off.
@@ -257,10 +303,9 @@ export function useTranslator({
 async function tryWhisperAlternative(opts: {
   seg: LiveSegment;
   audioBuffer?: RollingAudioBuffer | null;
-  sourceLanguage: string;
   authToken: string | null | undefined;
-}): Promise<string | undefined> {
-  const { seg, audioBuffer, sourceLanguage, authToken } = opts;
+}): Promise<{ text: string; language?: string } | undefined> {
+  const { seg, audioBuffer, authToken } = opts;
   if (!audioBuffer) return undefined;
   const start = Math.max(0, seg.timestamp - 0.2);
   const end = seg.timestamp + (seg.durationSec ?? 5) + 0.2;
@@ -279,8 +324,6 @@ async function tryWhisperAlternative(opts: {
   try {
     const form = new FormData();
     form.append("file", blob, "segment.wav");
-    if (/^[a-z]{2}$/.test(sourceLanguage))
-      form.append("language", sourceLanguage);
     const headers: Record<string, string> = {};
     if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
     const res = await fetch("/api/transcribe", {
@@ -289,9 +332,19 @@ async function tryWhisperAlternative(opts: {
       body: form,
     });
     if (!res.ok) return undefined;
-    const data = (await res.json().catch(() => ({}))) as { text?: string };
+    const data = (await res.json().catch(() => ({}))) as {
+      text?: string;
+      language?: string;
+    };
     const text = (data.text ?? "").trim();
-    return text.length > 0 ? text : undefined;
+    if (text.length === 0) return undefined;
+    return {
+      text,
+      language:
+        typeof data.language === "string" && data.language
+          ? data.language.toLowerCase()
+          : undefined,
+    };
   } catch {
     return undefined;
   }

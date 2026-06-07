@@ -253,6 +253,8 @@ ${context!
   if (hasAlt) {
     return `${contextBlock}Two STT engines transcribed the SAME ${sourceName} audio. Reconcile them — pick the more accurate one, or merge their best parts to recover words one engine missed — then translate ONLY that reconciled text to ${targetName}. Do NOT mention the reconciliation in your output. Output only the translation.
 
+If the two transcriptions are wildly divergent AND neither reads as coherent ${sourceName}, the audio was almost certainly not ${sourceName} speech (background talk in another language, or noise) — output an empty string instead of a translation.
+
 Engine A (Deepgram): ${text}
 Engine B (OpenAI Whisper): ${alternativeText!.trim()}`;
   }
@@ -338,6 +340,7 @@ const SYSTEM_PROMPT = `You are a translation engine for a live transcription app
 - Input may be a fragment or mid-sentence — this is a live transcription app, so the speaker hasn't finished. Translate fragments as fragments. If a word is cut off mid-syllable, translate what's there and end with "..." rather than commenting on the cut.
 - If the input is already in the target language, output it unchanged.
 - If the input is empty, gibberish, or genuinely untranslatable, output an empty string (do not invent translations of noise, do not explain why).
+- OFF-LANGUAGE AUDIO: the STT engine is FORCED to the source language, so speech in any other language arrives as a phonetic transliteration into the source script — it looks like source-language words but reads as incoherent nonsense (e.g. English "okay so basically" arriving as "اوكي سو بيسكلي"). If the text is clearly such a transliteration of non-source speech rather than real source-language content, output an empty string. Do NOT attempt a best-effort translation of transliterated noise.
 - The Islamic-terminology rules below apply REGARDLESS of source language. They fire whenever Islamic content is present — Arabic→English, English→Urdu, Turkish→French, etc.
 
 ## Context handling
@@ -538,6 +541,19 @@ export async function POST(req: NextRequest) {
     (context ?? []).map((c) => c.id).filter((id): id is string => !!id)
   );
   const parsed = parseMergeDirective(rawText, validContextIds);
+
+  // Empty output is the model's "this is untranslatable noise / off-language
+  // transliteration" verdict (per the system prompt). Surface it as a
+  // filtered segment — the client suppresses it from the transcript — rather
+  // than falling through to the "no text" error path. Real speech never
+  // legitimately translates to an empty string.
+  if (!parsed.translation.trim()) {
+    return NextResponse.json({
+      translatedText: "",
+      filtered: true,
+      filterReason: "model-judged-noise",
+    });
+  }
 
   // Citation enrichment pass: verify hadith citations against sunnah.com
   // and Quran citations against quran.com, replace text with canonical

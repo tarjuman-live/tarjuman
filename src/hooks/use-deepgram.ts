@@ -87,6 +87,17 @@ type DeepgramMessage =
  */
 const FINAL_CONFIDENCE_THRESHOLD = 0.55;
 
+/**
+ * Don't paint interim text below this confidence. Interims are partial
+ * hypotheses so they score lower than finals — this floor is deliberately
+ * lenient. It exists so off-language speech (which Deepgram, forced to the
+ * session language, transcribes as low-confidence transliterated noise)
+ * doesn't continuously flash garbage in the live view while every final
+ * gets dropped by the filters downstream. Real source-language speech
+ * crosses 0.4 within the first word or two.
+ */
+const INTERIM_CONFIDENCE_THRESHOLD = 0.4;
+
 /** Lock policy: don't lock until the session has been active this long. */
 const SPEAKER_LOCK_WARMUP_MS = 15_000;
 /** Lock policy: minimum speech duration (seconds) before any speaker can be locked. */
@@ -371,11 +382,13 @@ export function useDeepgram({
             setInterimText("");
             return;
           }
-          // Off-language drop. With detect_language=true Deepgram returns
-          // detected_language + language_confidence per result. If the
-          // detector is sure (>0.7) the audio isn't in the user-selected
-          // source language, drop the segment. Use the prefix match so
-          // "ar-SA" still counts as "ar".
+          // Off-language drop — currently INERT. detected_language is only
+          // present with detect_language=true, which the /api/deepgram route
+          // no longer sends (nova-3 rejects it alongside a fixed language=,
+          // and language=multi has no Arabic support as of mid-2026). Kept
+          // as a free defense in case the params ever change. The live
+          // off-language filtering happens downstream: Whisper language-ID
+          // drop in use-translator.ts + script/LLM filters in /api/translate.
           const detectedLang = msg.channel.detected_language;
           const langConf = msg.channel.language_confidence ?? 0;
           if (
@@ -487,7 +500,13 @@ export function useDeepgram({
           ]);
           setInterimText("");
         } else {
-          setInterimText(transcript);
+          // Interim gating: skip (don't clear) updates below the confidence
+          // floor — a kept higher-confidence interim beats flashing noise.
+          const interimConfidence =
+            msg.channel?.alternatives?.[0]?.confidence ?? 1;
+          if (interimConfidence >= INTERIM_CONFIDENCE_THRESHOLD) {
+            setInterimText(transcript);
+          }
         }
       };
 
