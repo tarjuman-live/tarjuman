@@ -3,7 +3,9 @@
 This is the canonical deploy guide. The app is hosted on Vercel with the
 GitHub integration: every push to `main` builds and deploys production.
 
-- **Production app:** https://live-transcribe-tarjuman-2ngq.vercel.app
+- **Production app:** https://tarjuman.live (canonical; `www` 308-redirects
+  to the bare domain. The original `live-transcribe-tarjuman-2ngq.vercel.app`
+  still resolves to the same deployment.)
 - **Convex prod deployment:** `opulent-parakeet-508`
 - **Convex dev deployment:** `ardent-mockingbird-866`
 - **GitHub repo:** `abdullah-diallo/live-transcribe--tarjuman-`
@@ -65,7 +67,7 @@ ANTHROPIC_API_KEY      sk-ant-api03-...
 OPENAI_API_KEY         sk-proj-...        (optional but recommended)
 SUNNAH_API_KEY         sunnah.com key     (optional)
 DEEPGRAM_PROJECT_ID    Deepgram project id (optional)
-NEXT_PUBLIC_APP_URL    https://live-transcribe-tarjuman-2ngq.vercel.app
+NEXT_PUBLIC_APP_URL    https://tarjuman.live
 NEXT_PUBLIC_SENTRY_DSN your Sentry DSN    (optional; empty = Sentry off)
 ```
 
@@ -88,15 +90,15 @@ npx convex env set --prod KEY value
 | Var | Purpose |
 |---|---|
 | `JWT_PRIVATE_KEY`, `JWKS` | Convex Auth session signing — set automatically by `npx @convex-dev/auth` |
-| `SITE_URL` | The Vercel URL (`https://live-transcribe-tarjuman-2ngq.vercel.app`) — Convex Auth redirects |
+| `SITE_URL` | The canonical app URL (`https://tarjuman.live`) — Convex Auth redirects |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth — required for Google sign-in |
 | `RESEND_API_KEY` | Password-reset email sender (`convex/passwordReset.ts`) |
-| `RESEND_FROM` | Optional "From" address, e.g. `LiveTranscribe <no-reply@yourdomain>` |
+| `RESEND_FROM` | "From" address — set to `LiveTranscribe <no-reply@tarjuman.live>` |
 
-> **Resend caveat:** without `RESEND_FROM`, password-reset emails go out
-> from Resend's test sender, which only delivers to the Resend account
-> owner's own inbox. Before real users need password reset, verify a
-> domain in Resend and set `RESEND_FROM` to an address on it.
+> **Resend:** `tarjuman.live` is verified in Resend and `RESEND_FROM` is set,
+> so password-reset emails deliver to any user. If `RESEND_FROM` is ever
+> unset, sends fall back to Resend's test sender, which only delivers to the
+> Resend account owner's own inbox.
 
 (`LOOPS_API_KEY` / `LOOPS_PASSWORD_RESET_ID` in the Convex env are
 leftovers from the old Loops integration — unused since the switch to
@@ -115,12 +117,13 @@ In the Google Cloud console, the OAuth client needs:
   if you want Google sign-in to work in local dev too)
 - **Authorized JavaScript origin:**
   ```
-  https://live-transcribe-tarjuman-2ngq.vercel.app
+  https://tarjuman.live
   ```
+  (`http://localhost:3000` too, for local dev)
 
 ### 5. Verify
 
-Open the deployed URL and try:
+Open https://tarjuman.live and try:
 - [ ] Sign up with email + password → land on `/record`
 - [ ] Sign in with Google → land on `/record`
 - [ ] Tap record → grant mic → speak Arabic → see transcript + translation
@@ -148,15 +151,19 @@ want one: `npm i -g vercel`, then `vercel link` in the project root.
 
 ## Custom domain
 
-When ready (e.g. `livetranscribe.app`): Vercel project → **Settings →
-Domains** → add the domain and follow the DNS instructions (CNAME to
-`cname.vercel-dns.com`). Vercel auto-provisions the certificate. Then
-update everywhere the URL is pinned:
+The canonical domain is **`tarjuman.live`** (added in Vercel → Settings →
+Domains; `www` 308-redirects to the bare domain; Vercel auto-provisioned the
+cert). The four pinned-URL spots are all updated to it:
 
-1. Vercel env: `NEXT_PUBLIC_APP_URL` → redeploy
-2. Convex prod env: `npx convex env set --prod SITE_URL https://livetranscribe.app`
-3. Google OAuth authorized JavaScript origins
-4. Resend: verify the domain and set `RESEND_FROM`
+1. Vercel env `NEXT_PUBLIC_APP_URL` = `https://tarjuman.live` (needs a redeploy)
+2. Convex prod env `SITE_URL` = `https://tarjuman.live`
+3. Google OAuth authorized JavaScript origin includes `https://tarjuman.live`
+4. Resend domain `tarjuman.live` verified, `RESEND_FROM` = `LiveTranscribe <no-reply@tarjuman.live>`
+
+To move to a different domain later, repeat those four steps with the new
+value. The Google OAuth **redirect URI** never changes — it's on the Convex
+domain (`https://opulent-parakeet-508.convex.site/api/auth/callback/google`),
+not the app domain.
 
 ## Rollback
 
@@ -183,7 +190,7 @@ Logs.
 | `ANTHROPIC_API_KEY` | Vercel | `/api/translate`, `/api/summarize`, `/api/verify-citations` |
 | `OPENAI_API_KEY` | Vercel (optional) | `/api/tts` (natural read-aloud voice) + `/api/transcribe` (Whisper second pass). Unset → graceful fallback to Web Speech / Deepgram-only |
 | `SUNNAH_API_KEY` | Vercel (optional) | Hadith citation enrichment in translate/verify-citations. Unset → silently skipped |
-| `NEXT_PUBLIC_APP_URL` | Vercel | sitemap.ts / robots.ts canonical URL |
+| `NEXT_PUBLIC_APP_URL` | Vercel | sitemap.ts / robots.ts canonical URL (`https://tarjuman.live`) |
 | `NEXT_PUBLIC_SENTRY_DSN` | Vercel (optional) | Empty = Sentry off; non-empty = enabled |
 | `NEXT_PUBLIC_CONVEX_URL` | — (auto) | Injected by `convex deploy --cmd` during the Vercel build; do not set manually |
 | `NEXT_PUBLIC_VERCEL_ENV` | — (auto) | Vercel system var (needs "expose system env vars" on); Sentry environment tag |
