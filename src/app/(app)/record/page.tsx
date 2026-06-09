@@ -116,10 +116,12 @@ export default function RecordPage() {
     recorder.phase === "recording" || recorder.phase === "paused";
   const isPrewarmed = recorder.phase === "prewarmed";
 
-  // Hide the floating bottom nav while the recording UI is up so it doesn't
-  // crowd the pause/stop controls. Restored when leaving the record screen.
+  // Hide the floating bottom nav only while actually recording/paused so it
+  // doesn't crowd the pause/stop controls. NOT during prewarm/starting — those
+  // are idle-screen states (the mic warms up before the user taps Record), and
+  // the idle screen should keep the nav.
   const { setHidden: setNavHidden } = useNavVisibility();
-  const hideNav = isActive || isPrewarmed;
+  const hideNav = isActive;
   useEffect(() => {
     setNavHidden(hideNav);
   }, [hideNav, setNavHidden]);
