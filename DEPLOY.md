@@ -1,4 +1,4 @@
-# Deploy LiveTranscribe to Vercel
+# Deploy Tarjuman to Vercel
 
 This is the canonical deploy guide. The app is hosted on Vercel with the
 GitHub integration: every push to `main` builds and deploys production.
@@ -93,7 +93,7 @@ npx convex env set --prod KEY value
 | `SITE_URL` | The canonical app URL (`https://tarjuman.live`) — Convex Auth redirects |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth — required for Google sign-in |
 | `RESEND_API_KEY` | Password-reset email sender (`convex/passwordReset.ts`) |
-| `RESEND_FROM` | "From" address — set to `LiveTranscribe <no-reply@tarjuman.live>` |
+| `RESEND_FROM` | "From" address — set to `Tarjuman <no-reply@tarjuman.live>` |
 
 > **Resend:** `tarjuman.live` is verified in Resend and `RESEND_FROM` is set,
 > so password-reset emails deliver to any user. If `RESEND_FROM` is ever
@@ -158,7 +158,7 @@ cert). The four pinned-URL spots are all updated to it:
 1. Vercel env `NEXT_PUBLIC_APP_URL` = `https://tarjuman.live` (needs a redeploy)
 2. Convex prod env `SITE_URL` = `https://tarjuman.live`
 3. Google OAuth authorized JavaScript origin includes `https://tarjuman.live`
-4. Resend domain `tarjuman.live` verified, `RESEND_FROM` = `LiveTranscribe <no-reply@tarjuman.live>`
+4. Resend domain `tarjuman.live` verified, `RESEND_FROM` = `Tarjuman <no-reply@tarjuman.live>`
 
 To move to a different domain later, repeat those four steps with the new
 value. The Google OAuth **redirect URI** never changes — it's on the Convex

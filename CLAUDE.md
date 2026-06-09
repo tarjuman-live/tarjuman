@@ -1,8 +1,8 @@
-# CLAUDE.md — LiveTranscribe Build Instructions
+# CLAUDE.md — Tarjuman Build Instructions
 
 ## WHAT YOU ARE BUILDING
 
-LiveTranscribe is a real-time speech transcription and translation web app. A user selects a source language (e.g., Arabic) and target language (e.g., English), taps record, and instantly sees live transcription and translation on screen. When the session ends, they can generate an AI summary of the entire transcript — instant notes without writing anything down.
+Tarjuman is a real-time speech transcription and translation web app. A user selects a source language (e.g., Arabic) and target language (e.g., English), taps record, and instantly sees live transcription and translation on screen. When the session ends, they can generate an AI summary of the entire transcript — instant notes without writing anything down.
 
 **Primary use case:** Non-Arabic speakers attending khutbahs, lectures, and classes in Madinah/Saudi Arabia. Also: conferences, multilingual meetings, educational settings.
 
@@ -563,7 +563,7 @@ Store pausedAt timestamp on pause, calculate elapsed = previousElapsed + (paused
 **Pre-Recording State:**
 ```
 ┌────────────────────────────────┐
-│  [← Back]         LiveTranscribe│
+│  [← Back]         Tarjuman      │
 │                                │
 │  ┌──────────────────────────┐  │
 │  │  Source: [Arabic ▾]       │  │
@@ -793,9 +793,15 @@ An interactive prototype is included in this package as `prototype.tsx`. This is
 14. **Test in a REAL noisy environment.** Play an Arabic khutbah through a phone speaker at moderate volume, place a second phone 1-2 meters away, and capture with the app. This simulates the actual use case far better than a clean YouTube feed through headphones.
 
 <!-- convex-ai-start -->
+
 This project uses [Convex](https://convex.dev) as its backend.
 
-When working on Convex code, **always read `convex/_generated/ai/guidelines.md` first** for important guidelines on how to correctly use Convex APIs and patterns. The file contains rules that override what you may have learned about Convex from training data.
+When working on Convex code, **always read
+`convex/_generated/ai/guidelines.md` first** for important guidelines on
+how to correctly use Convex APIs and patterns. The file contains rules that
+override what you may have learned about Convex from training data.
 
-Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
+Convex agent skills for common tasks can be installed by running
+`npx convex ai-files install`.
+
 <!-- convex-ai-end -->

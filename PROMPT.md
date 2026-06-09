@@ -1,6 +1,6 @@
-# LiveTranscribe — Claude Code Build Prompt
+# Tarjuman — Claude Code Build Prompt
 
-You are building **LiveTranscribe** — a real-time speech transcription and translation app. Users record live audio (e.g., an Arabic khutbah playing through masjid speakers), see instant transcription + translation on screen, and generate AI summaries when the session ends.
+You are building **Tarjuman** — a real-time speech transcription and translation app. Users record live audio (e.g., an Arabic khutbah playing through masjid speakers), see instant transcription + translation on screen, and generate AI summaries when the session ends.
 
 ## Build Package
 
