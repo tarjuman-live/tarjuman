@@ -26,7 +26,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
           <Icon name="back" size={18} color={COLORS.t2} />
         </Link>
         <span className="text-base font-bold" style={{ color: COLORS.w }}>
-          LiveTranscribe
+          Tarjuman
         </span>
       </div>
       <article className="flex-1 px-6 py-8 max-w-[640px] w-full mx-auto">

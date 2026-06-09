@@ -4,8 +4,8 @@ import { COLORS } from "@/lib/constants";
 // common SaaS Terms of Service templates.
 
 export const metadata = {
-  title: "Terms of Service — LiveTranscribe",
-  description: "Terms governing use of LiveTranscribe.",
+  title: "Terms of Service",
+  description: "Terms governing use of Tarjuman.",
 };
 
 const styles = {
@@ -29,7 +29,7 @@ export default function TermsPage() {
       <div style={styles.meta}>Last updated: 2026-05-04 — DRAFT.</div>
 
       <p style={styles.p}>
-        By using LiveTranscribe (the &quot;Service&quot;), you agree to these
+        By using Tarjuman (the &quot;Service&quot;), you agree to these
         Terms of Service. If you don&apos;t agree, don&apos;t use the Service.
       </p>
 

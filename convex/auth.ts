@@ -4,7 +4,7 @@ import { convexAuth } from "@convex-dev/auth/server";
 import { PasswordResetEmail } from "./passwordReset";
 
 /**
- * Auth setup for LiveTranscribe.
+ * Auth setup for Tarjuman.
  *
  * Three providers:
  * - Password: email + password. Convex Auth handles hashing/salting/user

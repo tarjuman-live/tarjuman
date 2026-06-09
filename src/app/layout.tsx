@@ -1,7 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/providers/convex-provider";
+import {
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_DESCRIPTION,
+  SITE_URL,
+  KEYWORDS,
+} from "@/lib/site";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -16,17 +25,41 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LiveTranscribe",
-  description:
-    "Real-time transcription and translation. Record a khutbah or lecture — see live dual-language text and generate an AI summary in seconds.",
+  // metadataBase makes every relative URL below (canonical, OG image, etc.)
+  // resolve to an absolute https://tarjuman.live/... URL. Without it Next emits
+  // relative OG image paths that social crawlers can't fetch.
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: KEYWORDS,
+  alternates: { canonical: "/" },
   manifest: "/manifest.json",
   // iOS-specific PWA install metadata. iOS doesn't read manifest.json the
   // way Android does — it needs these meta tags to enable Add-to-Home-Screen
   // standalone mode and pick the right icon.
   appleWebApp: {
     capable: true,
-    title: "LiveTranscribe",
+    title: SITE_NAME,
     statusBarStyle: "black-translucent",
+  },
+  // og:image / twitter:image are generated automatically from the
+  // opengraph-image.tsx + twitter-image.tsx file conventions in this folder.
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: "/",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
   },
   icons: {
     icon: [
@@ -38,7 +71,16 @@ export const metadata: Metadata = {
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
-  applicationName: "LiveTranscribe",
+  // Paste the Search Console token into NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+  // (Vercel env) to verify ownership without a code change. DNS TXT is the
+  // preferred alternative — it covers every subdomain at once.
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+        },
+      }
+    : {}),
 };
 
 export const viewport: Viewport = {
@@ -64,6 +106,8 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ConvexClientProvider>{children}</ConvexClientProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

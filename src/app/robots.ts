@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site";
 
 /**
  * Allow indexing of public marketing + auth pages. Block everything under
@@ -6,7 +7,6 @@ import type { MetadataRoute } from "next";
  * /api/* (no value to crawlers, just adds noise to logs).
  */
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   return {
     rules: [
       {
@@ -15,6 +15,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/record", "/history", "/session/", "/api/"],
       },
     ],
-    sitemap: `${base.replace(/\/$/, "")}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

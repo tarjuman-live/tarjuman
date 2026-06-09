@@ -23,9 +23,9 @@ export function MicErrorState({
       : "Couldn't start recording";
 
   const body = unavailable
-    ? "This device or browser doesn't expose a microphone we can use. Try opening LiveTranscribe in Safari, Chrome, or Firefox on a device with a mic."
+    ? "This device or browser doesn't expose a microphone we can use. Try opening Tarjuman in Safari, Chrome, or Firefox on a device with a mic."
     : permissionDenied
-      ? "LiveTranscribe needs microphone access to transcribe audio. Open your browser's site settings, allow the microphone for this site, then tap Try Again."
+      ? "Tarjuman needs microphone access to transcribe audio. Open your browser's site settings, allow the microphone for this site, then tap Try Again."
       : message || "Something went wrong. Please try again.";
 
   return (

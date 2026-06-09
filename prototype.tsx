@@ -83,7 +83,7 @@ const c = {
   w: "#F0F4F8", t2: "#B0BEC5", t3: "#6B7D8D", t4: "#455A64",
 };
 
-export default function LiveTranscribePrototype() {
+export default function TarjumanPrototype() {
   const [view, setView] = useState("record"); // record | history | session
   const [recState, setRecState] = useState("idle"); // idle | recording | paused | completed
   const [sourceLang, setSourceLang] = useState("ar");
@@ -280,7 +280,7 @@ export default function LiveTranscribePrototype() {
           {recState === "idle" && (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Icon name="globe" size={18} color={c.accent} />
-              <span style={{ fontSize: 16, fontWeight: 700, color: c.w }}>LiveTranscribe</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: c.w }}>Tarjuman</span>
             </div>
           )}
         </div>

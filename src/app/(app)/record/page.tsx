@@ -404,7 +404,7 @@ export default function RecordPage() {
               className="text-base font-bold"
               style={{ color: COLORS.w }}
             >
-              LiveTranscribe
+              Tarjuman
             </span>
           </div>
         </div>
@@ -427,7 +427,7 @@ export default function RecordPage() {
         <div className="flex items-center gap-2">
           <Icon name="globe" size={18} color={COLORS.accent} />
           <span className="text-base font-bold" style={{ color: COLORS.w }}>
-            LiveTranscribe
+            Tarjuman
           </span>
         </div>
         <AccountMenu />

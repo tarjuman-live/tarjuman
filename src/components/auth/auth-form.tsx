@@ -161,7 +161,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             Account created
           </h1>
           <p className="text-[13px] mt-1" style={{ color: COLORS.t3 }}>
-            Welcome to LiveTranscribe. Taking you to the recorder…
+            Welcome to Tarjuman. Taking you to the recorder…
           </p>
         </div>
       </div>
@@ -181,7 +181,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           <Icon name="mic" size={18} color="#0A0F1C" />
         </div>
         <span className="text-xl font-bold" style={{ color: COLORS.w }}>
-          LiveTranscribe
+          Tarjuman
         </span>
       </div>
 
@@ -372,7 +372,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       </button>
 
       <div className="text-center text-[13px]" style={{ color: COLORS.t3 }}>
-        {isSignUp ? "Already have an account? " : "New to LiveTranscribe? "}
+        {isSignUp ? "Already have an account? " : "New to Tarjuman? "}
         <Link
           href={isSignUp ? "/login" : "/signup"}
           className="font-semibold"

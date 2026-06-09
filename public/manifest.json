@@ -1,7 +1,7 @@
 {
-  "name": "LiveTranscribe",
-  "short_name": "LiveTranscribe",
-  "description": "Real-time transcription and translation for khutbahs, lectures, and conferences.",
+  "name": "Tarjuman — Live Khutbah Transcription & Translation",
+  "short_name": "Tarjuman",
+  "description": "Real-time transcription and translation for khutbahs, lectures, and classes — with Islamic terminology preserved and instant AI summaries.",
   "start_url": "/record",
   "scope": "/",
   "display": "standalone",

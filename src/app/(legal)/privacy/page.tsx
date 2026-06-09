@@ -6,8 +6,8 @@ import { COLORS } from "@/lib/constants";
 // produce so swapping is straightforward.
 
 export const metadata = {
-  title: "Privacy Policy — LiveTranscribe",
-  description: "How LiveTranscribe collects, uses, and stores your data.",
+  title: "Privacy Policy",
+  description: "How Tarjuman collects, uses, and stores your data.",
 };
 
 const styles = {
@@ -31,9 +31,9 @@ export default function PrivacyPage() {
       <div style={styles.meta}>Last updated: 2026-05-04 — DRAFT.</div>
 
       <p style={styles.p}>
-        This Privacy Policy describes how LiveTranscribe (&quot;we&quot;,
+        This Privacy Policy describes how Tarjuman (&quot;we&quot;,
         &quot;our&quot;) collects, uses, and protects information when you use
-        the LiveTranscribe service.
+        the Tarjuman service.
       </p>
 
       <h2 style={styles.h2}>What we collect</h2>
@@ -154,7 +154,7 @@ export default function PrivacyPage() {
 
       <h2 style={styles.h2}>Children</h2>
       <p style={styles.p}>
-        LiveTranscribe is not intended for children under 13. If you become
+        Tarjuman is not intended for children under 13. If you become
         aware that a child has provided us with personal information, please
         contact us so we can delete it.
       </p>

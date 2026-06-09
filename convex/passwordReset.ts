@@ -13,7 +13,7 @@ import Resend from "@auth/core/providers/resend";
  *   `onboarding@resend.dev` can only deliver to the email address your Resend
  *   account is registered with. That's enough to test the full flow and reset
  *   your own account. To email ANY user, verify a domain in Resend and set
- *   RESEND_FROM to an address on it (e.g. "LiveTranscribe <no-reply@yourdomain>").
+ *   RESEND_FROM to an address on it (e.g. "Tarjuman <no-reply@yourdomain>").
  *
  * Env vars (set via `npx convex env set ...` — Convex env, not .env.local):
  *   RESEND_API_KEY  — your Resend API key (resend.com → API Keys). Required to
@@ -31,7 +31,7 @@ import Resend from "@auth/core/providers/resend";
  * fully under our control.
  */
 
-const DEFAULT_FROM = "LiveTranscribe <onboarding@resend.dev>";
+const DEFAULT_FROM = "Tarjuman <onboarding@resend.dev>";
 
 function generateOtp(length = 6): string {
   // 6 digits = 1M combinations; with 15-min TTL + rate limiting that's
@@ -65,9 +65,9 @@ async function sendViaResend(email: string, otp: string): Promise<void> {
     body: JSON.stringify({
       from,
       to: email,
-      subject: `Your LiveTranscribe reset code: ${otp}`,
+      subject: `Your Tarjuman reset code: ${otp}`,
       text:
-        `Your LiveTranscribe password reset code is ${otp}.\n\n` +
+        `Your Tarjuman password reset code is ${otp}.\n\n` +
         `It expires in 15 minutes. If you didn't request a password reset, ` +
         `you can safely ignore this email.`,
       // Email-safe layout: a full-width <table> with a dark bgcolor fills the
@@ -82,7 +82,7 @@ async function sendViaResend(email: string, otp: string): Promise<void> {
         // Brand wordmark
         `<tr><td style="padding:0 0 24px">` +
         `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:#E8943A;vertical-align:middle"></span>` +
-        `<span style="margin-left:8px;font-size:16px;font-weight:700;color:#43342A;vertical-align:middle">LiveTranscribe</span>` +
+        `<span style="margin-left:8px;font-size:16px;font-weight:700;color:#43342A;vertical-align:middle">Tarjuman</span>` +
         `</td></tr>` +
         // Card
         `<tr><td style="background-color:#FFFDF8;border:1px solid #EDDFC9;border-radius:16px;padding:32px">` +
@@ -92,7 +92,7 @@ async function sendViaResend(email: string, otp: string): Promise<void> {
         `<p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#A6927C">If you didn't request a password reset, you can safely ignore this email — your password won't change.</p>` +
         `</td></tr>` +
         // Footer
-        `<tr><td style="padding:24px 0 0;text-align:center;font-size:11px;color:#B0A08C">LiveTranscribe · Real-time transcription &amp; translation</td></tr>` +
+        `<tr><td style="padding:24px 0 0;text-align:center;font-size:11px;color:#B0A08C">Tarjuman · Real-time transcription &amp; translation</td></tr>` +
         `</table>` +
         `</td></tr></table>`,
     }),

@@ -65,23 +65,21 @@ export function PositioningTips({
           }}
         />
         <Dialog.Content
-          className="fixed left-1/2 -translate-x-1/2 bottom-0 z-[201] w-full max-w-[480px] max-h-[85vh] overflow-auto pt-6 outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom duration-200"
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-[calc(100%-32px)] max-w-[440px] max-h-[85vh] overflow-auto outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200 ease-out"
           style={{
             // Liquid glass: translucent tint over a heavy frosted backdrop.
             background: "rgba(20, 28, 46, 0.6)",
             backdropFilter: "blur(28px) saturate(180%)",
             WebkitBackdropFilter: "blur(28px) saturate(180%)",
-            borderRadius: "24px 24px 0 0",
+            borderRadius: 24,
             border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderBottom: "none",
-            // Bottom-sheet shadow rises upward; keep the top inset highlight
-            // for the glass catch-light.
+            // Centered bubble: all-around drop shadow with top catch-light and
+            // bottom shade for glass depth (matches PromptDialog/ConfirmDialog).
             boxShadow:
-              "0 -24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
-            paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
+              "0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.25)",
           }}
         >
-          <div className="px-6 pb-4">
+          <div className="p-6">
             <div
               className="w-12 h-12 rounded-2xl grid place-items-center mb-4"
               style={{
@@ -101,7 +99,7 @@ export function PositioningTips({
               className="text-[13px] leading-relaxed mb-4"
               style={{ color: COLORS.t3 }}
             >
-              LiveTranscribe captures audio from speakers in halls and masjids
+              Tarjuman captures audio from speakers in halls and masjids
               — a few seconds of setup makes a big difference.
             </Dialog.Description>
 
