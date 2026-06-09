@@ -18,7 +18,7 @@ export default function Home() {
 
       {/* Hero — staggered fade-up on load */}
       <section className="flex flex-col items-center justify-center text-center px-6 pt-20 pb-16 sm:pt-28 sm:pb-24 gap-6 min-h-[86vh]">
-        <Reveal delay={0} className={HERO_ITEM}>
+        <Reveal delay={0} className={HERO_ITEM} fade={false}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)] grid place-items-center shadow-[0_0_30px_rgba(46,204,113,0.4)]">
               <svg
@@ -47,13 +47,13 @@ export default function Home() {
           </div>
         </Reveal>
 
-        <Reveal delay={90} className={HERO_ITEM}>
+        <Reveal delay={90} className={HERO_ITEM} fade={false}>
           <h1 className="text-3xl sm:text-5xl font-bold max-w-2xl leading-[1.1]">
             Real-time khutbah transcription &amp; translation
           </h1>
         </Reveal>
 
-        <Reveal delay={180} className={HERO_ITEM}>
+        <Reveal delay={180} className={HERO_ITEM} fade={false}>
           <p className="max-w-md text-[var(--color-text-2)] text-base sm:text-lg leading-relaxed">
             Tarjuman turns Arabic speech into on-screen English as it&apos;s
             spoken — preserving Islamic terms — and writes your summary when the
@@ -61,11 +61,11 @@ export default function Home() {
           </p>
         </Reveal>
 
-        <Reveal delay={270} className={HERO_ITEM}>
+        <Reveal delay={270} className={HERO_ITEM} fade={false}>
           <TryItFree />
         </Reveal>
 
-        <Reveal delay={350} className={HERO_ITEM}>
+        <Reveal delay={350} className={HERO_ITEM} fade={false}>
           <p className="text-xs text-[var(--color-text-4)]">
             Free to start · Arabic → English &amp; 30+ languages
           </p>
