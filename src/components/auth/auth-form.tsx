@@ -9,6 +9,13 @@ import { Icon } from "@/components/shared/icon";
 
 interface AuthFormProps {
   mode: "signIn" | "signUp";
+  /**
+   * When provided, the sign-in/sign-up toggle switches mode in place (calling
+   * this) instead of navigating to /login or /signup. Used by the auth modal
+   * so the popup flips between modes without a page change. Omit on the
+   * standalone /login and /signup pages to keep link navigation.
+   */
+  onSwitchMode?: (next: "signIn" | "signUp") => void;
 }
 
 interface FieldErrors {
@@ -73,7 +80,7 @@ function friendlyError(raw: string, mode: "signIn" | "signUp"): string {
   return raw;
 }
 
-export function AuthForm({ mode }: AuthFormProps) {
+export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
   const { signIn } = useAuthActions();
   const router = useRouter();
   const isSignUp = mode === "signUp";
@@ -373,13 +380,24 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       <div className="text-center text-[13px]" style={{ color: COLORS.t3 }}>
         {isSignUp ? "Already have an account? " : "New to Tarjuman? "}
-        <Link
-          href={isSignUp ? "/login" : "/signup"}
-          className="font-semibold"
-          style={{ color: COLORS.accent }}
-        >
-          {isSignUp ? "Sign in" : "Create one"}
-        </Link>
+        {onSwitchMode ? (
+          <button
+            type="button"
+            onClick={() => onSwitchMode(isSignUp ? "signIn" : "signUp")}
+            className="font-semibold cursor-pointer"
+            style={{ color: COLORS.accent }}
+          >
+            {isSignUp ? "Sign in" : "Create one"}
+          </button>
+        ) : (
+          <Link
+            href={isSignUp ? "/login" : "/signup"}
+            className="font-semibold"
+            style={{ color: COLORS.accent }}
+          >
+            {isSignUp ? "Sign in" : "Create one"}
+          </Link>
+        )}
       </div>
     </div>
   );

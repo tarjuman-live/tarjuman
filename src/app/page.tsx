@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Features } from "@/components/landing/features";
+import { TryItFree } from "@/components/landing/try-it-free";
 import { UseCases } from "@/components/landing/use-cases";
 import { Faq } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
@@ -49,12 +49,7 @@ export default function Home() {
           lecture ends.
         </p>
 
-        <Link
-          href="/record"
-          className="mt-2 px-6 py-3 rounded-xl bg-[var(--color-accent)] text-[#0A0F1C] font-bold shadow-[0_0_24px_rgba(46,204,113,0.35)] hover:brightness-110 transition"
-        >
-          Try it free
-        </Link>
+        <TryItFree />
         <p className="text-xs text-[var(--color-text-4)]">
           Free to start · Arabic → English &amp; 30+ languages
         </p>
