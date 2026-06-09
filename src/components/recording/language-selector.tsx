@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { COLORS } from "@/lib/constants";
 import { getLangName } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
@@ -18,8 +18,26 @@ export function LanguageSelector({
   onChange,
 }: LanguageSelectorProps) {
   const [pickerOpen, setPickerOpen] = useState<"source" | "target" | null>(null);
+  // Swap-button micro-interaction: spin the ↔ a full turn on hover/swap, and
+  // warm the button from cool green → amber while hovered/pressed.
+  const [spin, setSpin] = useState(0); // accumulated degrees
+  const [warm, setWarm] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduceMotion(mq.matches);
+    const onMq = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
+    mq.addEventListener("change", onMq);
+    return () => mq.removeEventListener("change", onMq);
+  }, []);
+
+  // Full 360° turn each spin. The ↔ icon is symmetric under 180°, so a half
+  // turn would look static — a full turn reads as a clear rotation.
+  const spinOnce = () => setSpin((d) => d + 360);
 
   const handleSwap = () => {
+    spinOnce();
     onChange({ sourceLang: targetLang, targetLang: sourceLang });
   };
 
@@ -47,18 +65,43 @@ export function LanguageSelector({
         </div>
       </button>
 
-      {/* Swap */}
+      {/* Swap — warms cool green → amber and spins the ↔ a full 360° on
+          hover/press, plus another turn on each swap. On touch,
+          pointerenter/leave fire on tap, so mobile gets the warm flash + spin
+          too. Icon uses currentColor so its stroke transitions with the
+          button's color. */}
       <button
         type="button"
         onClick={handleSwap}
+        onPointerEnter={() => {
+          setWarm(true);
+          if (!reduceMotion) spinOnce();
+        }}
+        onPointerLeave={() => setWarm(false)}
         aria-label="Swap source and target languages"
-        className="w-10 h-10 rounded-2xl grid place-items-center cursor-pointer flex-shrink-0 transition-transform active:scale-95"
+        className="w-10 h-10 rounded-2xl grid place-items-center cursor-pointer flex-shrink-0"
         style={{
-          background: COLORS.accentSoft,
-          border: `1px solid ${COLORS.accent}30`,
+          background: warm ? COLORS.amberSoft : COLORS.accentSoft,
+          border: `1px solid ${warm ? COLORS.amber : COLORS.accent}30`,
+          color: warm ? COLORS.amber : COLORS.accent,
+          boxShadow: warm ? `0 0 16px ${COLORS.amber}55` : "0 0 0 rgba(0,0,0,0)",
+          transform: warm && !reduceMotion ? "scale(1.06)" : "scale(1)",
+          transition: reduceMotion
+            ? "none"
+            : "background 300ms ease, border-color 300ms ease, color 300ms ease, box-shadow 300ms ease, transform 200ms ease",
         }}
       >
-        <Icon name="swap" size={16} color={COLORS.accent} />
+        <span
+          className="grid place-items-center"
+          style={{
+            transform: reduceMotion ? undefined : `rotate(${spin}deg)`,
+            transition: reduceMotion
+              ? "none"
+              : "transform 450ms cubic-bezier(0.22, 1.2, 0.36, 1)",
+          }}
+        >
+          <Icon name="swap" size={16} />
+        </span>
       </button>
 
       {/* Target */}

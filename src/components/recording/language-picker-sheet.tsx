@@ -68,20 +68,24 @@ export function LanguagePickerSheet({
           }}
         />
         <Dialog.Content
-          className="fixed left-1/2 -translate-x-1/2 bottom-0 z-[201] w-full max-w-[480px] max-h-[70vh] flex flex-col pt-6 outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom duration-200"
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-[calc(100%-32px)] max-w-[420px] max-h-[80dvh] flex flex-col pt-6 outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-150"
           style={{
             // Liquid glass: translucent tint over a heavy frosted backdrop.
             background: "rgba(20, 28, 46, 0.6)",
             backdropFilter: "blur(28px) saturate(180%)",
             WebkitBackdropFilter: "blur(28px) saturate(180%)",
-            borderRadius: "24px 24px 0 0",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderBottom: "none",
-            // Bottom-sheet shadow rises upward; keep the top inset highlight
-            // for the glass catch-light.
+            borderRadius: 24,
+            // Longhand border (not the `border` shorthand) so React never warns
+            // about a shorthand/longhand conflict when Fast Refresh reconciles
+            // against the old bottom-sheet style that set borderBottom.
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: "rgba(255, 255, 255, 0.1)",
+            // Centered-dialog shadow with inset catch-lights, matching
+            // prompt-dialog / confirm-dialog.
             boxShadow:
-              "0 -24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
-            paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
+              "0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.25)",
+            paddingBottom: 12,
           }}
         >
           {/* Header */}
