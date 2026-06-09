@@ -4,6 +4,7 @@ import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { NavVisibilityProvider } from "@/components/layout/nav-visibility";
 import { COLORS } from "@/lib/constants";
 
 /**
@@ -45,16 +46,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div
-      className="w-full mx-auto relative overflow-hidden flex flex-col"
-      style={{
-        maxWidth: 420,
-        minHeight: "100dvh",
-        background: COLORS.bg,
-      }}
-    >
-      {children}
-      <BottomNav />
-    </div>
+    <NavVisibilityProvider>
+      <div
+        className="w-full mx-auto relative overflow-hidden flex flex-col"
+        style={{
+          maxWidth: 420,
+          minHeight: "100dvh",
+          background: COLORS.bg,
+        }}
+      >
+        {children}
+        <BottomNav />
+      </div>
+    </NavVisibilityProvider>
   );
 }

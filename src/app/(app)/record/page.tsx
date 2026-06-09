@@ -13,6 +13,7 @@ import { RecordingShell } from "@/components/recording/recording-shell";
 import { MicErrorState } from "@/components/recording/mic-error-state";
 import { PositioningTips } from "@/components/recording/positioning-tips";
 import { AccountMenu } from "@/components/auth/account-menu";
+import { useNavVisibility } from "@/components/layout/nav-visibility";
 import { haptics } from "@/lib/haptics";
 import {
   CompletedView,
@@ -114,6 +115,15 @@ export default function RecordPage() {
   const isActive =
     recorder.phase === "recording" || recorder.phase === "paused";
   const isPrewarmed = recorder.phase === "prewarmed";
+
+  // Hide the floating bottom nav while the recording UI is up so it doesn't
+  // crowd the pause/stop controls. Restored when leaving the record screen.
+  const { setHidden: setNavHidden } = useNavVisibility();
+  const hideNav = isActive || isPrewarmed;
+  useEffect(() => {
+    setNavHidden(hideNav);
+  }, [hideNav, setNavHidden]);
+  useEffect(() => () => setNavHidden(false), [setNavHidden]);
 
   // Pre-warm the audio pipeline + Deepgram WS as soon as the page mounts,
   // but ONLY if mic permission is already granted — never trigger an

@@ -65,18 +65,15 @@ export function LanguageSelector({
         </div>
       </button>
 
-      {/* Swap — warms cool green → amber and spins the ↔ a full 360° on
-          hover/press, plus another turn on each swap. On touch,
+      {/* Swap — warms cool green → amber and spins the ↔ a full turn on hover,
+          then unwinds it back on leave; each swap adds another turn. On touch,
           pointerenter/leave fire on tap, so mobile gets the warm flash + spin
           too. Icon uses currentColor so its stroke transitions with the
           button's color. */}
       <button
         type="button"
         onClick={handleSwap}
-        onPointerEnter={() => {
-          setWarm(true);
-          if (!reduceMotion) spinOnce();
-        }}
+        onPointerEnter={() => setWarm(true)}
         onPointerLeave={() => setWarm(false)}
         aria-label="Swap source and target languages"
         className="w-10 h-10 rounded-2xl grid place-items-center cursor-pointer flex-shrink-0"
@@ -94,13 +91,25 @@ export function LanguageSelector({
         <span
           className="grid place-items-center"
           style={{
-            transform: reduceMotion ? undefined : `rotate(${spin}deg)`,
+            // Outer: winds in on hover (0→360) and unwinds back on leave (360→0).
+            transform: reduceMotion ? undefined : `rotate(${warm ? 360 : 0}deg)`,
             transition: reduceMotion
               ? "none"
-              : "transform 450ms cubic-bezier(0.22, 1.2, 0.36, 1)",
+              : "transform 500ms cubic-bezier(0.22, 1.2, 0.36, 1)",
           }}
         >
-          <Icon name="swap" size={16} />
+          <span
+            className="grid place-items-center"
+            style={{
+              // Inner: an extra full turn on each swap-click.
+              transform: reduceMotion ? undefined : `rotate(${spin}deg)`,
+              transition: reduceMotion
+                ? "none"
+                : "transform 450ms cubic-bezier(0.22, 1.2, 0.36, 1)",
+            }}
+          >
+            <Icon name="swap" size={16} />
+          </span>
         </span>
       </button>
 

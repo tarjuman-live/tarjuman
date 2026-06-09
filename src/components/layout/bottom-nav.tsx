@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Icon, IconName } from "@/components/shared/icon";
+import { useNavVisibility } from "@/components/layout/nav-visibility";
 import { COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,7 @@ const FLIGHT_MS = 480;
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { hidden } = useNavVisibility();
   const activeIndex = Math.max(
     TABS.findIndex((t) => t.matches(pathname)),
     0
@@ -109,8 +111,19 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed left-1/2 -translate-x-1/2 z-50 flex items-center"
+      aria-hidden={hidden}
+      className="fixed left-1/2 z-50 flex items-center"
       style={{
+        // Centered via inline transform (so the hide-slide can compose with
+        // it); slides down + fades out when a page asks to hide the nav, e.g.
+        // the record screen during an active session.
+        transform: `translateX(-50%) translateY(${
+          hidden ? "calc(100% + 28px)" : "0px"
+        })`,
+        opacity: hidden ? 0 : 1,
+        pointerEvents: hidden ? "none" : "auto",
+        transition:
+          "transform 320ms cubic-bezier(0.4, 0, 0.2, 1), opacity 320ms ease",
         // Floats above the bottom edge — the safe-area inset lifts the whole
         // capsule rather than padding its inside.
         bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
