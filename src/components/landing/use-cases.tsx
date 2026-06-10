@@ -30,13 +30,15 @@ export function UseCases() {
         </Reveal>
         <div className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {USE_CASES.map(({ title, body }, i) => (
-            <Reveal key={title} delay={60 + i * 80}>
-              <h3 className="text-base font-semibold text-[var(--color-accent)]">
-                {title}
-              </h3>
-              <p className="mt-1.5 text-[var(--color-text-2)] text-sm leading-relaxed">
-                {body}
-              </p>
+            <Reveal key={title} delay={60 + i * 80} className="h-full">
+              <div className="h-full rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-bg)] p-5 transition duration-200 hover:-translate-y-1 hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-light)] hover:shadow-[0_10px_30px_rgba(46,204,113,0.18)]">
+                <h3 className="text-base font-semibold text-[var(--color-accent)]">
+                  {title}
+                </h3>
+                <p className="mt-1.5 text-[var(--color-text-2)] text-sm leading-relaxed">
+                  {body}
+                </p>
+              </div>
             </Reveal>
           ))}
         </div>
