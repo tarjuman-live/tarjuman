@@ -44,7 +44,7 @@ export function TryItFree() {
         onClick={handleClick}
         onPointerEnter={preload}
         onFocus={preload}
-        className="mt-2 px-6 py-3 rounded-xl bg-[var(--color-accent)] text-[#0A0F1C] font-bold shadow-[0_0_24px_rgba(46,204,113,0.35)] hover:brightness-110 transition cursor-pointer"
+        className="mt-2 px-6 py-3 rounded-xl border border-[var(--color-accent)] bg-[var(--color-accent)] text-[#0A0F1C] font-bold shadow-[0_0_24px_rgba(46,204,113,0.35)] transition-colors duration-200 cursor-pointer hover:bg-[#0A0F1C] hover:text-[var(--color-accent)]"
       >
         Try it free
       </button>
