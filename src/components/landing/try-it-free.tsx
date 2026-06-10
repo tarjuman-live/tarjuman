@@ -61,7 +61,9 @@ export function TryItFree() {
           backgroundColor: hovered ? "#0A0F1C" : "var(--color-accent)",
           color: hovered ? "var(--color-accent)" : "#0A0F1C",
           boxShadow: "0 0 24px rgba(46,204,113,0.35)",
-          transition: "background-color 200ms ease, color 200ms ease",
+          transform: hovered ? "translateY(-3px)" : "none",
+          transition:
+            "background-color 200ms ease, color 200ms ease, transform 200ms ease",
         }}
       >
         Try it free
