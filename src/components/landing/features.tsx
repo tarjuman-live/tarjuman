@@ -1,4 +1,5 @@
 import { Languages, BookOpen, Waves, Sparkles } from "lucide-react";
+import { Reveal } from "./reveal";
 
 const FEATURES = [
   {
@@ -26,27 +27,28 @@ const FEATURES = [
 export function Features() {
   return (
     <section className="w-full max-w-5xl mx-auto px-6 py-16 sm:py-24">
-      <h2 className="text-2xl sm:text-3xl font-bold text-center max-w-2xl mx-auto leading-tight">
-        Everything you need to follow an Arabic lecture
-      </h2>
-      <p className="mt-3 text-center text-[var(--color-text-2)] max-w-xl mx-auto">
-        Tarjuman is built for the real environment — a khateeb on a PA system,
-        across a crowded hall, in a language you&apos;re still learning.
-      </p>
+      <Reveal>
+        <h2 className="text-2xl sm:text-3xl font-bold text-center max-w-2xl mx-auto leading-tight">
+          Everything you need to follow an Arabic lecture
+        </h2>
+        <p className="mt-3 text-center text-[var(--color-text-2)] max-w-xl mx-auto">
+          Tarjuman is built for the real environment — a khateeb on a PA system,
+          across a crowded hall, in a language you&apos;re still learning.
+        </p>
+      </Reveal>
       <div className="mt-12 grid gap-4 sm:grid-cols-2">
-        {FEATURES.map(({ icon: Icon, title, body }) => (
-          <div
-            key={title}
-            className="rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-6"
-          >
-            <div className="w-11 h-11 rounded-xl bg-[var(--color-accent-soft)] grid place-items-center">
-              <Icon className="w-5 h-5 text-[var(--color-accent)]" strokeWidth={2} />
+        {FEATURES.map(({ icon: Icon, title, body }, i) => (
+          <Reveal key={title} delay={80 + i * 90} className="h-full">
+            <div className="h-full rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-6 transition duration-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+              <div className="w-11 h-11 rounded-xl bg-[var(--color-accent-soft)] grid place-items-center">
+                <Icon className="w-5 h-5 text-[var(--color-accent)]" strokeWidth={2} />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">{title}</h3>
+              <p className="mt-1.5 text-[var(--color-text-2)] text-sm leading-relaxed">
+                {body}
+              </p>
             </div>
-            <h3 className="mt-4 text-lg font-semibold">{title}</h3>
-            <p className="mt-1.5 text-[var(--color-text-2)] text-sm leading-relaxed">
-              {body}
-            </p>
-          </div>
+          </Reveal>
         ))}
       </div>
     </section>

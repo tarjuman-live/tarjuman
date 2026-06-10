@@ -16,8 +16,17 @@ export default function Home() {
     <main className="flex-1 flex flex-col">
       <JsonLd />
 
-      {/* Hero — staggered fade-up on load */}
-      <section className="flex flex-col items-center justify-center text-center px-6 pt-20 pb-16 sm:pt-28 sm:pb-24 gap-6 min-h-[86vh]">
+      {/* Hero — staggered rise on load over a slow-drifting ambient glow */}
+      <section className="relative overflow-hidden flex flex-col items-center justify-center text-center px-6 pt-20 pb-16 sm:pt-28 sm:pb-24 gap-6 min-h-[86vh]">
+        <div
+          aria-hidden
+          className="hero-glow pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[640px] w-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(46,204,113,0.16), rgba(46,204,113,0) 70%)",
+          }}
+        />
+
         <Reveal delay={0} className={HERO_ITEM} fade={false}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)] grid place-items-center shadow-[0_0_30px_rgba(46,204,113,0.4)]">
@@ -72,19 +81,11 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* Sections — fade-up as each scrolls into view */}
-      <Reveal>
-        <Features />
-      </Reveal>
-      <Reveal>
-        <UseCases />
-      </Reveal>
-      <Reveal>
-        <Faq />
-      </Reveal>
-      <Reveal>
-        <Footer />
-      </Reveal>
+      {/* Sections self-animate (heading first, then items stagger in) */}
+      <Features />
+      <UseCases />
+      <Faq />
+      <Footer />
     </main>
   );
 }

@@ -83,3 +83,25 @@ html {
   backdrop-filter: blur(6px) saturate(140%);
   -webkit-backdrop-filter: blur(6px) saturate(140%);
 }
+
+/* Ambient hero glow — a soft green light that slowly drifts behind the hero.
+   The centering (-50%,-50%) is baked into the keyframe so it stays centered
+   while it moves; the static -translate utilities on the element cover the
+   reduced-motion case when the animation is off. */
+@keyframes hero-glow-drift {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translate3d(-6%, -2%, 0) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) translate3d(6%, 4%, 0) scale(1.12);
+  }
+}
+.hero-glow {
+  animation: hero-glow-drift 16s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow {
+    animation: none;
+  }
+}

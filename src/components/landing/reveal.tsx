@@ -9,18 +9,17 @@ interface RevealProps {
   className?: string;
   /**
    * false = transform-only (opacity stays 1). Use for above-the-fold content
-   * so a fade-in doesn't delay Largest Contentful Paint. Default true
-   * (fade + slide) — fine for below-the-fold scroll reveals.
+   * so a fade-in doesn't delay Largest Contentful Paint. Default true.
    */
   fade?: boolean;
 }
 
 /**
- * Reveals its children the first time they scroll into view. Above-the-fold
- * content (with `fade={false}`) animates on load without an opacity fade so it
- * doesn't push out LCP. Respects prefers-reduced-motion (shows instantly, no
- * transition). Content is only opacity/transform-shifted — never removed from
- * the DOM — so it stays crawlable for SEO.
+ * Reveals its children the first time they scroll into view, with a punchy
+ * rise + slight scale and a gentle overshoot. `fade={false}` keeps opacity at 1
+ * (LCP-safe) for above-the-fold content. Respects prefers-reduced-motion (shows
+ * instantly). Content is only opacity/transform-shifted — never removed from
+ * the DOM — so it stays crawlable.
  */
 export function Reveal({ children, delay = 0, className, fade = true }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -48,7 +47,8 @@ export function Reveal({ children, delay = 0, className, fade = true }: RevealPr
     return () => io.disconnect();
   }, []);
 
-  const ease = "cubic-bezier(0.22, 1, 0.36, 1)";
+  const smooth = "cubic-bezier(0.22, 1, 0.36, 1)";
+  const overshoot = "cubic-bezier(0.34, 1.4, 0.64, 1)"; // slight "pop"
 
   return (
     <div
@@ -56,12 +56,12 @@ export function Reveal({ children, delay = 0, className, fade = true }: RevealPr
       className={className}
       style={{
         opacity: fade && !shown ? 0 : 1,
-        transform: shown ? "none" : "translateY(18px)",
+        transform: shown ? "none" : "translateY(28px) scale(0.96)",
         transition: reduce
           ? "none"
           : [
-              fade ? `opacity 650ms ${ease} ${delay}ms` : null,
-              `transform 650ms ${ease} ${delay}ms`,
+              fade ? `opacity 600ms ${smooth} ${delay}ms` : null,
+              `transform 600ms ${overshoot} ${delay}ms`,
             ]
               .filter(Boolean)
               .join(", "),
