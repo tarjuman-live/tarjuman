@@ -23,6 +23,7 @@ export function TryItFree() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   // Mounting AuthModal triggers its dynamic import. Preload on intent so the
   // first click opens immediately.
@@ -42,9 +43,26 @@ export function TryItFree() {
       <button
         type="button"
         onClick={handleClick}
-        onPointerEnter={preload}
-        onFocus={preload}
-        className="mt-2 px-6 py-3 rounded-xl border border-[var(--color-accent)] bg-[var(--color-accent)] text-[#0A0F1C] font-bold shadow-[0_0_24px_rgba(46,204,113,0.35)] transition-colors duration-200 cursor-pointer hover:bg-[#0A0F1C] hover:text-[var(--color-accent)]"
+        onPointerEnter={() => {
+          preload();
+          setHovered(true);
+        }}
+        onPointerLeave={() => setHovered(false)}
+        onFocus={() => {
+          preload();
+          setHovered(true);
+        }}
+        onBlur={() => setHovered(false)}
+        className="mt-2 px-6 py-3 rounded-xl font-bold cursor-pointer"
+        style={{
+          // Hover inverts: green→dark bg, dark→green text. Green border stays
+          // so the button keeps its size and is visible once the bg goes dark.
+          border: "1px solid var(--color-accent)",
+          backgroundColor: hovered ? "#0A0F1C" : "var(--color-accent)",
+          color: hovered ? "var(--color-accent)" : "#0A0F1C",
+          boxShadow: "0 0 24px rgba(46,204,113,0.35)",
+          transition: "background-color 200ms ease, color 200ms ease",
+        }}
       >
         Try it free
       </button>
