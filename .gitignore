@@ -34,6 +34,13 @@ yarn-error.log*
 .env*
 !.env.local.example
 
+# local mcp config (may contain API keys — keep out of git)
+.mcp.json
+.vscode/mcp.json
+
+# local planning artifact (pre-rebrand checklist PDF, not project docs)
+docs/livetranscribe-checklist.pdf
+
 # vercel
 .vercel
 
