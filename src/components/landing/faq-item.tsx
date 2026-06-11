@@ -17,12 +17,9 @@ export function FaqItem({ q, a }: { q: string; a: string }) {
 
   return (
     <div
-      className="rounded-2xl border border-[var(--color-border-light)] transition-colors duration-300"
-      style={{
-        backgroundColor: open
-          ? "var(--color-surface-light)"
-          : "var(--color-surface)",
-      }}
+      className={`rounded-2xl border border-[var(--color-border-light)] transition duration-300 hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-light)] hover:shadow-[0_10px_30px_rgba(46,204,113,0.18)] ${
+        open ? "bg-[var(--color-surface-light)]" : "bg-[var(--color-surface)]"
+      }`}
     >
       <button
         type="button"
