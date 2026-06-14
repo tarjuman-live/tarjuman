@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Tarjuman — STT & TTS Provider Analysis</title>
+<style>
+  :root {
+    --ink: #11161f; --muted: #5b6573; --line: #d7dce3; --line2: #eceff3;
+    --accent: #1f8f4e; --accent-soft: #e9f6ef; --amber: #b4790a; --amber-soft: #fbf3e2;
+    --red: #b3261e; --red-soft: #fbeae9; --blue: #1857b8; --blue-soft: #eaf0fb;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font: 13px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); margin: 0; padding: 0;
+  }
+  .page { padding: 40px 44px; max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 17px; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--ink); letter-spacing: -0.01em; }
+  h3 { font-size: 13.5px; margin: 16px 0 6px; }
+  p { margin: 7px 0; }
+  .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .lead { font-size: 13.5px; }
+  strong { font-weight: 650; }
+  code { font: 11.5px ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: var(--line2); padding: 1px 5px; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-size: 11.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+  th { background: #f4f6f8; font-weight: 650; }
+  td.win { background: var(--accent-soft); }
+  .tag { display: inline-block; font-size: 10.5px; font-weight: 650; padding: 1px 7px; border-radius: 20px; }
+  .yes { color: var(--accent); background: var(--accent-soft); }
+  .no { color: var(--red); background: var(--red-soft); }
+  .meh { color: var(--amber); background: var(--amber-soft); }
+  .callout { border: 1px solid var(--line); border-left: 4px solid var(--accent); background: #fafdfb; padding: 12px 16px; border-radius: 6px; margin: 14px 0; }
+  .callout.amber { border-left-color: var(--amber); background: var(--amber-soft); }
+  .callout.blue  { border-left-color: var(--blue);  background: var(--blue-soft); }
+  .verdict { display: grid; grid-template-columns: 130px 1fr; gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin: 12px 0; }
+  .verdict > div { padding: 9px 13px; border-bottom: 1px solid var(--line2); }
+  .verdict > div:nth-child(odd) { background: #f7f9fb; font-weight: 650; border-right: 1px solid var(--line); }
+  .verdict > div:nth-last-child(-n+2) { border-bottom: none; }
+  .best-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .best-card { border: 1px solid var(--line); border-radius: 8px; padding: 11px 14px; }
+  .best-card h4 { margin: 0 0 4px; font-size: 12.5px; }
+  .best-card .one { color: var(--muted); font-size: 11.5px; }
+  ol.actions { margin: 8px 0; padding-left: 20px; }
+  ol.actions li { margin: 7px 0; }
+  .pill { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 4px; margin-right: 6px; }
+  .now { background: var(--accent); color: #fff; }
+  .soon { background: var(--amber); color: #fff; }
+  .later { background: #6b7280; color: #fff; }
+  .skip { background: #c7ccd3; color: #2b2f36; }
+  .footer { margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10.5px; }
+  .src { font-size: 10px; color: var(--muted); columns: 2; column-gap: 26px; }
+  .src a { color: var(--blue); text-decoration: none; }
+  @media print { h2 { break-after: avoid; } table, .verdict, .best-grid, .callout { break-inside: avoid; } .page { padding: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Tarjuman — Speech-to-Text &amp; Text-to-Speech Provider Analysis</h1>
+  <div class="sub">Deepgram · OpenAI · Google Gemini &nbsp;|&nbsp; Recommendation for a real-time Arabic→English khutbah transcription app &nbsp;|&nbsp; Prepared June 14, 2026</div>
+
+  <div class="callout">
+    <strong>Bottom line.</strong> Your current stack is already the right one — keep it. The best realtime
+    Arabic STT is <strong>Deepgram Nova-3</strong>, and you correctly run a second engine
+    (<strong>OpenAI Whisper</strong>) alongside it for accuracy. The best TTS for your 30+ target languages is
+    <strong>OpenAI</strong>, with the browser <strong>Web Speech API</strong> as the free fallback. Don't add Gemini to the
+    realtime path (it's an LLM doing audio, not a low-latency STT engine). The only changes worth making now are two
+    drop-in model upgrades and a translation retry — and even those come <em>after</em> you've field-tested Deepgram in a
+    real masjid. Redundancy is insurance; don't pay the premium before you have users to protect.
+  </div>
+
+  <h2>Your current architecture (what the advice is built on)</h2>
+  <table>
+    <tr><th style="width:130px">Stage</th><th>Provider &amp; model</th><th>Role</th></tr>
+    <tr><td><strong>STT — realtime</strong></td><td>Deepgram <code>nova-3</code> (WebSocket, Arabic, <code>diarize=true</code>, <code>endpointing=500</code>)</td><td>Primary live transcript</td></tr>
+    <tr><td><strong>STT — 2nd opinion</strong></td><td>OpenAI <code>whisper-1</code> (per finalized segment, unhinted)</td><td>Accuracy reconcile + off-language detection</td></tr>
+    <tr><td><strong>Translation</strong></td><td>Claude <code>haiku-4.5</code> / <code>sonnet-4.6</code></td><td>Translate + preserve Islamic terms; reconciles the two STT outputs</td></tr>
+    <tr><td><strong>TTS</strong></td><td>OpenAI <code>tts-1-hd</code> (voice <code>onyx</code>) → Web Speech API</td><td>Speaks the <em>translated</em> (usually English) text; browser fallback</td></tr>
+  </table>
+  <p class="sub">You already run <strong>two STT engines</strong> and a <strong>two-tier TTS fallback</strong>. The genuine single point of failure is realtime STT (no Deepgram outage failover); translation also has no fallback.</p>
+
+  <h2>STT comparison — realtime Arabic transcription</h2>
+  <table>
+    <tr>
+      <th style="width:14%">Provider</th><th>Realtime streaming</th><th>Arabic quality</th>
+      <th>Diarization (live)</th><th>Latency</th><th>Price /min</th><th>Best at</th>
+    </tr>
+    <tr>
+      <td class="win"><strong>Deepgram</strong><br>Nova-3</td>
+      <td class="win"><span class="tag yes">Yes</span> WebSocket</td>
+      <td class="win"><strong>Best.</strong> Dedicated monolingual Arabic model, 17 dialects; ~40% lower WER (vendor claim)</td>
+      <td class="win"><span class="tag yes">Yes</span> (you use it today)</td>
+      <td class="win"><strong>~200–300 ms</strong></td>
+      <td>~$0.005–0.007</td>
+      <td>Accuracy-first realtime Arabic at lowest latency</td>
+    </tr>
+    <tr>
+      <td><strong>OpenAI</strong><br>gpt-4o-transcribe / realtime / whisper</td>
+      <td><span class="tag meh">Partial</span> realtime via <code>gpt-realtime-whisper</code>; whisper &amp; gpt-4o-transcribe are batch</td>
+      <td>Strong (Arabic supported); gpt-4o-transcribe beats whisper</td>
+      <td><span class="tag no">No</span> in realtime (diarize is batch-only)</td>
+      <td>Tunable, not published</td>
+      <td>$0.006 batch · $0.017 realtime</td>
+      <td>Best accuracy 2nd-opinion &amp; the natural outage failover</td>
+    </tr>
+    <tr>
+      <td><strong>Gemini</strong><br>Live API / 2.5 Flash</td>
+      <td><span class="tag meh">Yes, but</span> LLM audio, not STT-grade</td>
+      <td>OK; transcription is a side-output of an LLM, no word timing guarantees</td>
+      <td><span class="tag no">No</span></td>
+      <td><span class="tag no">~3–15 s</span> spikes reported</td>
+      <td>~$0.037 (token-bundled)</td>
+      <td>Voice-agent reasoning — <em>not</em> pure transcription</td>
+    </tr>
+  </table>
+  <p class="sub">Google's real STT engine is <strong>Cloud Speech-to-Text (Chirp 3)</strong> — a separate product from Gemini, streaming, Arabic-capable, but ~300–600 ms and less Arabic-tuned than Deepgram. Viable, but not better here.</p>
+
+  <h2>TTS comparison — speaking the translated text (English-primary, 30+ targets)</h2>
+  <table>
+    <tr>
+      <th style="width:14%">Provider</th><th>Naturalness (English)</th><th>Languages</th>
+      <th>Realtime / latency</th><th>Price /10 min*</th><th>Best at</th>
+    </tr>
+    <tr>
+      <td class="win"><strong>OpenAI</strong><br>gpt-4o-mini-tts / tts-1-hd</td>
+      <td class="win">High; <code>gpt-4o-mini-tts</code> is steerable (tone, pace)</td>
+      <td class="win"><strong>95+</strong> (Urdu, Turkish, Indonesian workable)</td>
+      <td>Streams; ~1–2 s/segment (fine with prefetch)</td>
+      <td class="win">~$0.15 (mini) · ~$0.27 (hd)</td>
+      <td>Best all-round: English quality + broad targets + cost</td>
+    </tr>
+    <tr>
+      <td><strong>Gemini</strong><br>2.5 / 3.1 Flash TTS</td>
+      <td>High, expressive</td>
+      <td><strong>70+</strong> (best breadth)</td>
+      <td><span class="tag no">~3 s</span> — too slow for live</td>
+      <td>~$1.20–1.50</td>
+      <td>Batch "download the whole session as audio" (future)</td>
+    </tr>
+    <tr>
+      <td><strong>Deepgram</strong><br>Aura-2</td>
+      <td>High, professional</td>
+      <td><span class="tag no">7 only</span> (English + 6 European; <strong>no Arabic/Urdu/Turkish/Indonesian</strong>)</td>
+      <td class="win"><span class="tag yes">&lt;90 ms</span> — best latency</td>
+      <td>~$0.27</td>
+      <td>English-only ultra-low-latency niche</td>
+    </tr>
+    <tr>
+      <td><strong>Web Speech</strong><br>(browser)</td>
+      <td>Robotic, OS-dependent</td>
+      <td>Many (inconsistent)</td>
+      <td>Instant, on-device</td>
+      <td><strong>Free</strong></td>
+      <td>Last-resort fallback (already in place)</td>
+    </tr>
+  </table>
+  <p class="sub">*Corrected cost: real speech ≈ 130–150 wpm ≈ ~9K characters per 10 min — not the ~100K some calculators assume. Your "~$0.15/khutbah" budget is realistic with <code>gpt-4o-mini-tts</code>.</p>
+
+  <h2>What each provider does best (one line)</h2>
+  <div class="best-grid">
+    <div class="best-card"><h4>Deepgram — STT</h4><div class="one">Fastest, most accurate <strong>realtime Arabic</strong> with live diarization. The reason your transcript is usable. Keep as primary.</div></div>
+    <div class="best-card"><h4>Deepgram — TTS (Aura-2)</h4><div class="one">Lowest latency (&lt;90 ms) but English-only-ish. A niche English fallback, not a fit for your multilingual targets.</div></div>
+    <div class="best-card"><h4>OpenAI — STT</h4><div class="one">Best <strong>accuracy second-opinion</strong> (gpt-4o-transcribe) and the cleanest <strong>outage failover</strong> (gpt-realtime-whisper) — already wired.</div></div>
+    <div class="best-card"><h4>OpenAI — TTS</h4><div class="one">Best <strong>all-round</strong>: natural English, steerable, 95+ languages, cheapest. Your TTS primary.</div></div>
+    <div class="best-card"><h4>Gemini — STT</h4><div class="one">Best for conversational <strong>voice agents</strong> where an LLM reasons over audio — wrong tool for low-latency transcription.</div></div>
+    <div class="best-card"><h4>Gemini — TTS</h4><div class="one">Best <strong>language breadth</strong> (70+) and expressiveness — but ~3 s latency makes it a <strong>batch</strong>-only option for you.</div></div>
+  </div>
+
+  <h2>The verdict</h2>
+
+  <h3>Speech-to-Text</h3>
+  <div class="verdict">
+    <div>Primary</div><div><span class="pill now">keep</span><strong>Deepgram Nova-3</strong> (monolingual Arabic) — nothing beats it for realtime Arabic.</div>
+    <div>2nd opinion</div><div><span class="pill soon">upgrade</span>OpenAI Whisper → <strong>gpt-4o-transcribe</strong> (lower WER, ~same cost, drop-in). Keep the two-engine reconcile.</div>
+    <div>Outage failover</div><div><span class="pill later">later</span>OpenAI <strong>gpt-realtime-whisper</strong> — only fires if Deepgram fails to reconnect. Build once you have users.</div>
+    <div>Skip</div><div><span class="pill skip">skip</span>Gemini Live for transcription (latency, no diarization). Google Cloud STT works but isn't better.</div>
+  </div>
+
+  <h3>Text-to-Speech</h3>
+  <div class="verdict">
+    <div>Primary</div><div><span class="pill soon">upgrade</span>OpenAI <code>tts-1-hd</code> → <strong>gpt-4o-mini-tts</strong> (steerable, cheaper, 95+ langs). Drop-in.</div>
+    <div>Fallback</div><div><span class="pill now">keep</span><strong>Web Speech API</strong> — free, on-device, already per-item robust.</div>
+    <div>Niche</div><div><span class="pill skip">optional</span>Deepgram Aura-2 only if English dominates and latency complaints appear. Gemini TTS only for a future batch "download audio" feature.</div>
+  </div>
+
+  <div class="callout blue">
+    <strong>More than one provider — concurrently?</strong><br>
+    <strong>STT: yes, and you already do it right.</strong> Deepgram realtime + Whisper second-opinion is a deliberate dual-engine design for accuracy. Keep two — don't add a third concurrent engine.<br>
+    <strong>TTS: no.</strong> One cloud primary + Web Speech fallback. Running multiple cloud TTS at once just burns money.
+  </div>
+  <div class="callout blue">
+    <strong>More than one as fallback?</strong><br>
+    <strong>STT:</strong> one realtime failover (OpenAI) is enough. <strong>TTS:</strong> the cloud→Web-Speech two-tier is enough.<br>
+    <strong>The gap nobody asked about:</strong> translation has <em>no</em> fallback — and translation <em>is</em> the product. A transient Anthropic blip currently errors the segment. A simple retry / secondary is the cheapest, highest-value resilience win you can make.
+  </div>
+
+  <div class="callout amber">
+    <strong>What most people miss.</strong> Redundancy is insurance, and insurance has a premium — complexity, cost, and forever-maintenance. With zero validated users and a core that hasn't been field-tested in a real masjid, building elaborate multi-provider failover is premature. <strong>Validate Deepgram in the real environment first. Don't build a Deepgram failover before you've proven Deepgram itself works.</strong> An outage today hurts ~0 users; resilience engineering earns its keep once it protects someone.
+  </div>
+
+  <h2>What I'd actually do — in priority order</h2>
+  <ol class="actions">
+    <li><span class="pill now">now</span><strong>Field-test Deepgram first.</strong> Everything above assumes the primary is good enough in a real room. Prove that before changing anything (see <code>docs/field-test-protocol.md</code>).</li>
+    <li><span class="pill soon">cheap win</span><strong>Two drop-in model upgrades:</strong> Whisper → <code>gpt-4o-transcribe</code> (STT 2nd opinion) and <code>tts-1-hd</code> → <code>gpt-4o-mini-tts</code> (TTS). Better quality, lower cost, ~one line each. Do these <em>after</em> the field test so you don't change two variables before measuring the first.</li>
+    <li><span class="pill soon">cheap win</span><strong>Add a translation retry/secondary.</strong> Translation is the product and has no fallback today. One retry (or a cached/secondary model) is high-value insurance.</li>
+    <li><span class="pill later">when you have users</span><strong>Realtime STT outage failover</strong> to OpenAI <code>gpt-realtime-whisper</code>, triggered only when Deepgram can't reconnect.</li>
+    <li><span class="pill skip">skip for now</span>Gemini on the realtime path; Deepgram Aura-2 TTS; any concurrent third engine.</li>
+  </ol>
+
+  <div class="footer">
+    <strong>Caveats.</strong> Current as of June 14, 2026. Provider capabilities and pricing change frequently; vendor accuracy claims (e.g. Deepgram's "~40% lower WER") are unverified by independent 2026 benchmarks. "Gemini" here distinguishes the Gemini Live API (LLM audio) from Google Cloud Speech-to-Text (Chirp 3, a separate dedicated STT). Costs are estimates for a ~10–20 min khutbah and will vary with speech density and target language.
+    <div style="margin-top:10px"><strong>Key sources:</strong></div>
+    <div class="src">
+      Deepgram Nova-3 Arabic &amp; pricing &amp; diarization docs (deepgram.com) ·
+      Deepgram Aura-2 TTS &amp; languages (deepgram.com/product/text-to-speech) ·
+      OpenAI speech-to-text, realtime transcription &amp; gpt-realtime-whisper (developers.openai.com) ·
+      OpenAI gpt-4o-mini-tts &amp; TTS pricing (developers.openai.com) ·
+      Google Gemini Live API &amp; audio docs &amp; pricing (ai.google.dev) ·
+      Google Cloud Speech-to-Text / Chirp 3 (cloud.google.com/speech-to-text) ·
+      Gemini 3.5 Live Translate launch (marktechpost.com, Jun 2026) ·
+      TTS/STT latency &amp; pricing roundups 2026 (smallest.ai, costgoat.com, buildmvpfast.com).
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
