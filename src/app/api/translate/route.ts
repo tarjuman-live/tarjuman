@@ -464,54 +464,86 @@ export async function POST(req: NextRequest) {
   const model = hasAlternative ? MODEL_SONNET : routeModel(text, context);
   const maxTokens = model === MODEL_SONNET ? 1500 : 500;
 
-  // 15s timeout. Haiku usually responds in 0.3–1.5s; Sonnet ~1–3s for short
-  // segments. Anything beyond 15s indicates upstream trouble and we'd rather
-  // fail fast than hang the user's transcript indefinitely.
-  let response: Response;
-  try {
-    response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+  const requestBody = JSON.stringify({
+    model,
+    max_tokens: maxTokens,
+    system: [
+      {
+        type: "text",
+        text: SYSTEM_PROMPT,
+        cache_control: { type: "ephemeral" },
       },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        system: [
-          {
-            type: "text",
-            text: SYSTEM_PROMPT,
-            cache_control: { type: "ephemeral" },
-          },
-        ],
-        messages: [
-          {
-            role: "user",
-            content: buildUserMessage({
-              text,
-              sourceName,
-              targetName,
-              context,
-              alternativeText,
-            }),
-          },
-        ],
-      }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (/timed out|abort/i.test(msg)) {
+    ],
+    messages: [
+      {
+        role: "user",
+        content: buildUserMessage({
+          text,
+          sourceName,
+          targetName,
+          context,
+          alternativeText,
+        }),
+      },
+    ],
+  });
+
+  // Translation is the product, so a transient upstream blip (429 rate limit,
+  // 529 overloaded, 5xx, or a brief network error) must not error the segment.
+  // Retry once with a short backoff on those retryable failures.
+  //
+  // 15s timeout per attempt. Haiku usually responds in 0.3–1.5s; Sonnet ~1–3s.
+  // Timeouts/aborts are NOT retried — doubling a 15s wait would stall the live
+  // transcript, so those fail fast.
+  const MAX_ATTEMPTS = 2;
+  const RETRY_BACKOFF_MS = 400;
+  let response: Response | null = null;
+  let lastTransientDetail = "";
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: requestBody,
+        cache: "no-store",
+        signal: AbortSignal.timeout(15_000),
+      });
+      // Rate-limited / overloaded / server error → transient; retry if budget left.
+      if ((r.status === 429 || r.status >= 500) && attempt < MAX_ATTEMPTS) {
+        lastTransientDetail = `HTTP ${r.status}`;
+        await new Promise((res) => setTimeout(res, RETRY_BACKOFF_MS));
+        continue;
+      }
+      response = r;
+      break;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/timed out|abort/i.test(msg)) {
+        return NextResponse.json(
+          { error: "Translation timed out. Try again." },
+          { status: 504 }
+        );
+      }
+      // Network-level throw → transient; retry if budget left, else give up.
+      lastTransientDetail = msg;
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((res) => setTimeout(res, RETRY_BACKOFF_MS));
+        continue;
+      }
       return NextResponse.json(
-        { error: "Translation timed out. Try again." },
-        { status: 504 }
+        { error: `Translation failed: ${msg}` },
+        { status: 502 }
       );
     }
+  }
+
+  if (!response) {
     return NextResponse.json(
-      { error: `Translation failed: ${msg}` },
+      { error: `Translation failed: ${lastTransientDetail || "upstream error"}` },
       { status: 502 }
     );
   }
