@@ -293,7 +293,8 @@ export function parseQuranCitations(text: string): Array<{
  *   - If verified but target is not English: keep LLM lead-in, just replace
  *     the citation parenthetical with a clickable markdown link.
  *   - If 404 (hallucinated verse number): strip the citation parenthetical.
- *   - On transient API failure: leave citation as-is.
+ *   - On transient API failure: mark the citation `— unverified` rather than
+ *     leaving it to read as an authentic verse reference.
  *
  * Quran.com is a free public API; no env-var-missing path needed.
  */
@@ -324,13 +325,15 @@ export async function verifyAndEnrichQuran(
     const leadIn = text.slice(cursor, m.index);
 
     if (result.kind === "found") {
-      if (targetIsEnglish) {
+      const body = result.englishBody.trim();
+      if (targetIsEnglish && body) {
         // Replace lead-in (LLM's English) with canonical Muhsin Khan body.
-        const body = result.englishBody.trim();
         out.push(`${body} ${linkMarkdown}`);
       } else {
-        // Keep LLM's target-language rendering, just upgrade the citation
-        // to a clickable link.
+        // Non-English target, OR no canonical English body available — keep
+        // the LLM's own rendering and just upgrade the citation to a verified
+        // link. The verse is confirmed to exist; only its canonical English
+        // text is missing, so we never emit a bare empty-bodied link.
         out.push(`${leadIn}${linkMarkdown}`);
       }
       citations.push({
@@ -355,8 +358,13 @@ export async function verifyAndEnrichQuran(
         verified: false,
       });
     } else {
-      // Transient failure — leave everything alone.
-      out.push(`${leadIn}${m.raw}`);
+      // Could not verify (transient quran.com failure). Mark it unverified
+      // rather than presenting it as an authentic verse reference. The
+      // " — unverified" before the ")" also stops the citation regex from
+      // re-matching, so a second pass can't double-mark it.
+      out.push(
+        `${leadIn}(Quran ${m.surahDisplay}:${m.ayahNumber} — unverified)`
+      );
       citations.push({
         raw: m.raw,
         surahDisplay: m.surahDisplay,

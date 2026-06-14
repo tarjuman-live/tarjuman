@@ -12,10 +12,12 @@
  *                                    markdown link, and 404 citations
  *                                    stripped
  *
- * Behavior is opt-in: without `SUNNAH_API_KEY` in the environment, every
- * call short-circuits with `skipped: true` and the input text comes back
- * unchanged. That lets the rest of the app keep working before the user
- * has a key from sunnah.com.
+ * Fail-safe: a hadith citation is only ever presented as authentic once it's
+ * been verified against sunnah.com. When verification is unavailable — no
+ * `SUNNAH_API_KEY`, or a transient lookup failure — the citation is marked
+ * `— unverified` instead of passing through as if confirmed. (Hallucinated
+ * numbers that 404 are stripped.) So the app never puts an unconfirmed hadith
+ * reference on screen with false authority, even before a sunnah.com key is set.
  */
 
 // Citation pattern matches the (Collection Number) format the prompt
@@ -25,28 +27,36 @@ const CITATION_RE =
   /\((Sahih\s+(?:al-)?Bukhari|Sahih\s+Muslim|Sunan\s+(?:Abi|Abu)\s+Dawud|Sunan\s+at-?Tirmidhi|Jami['']?\s+at-?Tirmidhi|Sunan\s+an-?Nasa['']?i|Sunan\s+Ibn\s+Majah|Muwatta(?:\s+Malik)?|Musnad\s+Ahmad)\s+(\d+)\)/gi;
 
 // Collection display name → sunnah.com URL / API slug.
+// Keys are in NORMALIZED form (lowercase, apostrophes + hyphens removed) so
+// every rendering variant the LLM emits resolves to one entry. See
+// normalizeCollection below.
 const COLLECTION_SLUG: Record<string, string> = {
   bukhari: "bukhari",
-  "sahih al-bukhari": "bukhari",
+  "sahih albukhari": "bukhari",
   "sahih bukhari": "bukhari",
   "sahih muslim": "muslim",
   "sunan abi dawud": "abudawud",
   "sunan abu dawud": "abudawud",
-  "sunan at-tirmidhi": "tirmidhi",
   "sunan attirmidhi": "tirmidhi",
-  "jami' at-tirmidhi": "tirmidhi",
-  "jami at-tirmidhi": "tirmidhi",
-  "sunan an-nasa'i": "nasai",
+  "jami attirmidhi": "tirmidhi",
   "sunan annasai": "nasai",
-  "sunan an-nasai": "nasai",
   "sunan ibn majah": "ibnmajah",
   muwatta: "malik",
   "muwatta malik": "malik",
   "musnad ahmad": "ahmad",
 };
 
+// Normalize away the apostrophe / hyphen variation the LLM emits — e.g.
+// "Jami' at-Tirmidhi", "Jami atTirmidhi", "Sunan an-Nasa'i" all collapse to a
+// single key. Without this, a recognized-but-unresolved citation would be
+// skipped by parseCitations and slip past the fail-safe reading as authentic.
 function normalizeCollection(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, " ").trim();
+  return name
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/-/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function slugFor(name: string): string | undefined {
@@ -125,6 +135,14 @@ export async function lookupHadith(
     const body = (await res.json()) as SunnahHadithResponse;
     const en = body.hadith?.find((h) => h.lang === "en")?.body ?? "";
     const ar = body.hadith?.find((h) => h.lang === "ar")?.body ?? "";
+    // A 200 with no usable English body must NOT count as "found": the
+    // enrich step displays the English body, so an empty one would emit a
+    // bare citation link AND delete the speaker's own rendering of the
+    // hadith. Treat it as unverifiable (don't cache) so the fail-safe marks
+    // it "— unverified" and keeps the original text.
+    if (!en) {
+      return { kind: "unknown" };
+    }
     const entry: CacheEntry = {
       kind: "found",
       englishBody: en,
@@ -182,43 +200,46 @@ export function parseCitations(text: string): Array<{
   return out;
 }
 
+// Marker for a recognized-but-unverified hadith citation. We couldn't confirm
+// it against sunnah.com (no key, or transient failure), so it must not read as
+// authentic. The trailing " — unverified" before the ")" also means the
+// citation regex won't re-match it, so a second pass can't double-mark.
+function unverifiedCitation(collectionDisplay: string, number: string): string {
+  return `(${collectionDisplay} ${number} — unverified)`;
+}
+
 /**
  * Pipeline:
  *   - parse citations
- *   - lookup each (cached)
- *   - for each verified citation: replace everything from the start of text
- *     (or the end of the previous citation) up through that citation's
- *     closing paren with `<sunnah canonical body> [(Collection Number)](url)`
- *   - for each 404 citation: strip the parenthetical (keep surrounding text)
- *   - for `unknown` (no key, transient failure): leave the citation alone
+ *   - lookup each (cached) when a SUNNAH_API_KEY is configured
+ *   - "found"     → replace the lead-in (LLM's own rendering) + citation with
+ *                   `<sunnah canonical body> [(Collection Number)](url)`
+ *   - "not-found" → strip the parenthetical (hallucinated number)
+ *   - "unknown"   → could NOT verify (no key, or transient failure). Mark the
+ *                   citation `— unverified` so it is never presented as an
+ *                   authentic hadith reference. Fail-safe for the audience.
  *
- * When `SUNNAH_API_KEY` is missing, returns `{ text, citations: [], skipped: true }`.
+ * `skipped` is true only when there were no citations to process.
  */
 export async function verifyAndEnrich(text: string): Promise<{
   text: string;
   citations: VerifiedCitation[];
   skipped: boolean;
 }> {
-  if (!process.env.SUNNAH_API_KEY) {
+  const matches = parseCitations(text);
+  if (matches.length === 0) {
     return { text, citations: [], skipped: true };
   }
 
-  const matches = parseCitations(text);
-  if (matches.length === 0) {
-    return { text, citations: [], skipped: false };
-  }
-
-  // Look up all citations in parallel.
-  const results = await Promise.all(
-    matches.map((m) => lookupHadith(m.slug, m.number))
-  );
+  // Verify against sunnah.com when we have a key. Without one we cannot check
+  // any citation — but we must NOT let an unverified hadith reference read as
+  // authentic, so every lookup resolves to "unknown" and is marked below.
+  const hasKey = !!process.env.SUNNAH_API_KEY;
+  const results: CacheEntry[] = hasKey
+    ? await Promise.all(matches.map((m) => lookupHadith(m.slug, m.number)))
+    : matches.map(() => ({ kind: "unknown" as const }));
 
   // Walk the original text and build the enriched one piece by piece.
-  // For each citation:
-  //   - "found" → replace lead-in segment (since prev cursor) + citation
-  //               with `<canonical body> [(citation)](url)`
-  //   - "not-found" → keep lead-in, drop the citation parenthetical
-  //   - "unknown" → leave both lead-in and citation as-is
   const out: string[] = [];
   const citations: VerifiedCitation[] = [];
   let cursor = 0;
@@ -259,8 +280,9 @@ export async function verifyAndEnrich(text: string): Promise<{
         verified: false,
       });
     } else {
-      // Transient failure — keep everything as the LLM wrote it.
-      out.push(`${leadIn}${m.raw}`);
+      // Could not verify (no key / transient failure). Mark it unverified
+      // rather than presenting it as an authentic hadith reference.
+      out.push(`${leadIn}${unverifiedCitation(m.collectionDisplay, m.number)}`);
       citations.push({
         raw: m.raw,
         collectionDisplay: m.collectionDisplay,
