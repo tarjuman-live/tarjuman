@@ -1,7 +1,7 @@
 import { Features } from "@/components/landing/features";
 import { TryItFree } from "@/components/landing/try-it-free";
 import { UseCases } from "@/components/landing/use-cases";
-import { Testimonials } from "@/components/landing/testimonials";
+import { EarlyNote } from "@/components/landing/early-note";
 import { Faq } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
 import { Reveal } from "@/components/landing/reveal";
@@ -85,7 +85,7 @@ export default function Home() {
       {/* Sections self-animate (heading first, then items stagger in) */}
       <Features />
       <UseCases />
-      <Testimonials />
+      <EarlyNote />
       <Faq />
       <Footer />
     </main>
