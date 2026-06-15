@@ -15,10 +15,11 @@ interface RevealProps {
 }
 
 /**
- * Reveals its children the first time they scroll into view, with a punchy
- * rise + slight scale and a gentle overshoot. `fade={false}` keeps opacity at 1
- * (LCP-safe) for above-the-fold content. Respects prefers-reduced-motion (shows
- * instantly). Content is only opacity/transform-shifted — never removed from
+ * Reveals its children when they scroll into view (punchy rise + slight scale +
+ * gentle overshoot) AND re-hides them when they scroll back out — so the
+ * animation reverses on scroll-up. `fade={false}` keeps opacity at 1 (LCP-safe)
+ * for above-the-fold content. Respects prefers-reduced-motion (shows instantly,
+ * no toggling). Content is only opacity/transform-shifted — never removed from
  * the DOM — so it stays crawlable.
  */
 export function Reveal({ children, delay = 0, className, fade = true }: RevealProps) {
@@ -36,10 +37,9 @@ export function Reveal({ children, delay = 0, className, fade = true }: RevealPr
     }
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setShown(true);
-          io.disconnect();
-        }
+        // Two-way: shown while in view, hidden when scrolled back out, so the
+        // reveal reverses on scroll-up. Kept observing — not a one-shot.
+        setShown(entries[0]?.isIntersecting ?? false);
       },
       { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
     );
