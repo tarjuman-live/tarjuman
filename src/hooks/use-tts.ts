@@ -158,12 +158,17 @@ export function useTts({
     const male = matches.find((v) => isKnownMaleVoice(v));
     if (male) return male;
 
+    // No known-male voice for this language. Per the male-voice-only policy,
+    // do NOT fall back to an arbitrary voice — the platform default is often
+    // female (e.g. Microsoft Zira on Windows; some languages ship female-only).
+    // Return null so the caller skips speaking rather than reading the khutbah
+    // aloud in a female voice.
     console.warn(
-      `[tts] no known male voice installed for "${lang}" — falling back. Available: ${matches
+      `[tts] no known male voice for "${lang}" — skipping Web Speech (male-only policy). Available: ${matches
         .map((v) => `${v.name} (${v.lang})`)
         .join(", ")}`
     );
-    return matches.find((v) => v.localService) ?? matches[0] ?? null;
+    return null;
   };
 
   // Watch items for new ones to speak.
@@ -180,12 +185,13 @@ export function useTts({
         continue;
       }
       spoken.add(item.id);
+      const voice = pickVoice(language);
+      if (!voice) continue; // male-only policy: skip if no known male voice
       try {
         const utt = new SpeechSynthesisUtterance(item.text);
         utt.lang = language;
         utt.rate = rate;
-        const voice = pickVoice(language);
-        if (voice) utt.voice = voice;
+        utt.voice = voice;
         speechSynthesis.speak(utt);
       } catch {
         // Some browsers throw if speak is called outside a user gesture

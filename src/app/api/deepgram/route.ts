@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isValidLangCode } from "@/lib/utils";
+import { requireAuthFromHeader, checkRateLimit } from "@/lib/api-auth";
 
 /**
  * Issues credentials for a browser → Deepgram realtime transcription session.
@@ -102,6 +103,25 @@ export async function GET(req: Request) {
     return NextResponse.json(
       { error: "DEEPGRAM_API_KEY is not configured on the server" },
       { status: 500 }
+    );
+  }
+
+  // Gate like every other paid-upstream route: in production this mints a real
+  // Deepgram usage:write key, so without auth an attacker who finds the URL
+  // could mint keys in a loop and drain the Deepgram budget. Require a
+  // signed-in user + per-user rate limit (same pattern as /api/transcribe).
+  const auth = await requireAuthFromHeader(req);
+  if (!auth) {
+    return NextResponse.json(
+      { error: "Sign in to transcribe." },
+      { status: 401 }
+    );
+  }
+  const limit = checkRateLimit(auth.userId, "transcribe");
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: `Rate limit hit. Try again in ${limit.retryAfterSec}s.` },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } }
     );
   }
 

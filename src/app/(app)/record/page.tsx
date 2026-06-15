@@ -222,7 +222,7 @@ export default function RecordPage() {
     langsRef.current = { source: sourceLang, target: targetLang };
   }, [sourceLang, targetLang]);
 
-  const flushSegments = () => {
+  const flushSegments = (force = false) => {
     const sessionId = sessionIdRef.current;
     if (!sessionId) return;
     const flushed = flushedIdsRef.current;
@@ -240,7 +240,13 @@ export default function RecordPage() {
         return false;
       }
       if (sourceTargetSame) return true;
-      return translator.translations[seg.id] !== undefined;
+      if (translator.translations[seg.id] !== undefined) return true;
+      // On a forced flush (Stop), persist untranslated finals too — better a
+      // segment with its Arabic source and a blank translation than the whole
+      // segment (often the closing du'a/summary) silently lost because its
+      // translation was still in flight when the user tapped Stop. Regular
+      // ticks still wait for the translation to land.
+      return force;
     });
 
     if (ready.length === 0) return;
@@ -376,8 +382,10 @@ export default function RecordPage() {
       await recorder.stop();
       if (sessionId) {
         // Final flush after the recorder tears down — Convex's mutation
-        // queue ensures addSegments applies before completeSession.
-        flushSegments();
+        // queue ensures addSegments applies before completeSession. Force it:
+        // persist every remaining final segment (even ones whose translation
+        // hadn't resolved yet) so the closing content is never lost.
+        flushSegments(true);
         void completeSessionM({ sessionId, duration: finalDuration });
       }
       const snapshot: CompletedSession = {

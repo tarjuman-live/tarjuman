@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAuthToken } from "@convex-dev/auth/react";
 import type { ConnectionState, LiveSegment } from "@/types";
 import {
   DEEPGRAM_KEEPALIVE_INTERVAL_MS,
@@ -144,6 +145,15 @@ export function useDeepgram({
   const [error, setError] = useState<string | null>(null);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
 
+  // Convex Auth token, attached as Bearer to the /api/deepgram credential
+  // fetch so the route can authorize + rate-limit the user. Kept in a ref so a
+  // token refresh doesn't tear down and rebuild the live WebSocket.
+  const authToken = useAuthToken();
+  const authTokenRef = useRef<string | null | undefined>(authToken);
+  useEffect(() => {
+    authTokenRef.current = authToken;
+  }, [authToken]);
+
   // Hide stale StrictMode closures behind a stable "generation" — each
   // effect invocation gets a unique id; handlers ignore events from older
   // generations.
@@ -265,9 +275,13 @@ export function useDeepgram({
       // Step 1: credentials.
       let creds: { key: string; url: string };
       try {
+        const token = authTokenRef.current;
         const res = await fetch(
           `/api/deepgram?language=${encodeURIComponent(sourceLanguage)}`,
-          { cache: "no-store" }
+          {
+            cache: "no-store",
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          }
         );
         if (cancelled || !isLive()) return;
         if (!res.ok) {
