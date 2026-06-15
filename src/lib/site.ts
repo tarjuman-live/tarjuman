@@ -50,3 +50,15 @@ export const KEYWORDS = [
   "Islamic sermon notes app",
   "Arabic to English live translator",
 ];
+
+// Social + contact. ⚠️ Update to your REAL handles before promoting — a link to
+// a dead/empty account reads as abandonment and costs more trust than it adds.
+// Centralized so it's a one-line change, and so the Organization JSON-LD can
+// reuse these as `sameAs` once the accounts are confirmed.
+export const CONTACT_EMAIL = "hello@tarjuman.live";
+
+export const SOCIAL_LINKS = {
+  instagram: "https://instagram.com/tarjuman",
+  x: "https://x.com/tarjuman",
+  tiktok: "https://www.tiktok.com/@tarjuman",
+} as const;
