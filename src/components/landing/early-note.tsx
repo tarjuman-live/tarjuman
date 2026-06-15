@@ -20,7 +20,7 @@ export function EarlyNote() {
       </Reveal>
 
       <Reveal delay={90}>
-        <div className="mt-10 mx-auto max-w-2xl rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-8 sm:p-10 text-center transition duration-200 hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-light)] hover:shadow-[0_10px_30px_rgba(46,204,113,0.18)]">
+        <div className="mt-10 mx-auto max-w-2xl rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-8 sm:p-10 text-center transition duration-200 hover:-translate-y-1 hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-light)] hover:shadow-[0_10px_30px_rgba(46,204,113,0.18)]">
           <p className="text-lg sm:text-xl font-semibold text-[var(--color-text-1)] leading-relaxed">
             Tarjuman just launched.
           </p>
