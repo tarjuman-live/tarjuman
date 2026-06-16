@@ -48,7 +48,26 @@ export function Reveal({ children, delay = 0, className, fade = true }: RevealPr
   }, []);
 
   const smooth = "cubic-bezier(0.22, 1, 0.36, 1)";
-  const overshoot = "cubic-bezier(0.34, 1.4, 0.64, 1)"; // slight "pop"
+  const overshoot = "cubic-bezier(0.34, 1.4, 0.64, 1)"; // slight "pop" on entrance
+
+  // Entrance staggers (delay) and pops in; exit is immediate + snappy with NO
+  // stagger delay, so elements hide in step with scroll-up instead of lingering
+  // behind the entrance timing — keeps the reveal in sync with the scroll.
+  const transition = reduce
+    ? "none"
+    : shown
+      ? [
+          fade ? `opacity 600ms ${smooth} ${delay}ms` : null,
+          `transform 600ms ${overshoot} ${delay}ms`,
+        ]
+          .filter(Boolean)
+          .join(", ")
+      : [
+          fade ? `opacity 280ms ${smooth} 0ms` : null,
+          `transform 320ms ${smooth} 0ms`,
+        ]
+          .filter(Boolean)
+          .join(", ");
 
   return (
     <div
@@ -57,14 +76,7 @@ export function Reveal({ children, delay = 0, className, fade = true }: RevealPr
       style={{
         opacity: fade && !shown ? 0 : 1,
         transform: shown ? "none" : "translateY(28px) scale(0.96)",
-        transition: reduce
-          ? "none"
-          : [
-              fade ? `opacity 600ms ${smooth} ${delay}ms` : null,
-              `transform 600ms ${overshoot} ${delay}ms`,
-            ]
-              .filter(Boolean)
-              .join(", "),
+        transition,
         willChange: fade ? "opacity, transform" : "transform",
       }}
     >
