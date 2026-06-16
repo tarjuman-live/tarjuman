@@ -5,6 +5,7 @@ import { COLORS } from "@/lib/constants";
 import { formatDuration, getLangName } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
 import { SessionBody } from "./session-body";
+import { copyToClipboard } from "@/lib/clipboard";
 import type { LiveSegment } from "@/types";
 
 export interface CompletedSession {
@@ -38,6 +39,7 @@ export function CompletedView({
   onSummaryGenerated,
 }: CompletedViewProps) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const normalizedSegments = useMemo(
     () =>
@@ -68,12 +70,13 @@ export function CompletedView({
       if (seg.translatedText) lines.push(`  → ${seg.translatedText}`);
       lines.push("");
     }
-    try {
-      await navigator.clipboard.writeText(lines.join("\n").trim());
+    const ok = await copyToClipboard(lines.join("\n").trim());
+    if (ok) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard blocked */
+    } else {
+      setCopyFailed(true);
+      window.setTimeout(() => setCopyFailed(false), 2000);
     }
   };
 
@@ -138,15 +141,21 @@ export function CompletedView({
           style={{
             background: COLORS.surface,
             border: `1px solid ${COLORS.borderLight}`,
-            color: copied ? COLORS.accent : COLORS.t2,
+            color: copied
+              ? COLORS.accent
+              : copyFailed
+                ? COLORS.amber
+                : COLORS.t2,
           }}
         >
           <Icon
             name={copied ? "check" : "copy"}
             size={16}
-            color={copied ? COLORS.accent : COLORS.t2}
+            color={
+              copied ? COLORS.accent : copyFailed ? COLORS.amber : COLORS.t2
+            }
           />
-          {copied ? "Copied" : "Copy"}
+          {copied ? "Copied" : copyFailed ? "Couldn't copy" : "Copy"}
         </button>
         <button
           type="button"
