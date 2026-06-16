@@ -6,6 +6,7 @@ import {
 import { requireAuthFromHeader, checkRateLimit } from "@/lib/api-auth";
 import { verifyAndEnrich } from "@/lib/sunnah";
 import { verifyAndEnrichQuran } from "@/lib/quran";
+import { isOffLanguageScript } from "@/lib/script";
 
 interface TranslateRequest {
   text: string;
@@ -155,15 +156,11 @@ function routeModel(
 
 // ─── Noise filter ──────────────────────────────────────────────────────────
 // Drop segments before they ever hit the LLM:
-//   1. Fewer than 3 words (split on whitespace) — single-word interjections
-//      like "اجمعين" alone are noise.
-//   2. RTL source but the source text is <50% RTL-script characters — catches
-//      English loanwords transliterated into Arabic (e.g., "اوكي"/"okay")
-//      and accidental English bleed in an Arabic session.
-
-const ARABIC_SCRIPT_RE = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
-const HEBREW_SCRIPT_RE = /[֐-׿]/;
-const RTL_LANGS = new Set(["ar", "ur", "he", "fa", "ps", "sd"]);
+//   1. Fewer than 3 words — single-word interjections like "اجمعين" are noise.
+//   2. Off-language by script — non-source-script text in an RTL session (e.g.
+//      English in an Arabic session, now visible as Latin thanks to Deepgram
+//      multilingual mode). Server-side backstop to the client gate in
+//      use-deepgram; both share src/lib/script.ts.
 
 function shouldFilterAsNoise(
   text: string,
@@ -172,27 +169,13 @@ function shouldFilterAsNoise(
   const trimmed = text.trim();
   if (!trimmed) return { filter: true, reason: "empty" };
 
-  // Word-count filter.
   const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
   if (wordCount < 3) {
     return { filter: true, reason: `too-short (${wordCount} word(s))` };
   }
 
-  // Off-language script filter for RTL sources.
-  if (sourceLang && RTL_LANGS.has(sourceLang.toLowerCase())) {
-    const visibleChars = trimmed.replace(/[\s\p{P}\p{S}]/gu, "");
-    if (visibleChars.length === 0) return { filter: true, reason: "no-letters" };
-    let scriptChars = 0;
-    const scriptRe =
-      sourceLang.toLowerCase() === "he" ? HEBREW_SCRIPT_RE : ARABIC_SCRIPT_RE;
-    for (const ch of visibleChars) if (scriptRe.test(ch)) scriptChars++;
-    const ratio = scriptChars / visibleChars.length;
-    if (ratio < 0.5) {
-      return {
-        filter: true,
-        reason: `off-language-script (${Math.round(ratio * 100)}% match)`,
-      };
-    }
+  if (isOffLanguageScript(trimmed, sourceLang)) {
+    return { filter: true, reason: "off-language-script" };
   }
 
   return { filter: false };
@@ -333,7 +316,7 @@ Rules:
 - \`fromIds\` must be IMMEDIATELY CONSECUTIVE in the context (don't skip over unrelated segments in the middle).
 - \`combinedSourceText\` is the full source-language text of the merged-from segments + the current segment concatenated with a single space.
 - \`combinedTranslatedText\` is the full target-language translation of the verse/hadith with the standard inline citation in PARENTHESES (e.g., \`(Quran Al-Ahzab:56)\` or \`(Sahih al-Bukhari 3367)\` — sunnah.com style for hadith).
-- LENGTH CAP: only emit a merge when \`combinedTranslatedText\` is under approximately 600 characters. For very long verses (e.g., Ayat al-Kursi as a whole), let them stay split for readability.
+- LENGTH CAP: emit a merge when \`combinedTranslatedText\` is under approximately 1200 characters — enough for a full hadith with two narrations (e.g. the Bukhari + Muslim forms of one hadith) or a multi-ayah passage. For a recognized authentic hadith or a well-known verse, prefer merging into ONE message even toward that upper bound rather than leaving it split across several cards. Only let genuinely huge passages (e.g. Ayat al-Kursi in full) stay split.
 - If you don't want to merge, simply omit the \`<<<MERGE>>>\` block — output just the plain translation as before.
 
 Example merge output (NEVER actually translate this way unless the current segment really completes a verse):

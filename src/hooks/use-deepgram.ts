@@ -7,6 +7,7 @@ import {
   DEEPGRAM_KEEPALIVE_INTERVAL_MS,
   RECONNECT_BACKOFF,
 } from "@/lib/constants";
+import { isOffLanguageScript } from "@/lib/script";
 
 export interface UseDeepgramOptions {
   /**
@@ -379,13 +380,26 @@ export function useDeepgram({
             setInterimText("");
             return;
           }
-          // Off-language drop — currently INERT. detected_language is only
-          // present with detect_language=true, which the /api/deepgram route
-          // no longer sends (nova-3 rejects it alongside a fixed language=,
-          // and language=multi has no Arabic support as of mid-2026). Kept
-          // as a free defense in case the params ever change. The live
-          // off-language filtering happens downstream: the script-ratio +
-          // LLM transliteration/noise verdict in /api/translate.
+          // Off-language gate (deterministic, primary signal). The Deepgram
+          // connection runs in multilingual mode for RTL sources, so non-source
+          // speech arrives in its OWN script (Latin for English in an Arabic
+          // session) rather than Arabic-transliterated gibberish. Drop it before
+          // it enters the transcript — this replaced the removed Whisper
+          // language ID. Shares src/lib/script.ts with the server noise filter.
+          if (isOffLanguageScript(transcript, sourceLanguage)) {
+            console.log(
+              `[deepgram] dropped off-language segment (script): "${transcript.slice(
+                0,
+                60
+              )}"`
+            );
+            setInterimText("");
+            return;
+          }
+          // Secondary off-language drop via Deepgram's own per-segment language
+          // detection. In multilingual mode Deepgram may now populate
+          // detected_language / language_confidence; when present this fires as
+          // a free extra layer (it was inert under the old forced-language setup).
           const detectedLang = msg.channel.detected_language;
           const langConf = msg.channel.language_confidence ?? 0;
           if (

@@ -143,15 +143,16 @@ export function useTranslator({
       inFlightRef.current.add(seg.id);
       forcePendingRender((n) => n + 1);
 
-      // Build disambiguation context: up to 3 most-recent FINAL segments
-      // strictly preceding this one. Each entry carries the segment's stable
-      // id so the server can refer to specific segments in a merge directive
-      // (verse/hadith continuation detection).
+      // Build disambiguation context: up to 6 most-recent FINAL segments
+      // strictly preceding this one (wider than the old 3 so a hadith or verse
+      // spanning several segments is fully visible as a consecutive run the
+      // model can collapse into ONE merge). Each entry carries the segment's
+      // stable id so the server can name them in a `<<<MERGE>>>` directive.
       const segIndex = segments.indexOf(seg);
       const priorFinals = segments
         .slice(0, segIndex)
         .filter((s) => s.isFinal)
-        .slice(-3);
+        .slice(-6);
       const requestContext = priorFinals.map((s) => ({
         id: s.id,
         sourceText: s.text,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isValidLangCode } from "@/lib/utils";
 import { requireAuthFromHeader, checkRateLimit } from "@/lib/api-auth";
+import { RTL_LANGS } from "@/lib/script";
 
 /**
  * Issues credentials for a browser → Deepgram realtime transcription session.
@@ -139,13 +140,23 @@ export async function GET(req: Request) {
   // the source language drifts mid-utterance.
   const model = reqUrl.searchParams.get("model") ?? "nova-3";
 
+  // Off-language gating: for a forced RTL source (Arabic etc.) connect in
+  // Deepgram multilingual mode (nova-3 added Arabic to `multi` in Jan 2026). In
+  // multi, non-source speech transcribes in its OWN script (Latin for English)
+  // rather than Arabic-transliterated gibberish, so the script-ratio gate (the
+  // client drop in use-deepgram + the server filter in /api/translate) can drop
+  // it. The app's source language stays `language` for translation; only this
+  // STT connection switches to multi. "multi" is set HERE, after the lang-code
+  // validation above (which would otherwise reject it).
+  const dgLanguage = RTL_LANGS.has(language.toLowerCase()) ? "multi" : language;
+
   // The browser sends raw Linear16 PCM (16kHz mono, Int16 little-endian)
   // straight from an AudioWorklet. With WebM/Opus we had to omit
   // `encoding=` because the container framing was self-describing; with
   // raw PCM we MUST declare it or Deepgram won't know how to decode the
   // frames.
   const dgParams = new URLSearchParams({
-    language,
+    language: dgLanguage,
     model,
     encoding: "linear16",
     sample_rate: "16000",
