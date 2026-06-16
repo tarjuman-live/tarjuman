@@ -38,9 +38,6 @@ interface RecordingShellProps {
   pending?: Set<string>;
   /** Clear a segment's error and re-attempt its translation. */
   onRetry?: (id: string) => void;
-  /** Whether translation TTS is on. Controlled by parent via `onTtsToggle`. */
-  ttsEnabled: boolean;
-  onTtsToggle: () => void;
   /** Whether to keep only the dominant speaker. Controlled by the parent. */
   mainSpeakerOnly: boolean;
   onMainSpeakerToggle: () => void;
@@ -67,8 +64,6 @@ export function RecordingShell({
   errors,
   pending,
   onRetry,
-  ttsEnabled,
-  onTtsToggle,
   mainSpeakerOnly,
   onMainSpeakerToggle,
   onPause,
@@ -279,34 +274,6 @@ export function RecordingShell({
         className="px-5 py-4 flex justify-center items-center gap-4"
         style={{ borderTop: `1px solid ${COLORS.border}` }}
       >
-        {/* Translation audio toggle — TTS the translation aloud as it arrives. */}
-        <button
-          type="button"
-          onClick={onTtsToggle}
-          aria-label={
-            ttsEnabled ? "Mute translation audio" : "Speak translation aloud"
-          }
-          aria-pressed={ttsEnabled}
-          title={
-            ttsEnabled
-              ? "Translation audio: ON"
-              : "Translation audio: OFF"
-          }
-          className="w-11 h-11 rounded-2xl cursor-pointer grid place-items-center transition-transform active:scale-95"
-          style={{
-            background: ttsEnabled ? COLORS.accentSoft : COLORS.surface,
-            border: `1px solid ${
-              ttsEnabled ? `${COLORS.accent}40` : COLORS.borderLight
-            }`,
-          }}
-        >
-          <Icon
-            name={ttsEnabled ? "speaker" : "speakerOff"}
-            size={18}
-            color={ttsEnabled ? COLORS.accent : COLORS.t3}
-          />
-        </button>
-
         {paused ? (
           <button
             type="button"

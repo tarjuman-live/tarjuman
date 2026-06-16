@@ -305,9 +305,20 @@ export function useTranslator({
                 } else if (!looksLikeJson && acc.trimStart().startsWith("{")) {
                   looksLikeJson = true; // JSON body — wait for it whole, don't show
                 } else if (!looksLikeJson) {
-                  setTranslations((prev) =>
-                    prev[seg.id] === acc ? prev : { ...prev, [seg.id]: acc }
-                  );
+                  // Hold back the last META_SENTINEL.length chars: if the
+                  // sentinel straddles a chunk boundary, indexOf can't match it
+                  // until the next read, and showing `acc` raw would flash the
+                  // sentinel's prefix on screen for a frame. The final value is
+                  // set by applyResult after the loop regardless.
+                  const safeEnd = acc.length - META_SENTINEL.length;
+                  if (safeEnd > 0) {
+                    const visible = acc.slice(0, safeEnd);
+                    setTranslations((prev) =>
+                      prev[seg.id] === visible
+                        ? prev
+                        : { ...prev, [seg.id]: visible }
+                    );
+                  }
                 }
               }
             } catch {

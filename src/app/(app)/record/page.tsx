@@ -75,8 +75,7 @@ export default function RecordPage() {
   }, [prefs]);
 
   // Default TTS to ON — the user explicitly asked for live audio. They can
-  // mute it from the toggle in the recording shell or Settings; the choice
-  // persists per-user in Convex.
+  // mute it from Settings; the choice persists per-user in Convex.
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const hydratedTts = useRef(false);
   useEffect(() => {
@@ -94,13 +93,6 @@ export default function RecordPage() {
       }
     }
   }, [prefs, updatePrefs]);
-  const toggleTts = () => {
-    setTtsEnabled((cur) => {
-      const next = !cur;
-      void updatePrefs({ ttsEnabled: next });
-      return next;
-    });
-  };
 
   // Main-speaker filter — same Convex-backed pattern as TTS, lifted here from
   // the recording shell so its state survives across recordings and devices.
@@ -629,8 +621,6 @@ export default function RecordPage() {
         errors={translator.errors}
         pending={translator.pending}
         onRetry={translator.retry}
-        ttsEnabled={ttsEnabled}
-        onTtsToggle={toggleTts}
         mainSpeakerOnly={mainSpeakerOnly}
         onMainSpeakerToggle={toggleMainSpeaker}
         onPause={handlePause}
