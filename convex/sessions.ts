@@ -1,4 +1,9 @@
-import { mutation, query, type QueryCtx } from "./_generated/server";
+import {
+  mutation,
+  query,
+  internalMutation,
+  type QueryCtx,
+} from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { auth } from "./auth";
@@ -129,6 +134,7 @@ export const pauseSession = mutation({
     const session = await ctx.db.get(args.sessionId);
     if (!session) throw new Error("Session not found");
     if (session.userId !== userId) throw new Error("Not your session");
+    if (session.status === "completed") return; // terminal — see resumeSession
     await ctx.db.patch(args.sessionId, {
       status: "paused",
       updatedAt: Date.now(),
@@ -143,6 +149,10 @@ export const resumeSession = mutation({
     const session = await ctx.db.get(args.sessionId);
     if (!session) throw new Error("Session not found");
     if (session.userId !== userId) throw new Error("Not your session");
+    // "completed" is terminal — never resurrect a session the stale-session
+    // sweep (or a replay) already closed. Without this guard a stray Resume on
+    // a swept-but-still-open tab would silently re-open a completed session.
+    if (session.status === "completed") return;
     await ctx.db.patch(args.sessionId, {
       status: "recording",
       updatedAt: Date.now(),
@@ -221,6 +231,53 @@ export const deleteSession = mutation({
   },
 });
 
+/**
+ * Cron-driven cleanup for sessions abandoned mid-recording (tab killed before
+ * Stop), so they don't linger at status="recording" in the user's history.
+ *
+ * Only "recording" rows are swept — NOT "paused": a genuine pause can last
+ * hours (phone locked overnight) and its updatedAt isn't refreshed while
+ * paused, so sweeping "paused" would force-complete a still-live session. An
+ * actively-recording session bumps updatedAt every ~5s (addSegments), so a
+ * 6h-stale "recording" row is genuinely abandoned. Empty rows (e.g. the
+ * createSession-on-prewarm phantom from an idle /record visit) are DELETED
+ * rather than completed, so they never surface as "Untitled" history cards.
+ * The client mirror + replay in record/page.tsx is the data-recovery half.
+ */
+const STALE_SESSION_MS = 6 * 60 * 60 * 1000;
+
+export const sweepStaleSessions = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const cutoff = Date.now() - STALE_SESSION_MS;
+    const stale = await ctx.db
+      .query("sessions")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("status"), "recording"),
+          q.lt(q.field("updatedAt"), cutoff)
+        )
+      )
+      .collect();
+    let completed = 0;
+    let deleted = 0;
+    for (const s of stale) {
+      if (s.segments.length === 0) {
+        await ctx.db.delete(s._id); // empty phantom — nothing to keep
+        deleted++;
+      } else {
+        await ctx.db.patch(s._id, {
+          status: "completed",
+          title: s.title ?? deriveTitle(s.segments) ?? undefined,
+          updatedAt: Date.now(),
+        });
+        completed++;
+      }
+    }
+    return { completed, deleted };
+  },
+});
+
 // ─── Queries ───────────────────────────────────────────────────────────────
 
 export const getSession = query({
@@ -240,11 +297,14 @@ export const getUserSessions = query({
   handler: async (ctx) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) return [];
-    return await ctx.db
+    const all = await ctx.db
       .query("sessions")
       .withIndex("by_user_date", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
+    // Hide empty rows (e.g. the createSession-on-prewarm phantom from an idle
+    // /record visit) — they have no transcript to show.
+    return all.filter((s) => s.segments.length > 0);
   },
 });
 
@@ -254,11 +314,13 @@ export const getRecentSessions = query({
     const userId = await auth.getUserId(ctx);
     if (!userId) return [];
     const limit = args.limit ?? 3;
-    return await ctx.db
+    const recent = await ctx.db
       .query("sessions")
       .withIndex("by_user_date", (q) => q.eq("userId", userId))
       .order("desc")
-      .take(limit);
+      .collect();
+    // Skip empty phantom rows, then take the limit.
+    return recent.filter((s) => s.segments.length > 0).slice(0, limit);
   },
 });
 

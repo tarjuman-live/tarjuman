@@ -25,6 +25,23 @@ import { useTranslator } from "@/hooks/use-translator";
 import { useSessionTimer } from "@/hooks/use-session-timer";
 import { useTts } from "@/hooks/use-tts";
 
+// localStorage key holding an in-progress recording's transcript, so an
+// abnormal exit (tab close, mobile tab-discard, pause-then-kill) doesn't lose
+// the un-flushed tail or strand the session at status="recording". Written as
+// the recording proceeds + on pagehide/visibilitychange; replayed on next mount
+// (flushed to Convex + the session completed), then cleared.
+const PENDING_KEY = "tarjuman:pending-session";
+
+type StoredSegment = {
+  id: string;
+  sourceText: string;
+  translatedText: string;
+  timestamp: number;
+  mergedFromIds?: string[];
+  combinedSourceText?: string;
+  combinedTranslatedText?: string;
+};
+
 export default function RecordPage() {
   const [sourceLang, setSourceLang] = useState("ar");
   const [targetLang, setTargetLang] = useState("en");
@@ -216,6 +233,86 @@ export default function RecordPage() {
     langsRef.current = { source: sourceLang, target: targetLang };
   }, [sourceLang, targetLang]);
 
+  // Mirror current transcript + active state into refs so the exit handlers
+  // (registered once) and the flush tick can serialize the latest state into
+  // localStorage without re-binding.
+  const transcriptRef = useRef({
+    segments: deepgram.segments,
+    translations: translator.translations,
+    merges: translator.merges,
+    filteredIds: translator.filteredIds,
+  });
+  useEffect(() => {
+    transcriptRef.current = {
+      segments: deepgram.segments,
+      translations: translator.translations,
+      merges: translator.merges,
+      filteredIds: translator.filteredIds,
+    };
+  }, [
+    deepgram.segments,
+    translator.translations,
+    translator.merges,
+    translator.filteredIds,
+  ]);
+  const activeRef = useRef(isActive);
+  useEffect(() => {
+    activeRef.current = isActive;
+  }, [isActive]);
+
+  // Synchronously snapshot the in-progress transcript to localStorage. Survives
+  // a hard tab kill (unlike an async Convex mutation), so the un-flushed tail is
+  // recoverable on next mount. No-op when no session is in progress.
+  const writePendingMirror = () => {
+    if (typeof window === "undefined") return;
+    const sessionId = sessionIdRef.current;
+    if (!sessionId || !activeRef.current) return;
+    const { source, target } = langsRef.current;
+    const sameLang = source === target;
+    const { segments, translations, merges, filteredIds } =
+      transcriptRef.current;
+    const stored: StoredSegment[] = segments
+      .filter((s) => s.isFinal && !filteredIds.has(s.id))
+      .map((seg) => {
+        const merge = merges[seg.id];
+        return {
+          id: seg.id,
+          sourceText: seg.text,
+          translatedText: sameLang ? seg.text : translations[seg.id] ?? "",
+          timestamp: seg.timestamp,
+          ...(merge
+            ? {
+                mergedFromIds: merge.fromIds,
+                combinedSourceText: merge.combinedSourceText,
+                combinedTranslatedText: merge.combinedTranslatedText,
+              }
+            : {}),
+        };
+      });
+    if (stored.length === 0) return;
+    try {
+      localStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({
+          sessionId,
+          durationSec: elapsedRef.current,
+          segments: stored,
+        })
+      );
+    } catch {
+      /* quota exceeded / serialization error — best-effort, ignore */
+    }
+  };
+
+  const clearPendingMirror = () => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.removeItem(PENDING_KEY);
+    } catch {
+      /* ignore */
+    }
+  };
+
   const flushSegments = (force = false) => {
     const sessionId = sessionIdRef.current;
     if (!sessionId) return;
@@ -299,7 +396,10 @@ export default function RecordPage() {
   // 5s flush tick during active recording.
   useEffect(() => {
     if (recorder.phase !== "recording") return;
-    const id = window.setInterval(flushSegments, SEGMENT_FLUSH_INTERVAL_MS);
+    const id = window.setInterval(() => {
+      flushSegments();
+      writePendingMirror();
+    }, SEGMENT_FLUSH_INTERVAL_MS);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recorder.phase]);
@@ -327,6 +427,79 @@ export default function RecordPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recorder.phase]);
 
+  // Recover an orphaned recording from a previous abnormal exit: flush its
+  // mirrored transcript to Convex and mark the session complete, then clear the
+  // mirror. Gated on `prefs` resolving so the Convex auth handshake is done
+  // (the mutations require an authenticated user). Runs at most once.
+  const replayedRef = useRef(false);
+  useEffect(() => {
+    if (replayedRef.current) return;
+    if (prefs === undefined) return; // wait for auth to settle
+    if (typeof window === "undefined") return;
+    replayedRef.current = true;
+    let raw: string | null = null;
+    try {
+      raw = localStorage.getItem(PENDING_KEY);
+    } catch {
+      return;
+    }
+    if (!raw) return;
+    let pending: {
+      sessionId?: string;
+      durationSec?: number;
+      segments?: StoredSegment[];
+    };
+    try {
+      pending = JSON.parse(raw);
+    } catch {
+      clearPendingMirror();
+      return;
+    }
+    const pendingId = pending.sessionId;
+    if (!pendingId) {
+      clearPendingMirror();
+      return;
+    }
+    void (async () => {
+      try {
+        if (Array.isArray(pending.segments) && pending.segments.length > 0) {
+          await addSegments({
+            sessionId: pendingId as Id<"sessions">,
+            segments: pending.segments,
+          });
+        }
+        await completeSessionM({
+          sessionId: pendingId as Id<"sessions">,
+          duration: pending.durationSec ?? 0,
+        });
+      } catch {
+        /* session gone / not ours — nothing recoverable */
+      } finally {
+        clearPendingMirror();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefs]);
+
+  // Snapshot the transcript to localStorage when the tab is hidden or unloaded —
+  // the moment a mobile OS may discard it. The sync localStorage write is the
+  // reliable backstop (an async Convex mutation can't finish during unload);
+  // next mount replays it.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onPageHide = () => writePendingMirror();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") writePendingMirror();
+    };
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+    // writePendingMirror reads only refs — register once.
+  }, []);
+
   const handleStart = () => {
     setCompletedSession(null);
     haptics.start();
@@ -335,6 +508,7 @@ export default function RecordPage() {
 
   const handlePause = () => {
     flushSegments();
+    writePendingMirror();
     if (sessionIdRef.current)
       void pauseSessionM({ sessionId: sessionIdRef.current });
     haptics.pause();
@@ -394,6 +568,8 @@ export default function RecordPage() {
         targetLang: captured.targetLang,
       };
       setCompletedSession(snapshot);
+      // Cleanly stopped — drop the abnormal-exit mirror so it isn't replayed.
+      clearPendingMirror();
       sessionIdRef.current = null;
       createSessionPromiseRef.current = null;
       flushedIdsRef.current = new Set();
