@@ -26,6 +26,73 @@ export class MicUnavailableError extends Error {
   }
 }
 
+// Strict capture constraints tuned for our PA-distance pipeline. All three
+// processing flags need to be on for the macOS built-in mic to produce usable
+// (non-silent) audio in Chrome — disabling noiseSuppression in particular made
+// the stream read as literal silence. Some devices can't satisfy these and
+// throw OverconstrainedError; getMicStream() retries with the browser defaults.
+const STRICT_AUDIO: MediaTrackConstraints = {
+  channelCount: 1,
+  sampleRate: { ideal: 16000 },
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+};
+
+/**
+ * Request the mic with our strict constraints, falling back to the browser
+ * defaults if those specific constraints can't be satisfied on this device.
+ * A genuine no-mic / busy-mic / permission failure still throws (and is
+ * translated by mapMicError).
+ */
+async function getMicStream(): Promise<MediaStream> {
+  try {
+    return await navigator.mediaDevices.getUserMedia({ audio: STRICT_AUDIO });
+  } catch (e) {
+    const err = e as DOMException;
+    if (
+      err?.name === "OverconstrainedError" ||
+      err?.name === "ConstraintNotSatisfiedError"
+    ) {
+      // The constraints are the problem, not the device — retry bare so a
+      // valid-but-picky mic still records.
+      return navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+    throw err;
+  }
+}
+
+/**
+ * Translate a getUserMedia DOMException into a typed, actionable error. The
+ * recorder shows MicPermissionError / MicUnavailableError with bespoke copy;
+ * everything else surfaces its message verbatim above a "Try again" button, so
+ * the message itself must be human-friendly (not the raw "Requested device not
+ * found").
+ */
+export function mapMicError(err: DOMException): Error {
+  switch (err?.name) {
+    case "NotAllowedError":
+    case "PermissionDeniedError":
+    case "SecurityError":
+      return new MicPermissionError(
+        err.message || "Microphone permission denied"
+      );
+    case "NotFoundError":
+    case "DevicesNotFoundError":
+      return new Error(
+        "No microphone found. Make sure a mic is connected and enabled (check your OS sound settings), then try again."
+      );
+    case "NotReadableError":
+    case "TrackStartError":
+    case "AbortError":
+      return new Error(
+        "Your microphone is busy — another app may be using it. Close that app, then try again."
+      );
+    default:
+      return err instanceof Error ? err : new Error(String(err));
+  }
+}
+
 /**
  * Builds the audio processing graph, tuned for OUTDOOR PA-distance capture
  * (the primary use case is masjid khutbahs, including Madinah Haram and
@@ -62,31 +129,9 @@ export async function createAudioPipeline(): Promise<AudioPipeline> {
 
   let sourceStream: MediaStream;
   try {
-    sourceStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        channelCount: 1,
-        sampleRate: { ideal: 16000 },
-        // All three of these need to be on for the macOS built-in mic to
-        // produce usable audio in Chrome. Disabling noiseSuppression in
-        // particular caused the mic stream to read as literal silence —
-        // the OS audio chain seems to bypass entirely without it. The
-        // tradeoff (some quiet voiced consonants lost) is acceptable
-        // compared to "no audio at all".
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
-    });
+    sourceStream = await getMicStream();
   } catch (e) {
-    const err = e as DOMException;
-    if (
-      err?.name === "NotAllowedError" ||
-      err?.name === "PermissionDeniedError" ||
-      err?.name === "SecurityError"
-    ) {
-      throw new MicPermissionError(err.message || "Microphone permission denied");
-    }
-    throw err;
+    throw mapMicError(e as DOMException);
   }
 
   const AudioCtx: typeof AudioContext =
