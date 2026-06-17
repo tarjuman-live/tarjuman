@@ -1,4 +1,4 @@
-import { internalQuery } from "./_generated/server";
+import { internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 
@@ -153,5 +153,90 @@ export const getSessionDetail = internalQuery({
       summary: session.summary ?? null,
       segments: session.segments,
     };
+  },
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// Test-data cleanup
+//
+// Automated test / deploy-verification runs create sessions titled
+// "<prefix>-<unix-ms>" (e.g. "lt-verify-1780498...", "nav-test-...",
+// "lens-...", "fluid-..."). Real user sessions never look like this — their
+// title is derived from the transcript. These helpers find and (on explicit
+// confirmation) delete that junk. Run from the dashboard Functions runner.
+// ───────────────────────────────────────────────────────────────────────────
+
+const TEST_TITLE_PREFIXES = ["lt-verify", "nav-test", "lens", "fluid"];
+
+/**
+ * True only for "<prefix>-<digits…>" titles — i.e. the programmatic test
+ * pattern. Requiring the trailing digit run means a genuine session that
+ * merely starts with one of these words can never match.
+ */
+function isTestTitle(
+  title: string | undefined,
+  prefixes: readonly string[]
+): boolean {
+  if (!title) return false;
+  for (const p of prefixes) {
+    const pre = `${p}-`;
+    if (title.startsWith(pre) && /^\d/.test(title.slice(pre.length))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * DRY RUN — list the test sessions that {@link deleteTestSessions} would
+ * remove, so you can eyeball them before deleting. Pass `prefixes` to override
+ * the defaults. Read-only.
+ */
+export const listTestSessions = internalQuery({
+  args: { prefixes: v.optional(v.array(v.string())) },
+  handler: async (ctx, { prefixes }) => {
+    const pres = prefixes?.length ? prefixes : TEST_TITLE_PREFIXES;
+    const all = await ctx.db.query("sessions").collect();
+    const matched = all.filter((s) => isTestTitle(s.title, pres));
+    return {
+      prefixes: pres,
+      totalSessions: all.length,
+      matched: matched.length,
+      sample: matched.slice(0, 100).map((s) => ({
+        _id: s._id,
+        title: s.title ?? null,
+        status: s.status,
+        segmentCount: s.segments.length,
+        createdAt: s.createdAt,
+      })),
+    };
+  },
+});
+
+/**
+ * Delete the test sessions matched by their `prefix-<digits>` title.
+ *
+ * SAFETY: defaults to a DRY RUN — it only reports what it WOULD delete. Pass
+ * `confirm: true` to actually delete. Never touches a session whose title
+ * isn't a `prefix-<digits>` test title.
+ */
+export const deleteTestSessions = internalMutation({
+  args: {
+    prefixes: v.optional(v.array(v.string())),
+    confirm: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { prefixes, confirm }) => {
+    const pres = prefixes?.length ? prefixes : TEST_TITLE_PREFIXES;
+    const all = await ctx.db.query("sessions").collect();
+    const matched = all.filter((s) => isTestTitle(s.title, pres));
+    if (!confirm) {
+      return {
+        dryRun: true as const,
+        wouldDelete: matched.length,
+        sampleTitles: matched.slice(0, 100).map((s) => s.title ?? null),
+      };
+    }
+    for (const s of matched) await ctx.db.delete(s._id);
+    return { dryRun: false as const, deleted: matched.length };
   },
 });
