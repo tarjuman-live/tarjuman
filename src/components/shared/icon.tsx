@@ -20,7 +20,8 @@ export type IconName =
   | "speaker"
   | "speakerOff"
   | "search"
-  | "settings";
+  | "settings"
+  | "more";
 
 interface IconProps {
   name: IconName;
@@ -133,6 +134,13 @@ export function Icon({
       <svg {...common} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 20h9" />
         <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+      </svg>
+    ),
+    more: (
+      <svg {...common} fill={color}>
+        <circle cx="12" cy="5" r="1.7" />
+        <circle cx="12" cy="12" r="1.7" />
+        <circle cx="12" cy="19" r="1.7" />
       </svg>
     ),
     close: (

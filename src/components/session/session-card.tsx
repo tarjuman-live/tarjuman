@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation } from "convex/react";
 import { COLORS } from "@/lib/constants";
@@ -20,23 +20,60 @@ export function SessionCard({ session }: SessionCardProps) {
   const updateTitle = useMutation(api.sessions.updateTitle);
   const deleteSession = useMutation(api.sessions.deleteSession);
 
-  const [hoverRename, setHoverRename] = useState(false);
-  const [hoverDelete, setHoverDelete] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  // The popover is positioned `fixed` from the kebab's rect so it escapes the
+  // card's `overflow-hidden` and the scrolling list (an absolute menu clips).
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties | null>(null);
+  const kebabRef = useRef<HTMLButtonElement | null>(null);
 
   const title = session.title ?? "Untitled session";
   const hasSummary = Boolean(session.summary);
 
-  const openRename = (e: React.MouseEvent) => {
+  // Close the menu on any scroll / resize / Escape so it can't drift from its
+  // anchor (it's fixed-positioned, not tied to the button after open).
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = () => setMenuOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  const openMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const btn = kebabRef.current;
+    if (btn) {
+      const r = btn.getBoundingClientRect();
+      const right = window.innerWidth - r.right;
+      // Flip upward near the bottom of the viewport so a ~2-item menu isn't clipped.
+      const openUp = r.bottom + 100 > window.innerHeight;
+      setMenuStyle(
+        openUp
+          ? { position: "fixed", bottom: window.innerHeight - r.top + 6, right }
+          : { position: "fixed", top: r.bottom + 6, right }
+      );
+    }
+    setMenuOpen(true);
+  };
+
+  const onRename = () => {
+    setMenuOpen(false);
     setRenameOpen(true);
   };
 
-  const openDelete = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const onDelete = () => {
+    setMenuOpen(false);
     setDeleteOpen(true);
   };
 
@@ -110,36 +147,61 @@ export function SessionCard({ session }: SessionCardProps) {
         </div>
       </Link>
 
-      <div className="flex items-center gap-0.5 pr-2 flex-shrink-0">
+      <div className="flex items-center pr-2 flex-shrink-0">
         <button
+          ref={kebabRef}
           type="button"
-          onClick={openRename}
-          onMouseEnter={() => setHoverRename(true)}
-          onMouseLeave={() => setHoverRename(false)}
-          aria-label="Rename session"
-          className="w-9 h-9 rounded-lg grid place-items-center transition-colors"
-          style={{
-            background: hoverRename ? COLORS.surfaceLight : "transparent",
-            color: hoverRename ? COLORS.w : COLORS.t3,
-          }}
+          onClick={openMenu}
+          aria-label="Session options"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          className="w-9 h-9 rounded-lg grid place-items-center transition-colors hover:bg-white/5"
+          style={{ color: menuOpen ? COLORS.w : COLORS.t3 }}
         >
-          <Icon name="edit" size={16} color="currentColor" />
-        </button>
-        <button
-          type="button"
-          onClick={openDelete}
-          onMouseEnter={() => setHoverDelete(true)}
-          onMouseLeave={() => setHoverDelete(false)}
-          aria-label="Delete session"
-          className="w-9 h-9 rounded-lg grid place-items-center transition-colors"
-          style={{
-            background: hoverDelete ? COLORS.redSoft : "transparent",
-            color: hoverDelete ? COLORS.red : COLORS.t3,
-          }}
-        >
-          <Icon name="trash" size={16} color="currentColor" />
+          <Icon name="more" size={18} color="currentColor" />
         </button>
       </div>
+
+      {menuOpen && menuStyle && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setMenuOpen(false)}
+          />
+          <div
+            role="menu"
+            className="z-50 w-44 rounded-xl overflow-hidden"
+            style={{
+              ...menuStyle,
+              background: COLORS.surface,
+              border: `1px solid ${COLORS.borderLight}`,
+              boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
+            }}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={onRename}
+              className="w-full px-4 py-3 flex items-center gap-2 text-left text-[13px] font-semibold cursor-pointer hover:bg-black/20 transition-colors"
+              style={{ color: COLORS.t2 }}
+            >
+              <Icon name="edit" size={15} color={COLORS.t3} />
+              Rename
+            </button>
+            <div style={{ borderTop: `1px solid ${COLORS.border}` }} />
+            <button
+              type="button"
+              role="menuitem"
+              onClick={onDelete}
+              className="w-full px-4 py-3 flex items-center gap-2 text-left text-[13px] font-semibold cursor-pointer hover:bg-red-500/10 transition-colors"
+              style={{ color: COLORS.red }}
+            >
+              <Icon name="trash" size={15} color={COLORS.red} />
+              Delete
+            </button>
+          </div>
+        </>
+      )}
 
       <PromptDialog
         open={renameOpen}
