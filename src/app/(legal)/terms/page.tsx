@@ -1,4 +1,5 @@
 import { COLORS } from "@/lib/constants";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 // PLACEHOLDER text. Replace before public launch. The structure follows
 // common SaaS Terms of Service templates.
@@ -43,7 +44,7 @@ export default function TermsPage() {
       <p style={styles.p}>
         You&apos;re responsible for maintaining the confidentiality of your
         account credentials and for all activity that occurs under your
-        account. Notify us immediately at hiqmalabs@gmail.com if you suspect
+        account. Notify us immediately at {CONTACT_EMAIL} if you suspect
         unauthorized access.
       </p>
 
@@ -137,8 +138,8 @@ export default function TermsPage() {
       <h2 style={styles.h2}>Contact</h2>
       <p style={styles.p}>
         Questions? Email{" "}
-        <a href="mailto:hiqmalabs@gmail.com" style={{ color: COLORS.accent }}>
-          hiqmalabs@gmail.com
+        <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: COLORS.accent }}>
+          {CONTACT_EMAIL}
         </a>
         .
       </p>

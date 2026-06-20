@@ -1,4 +1,5 @@
 import { COLORS } from "@/lib/constants";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 // PLACEHOLDER text. Before public launch, replace with text from your
 // preferred privacy-policy generator (termly.io / iubenda / privacypolicies.com)
@@ -139,8 +140,8 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Correction / questions:</strong> email{" "}
-          <a href="mailto:hiqmalabs@gmail.com" style={{ color: COLORS.accent }}>
-            hiqmalabs@gmail.com
+          <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: COLORS.accent }}>
+            {CONTACT_EMAIL}
           </a>
           .
         </li>
@@ -170,8 +171,8 @@ export default function PrivacyPage() {
       <h2 style={styles.h2}>Contact</h2>
       <p style={styles.p}>
         Questions? Email{" "}
-        <a href="mailto:hiqmalabs@gmail.com" style={{ color: COLORS.accent }}>
-          hiqmalabs@gmail.com
+        <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: COLORS.accent }}>
+          {CONTACT_EMAIL}
         </a>
         .
       </p>
