@@ -632,6 +632,7 @@ export default function RecordPage() {
               Tarjuman
             </span>
           </div>
+          <AccountMenu />
         </div>
         <MicErrorState
           permissionDenied={recorder.permissionDenied}
