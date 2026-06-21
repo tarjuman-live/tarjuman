@@ -13,6 +13,15 @@ import { Icon } from "@/components/shared/icon";
  * Tap → opens a popover with the user's identity, a link to Settings, and
  * Sign out. Account management (edit name, delete account, preferences) lives
  * on the /settings page reached from here.
+ *
+ * IMPORTANT: this control is the ONLY way to reach Settings / Sign out, so it
+ * must never disappear. It is always rendered inside the auth-guarded app
+ * shell (the layout blocks unauthed users), which means we can safely keep the
+ * button on screen even while `api.users.me` is still loading OR resolves to
+ * null — e.g. a slow query, a transient token hiccup, or a deleted/missing
+ * user row. Earlier this component returned null in those cases, which made
+ * the avatar vanish and stranded the user with no way to sign out. Sign out
+ * works regardless of `me`, so it's always available.
  */
 export function AccountMenu() {
   const me = useQuery(api.users.me);
@@ -25,17 +34,11 @@ export function AccountMenu() {
   // circular avatar. On error we fall back to the initial.
   const [imageBroken, setImageBroken] = useState(false);
 
-  if (me === undefined) {
-    // Loading — don't render so the header doesn't visibly shift.
-    return null;
-  }
-  if (me === null) {
-    // Defensive: layout should redirect unauthed users before we ever render
-    // here. If we somehow get null, no-op.
-    return null;
-  }
-
-  const initial = (me.name?.[0] ?? me.email?.[0] ?? "?").toUpperCase();
+  const loading = me === undefined;
+  const showImage = Boolean(me?.image) && !imageBroken;
+  // While loading we show no glyph (a faint pulsing disc); once resolved, the
+  // user's initial, falling back to "?" if we somehow have no name/email.
+  const initial = (me?.name?.[0] ?? me?.email?.[0] ?? "?").toUpperCase();
 
   const handleSignOut = async () => {
     setOpen(false);
@@ -54,24 +57,26 @@ export function AccountMenu() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Account menu"
-        className="w-8 h-8 rounded-full grid place-items-center text-[12px] font-bold cursor-pointer transition-transform active:scale-95 overflow-hidden"
+        aria-busy={loading}
+        className={`w-8 h-8 rounded-full grid place-items-center text-[12px] font-bold cursor-pointer transition-transform active:scale-95 overflow-hidden${
+          loading ? " animate-pulse" : ""
+        }`}
         style={{
-          background:
-            me.image && !imageBroken ? "transparent" : COLORS.accentSoft,
+          background: showImage ? "transparent" : COLORS.accentSoft,
           border: `1px solid ${COLORS.accent}40`,
           color: COLORS.accent,
         }}
       >
-        {me.image && !imageBroken ? (
+        {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={me.image}
+            src={me!.image!}
             alt=""
             className="w-full h-full object-cover"
             onError={() => setImageBroken(true)}
             referrerPolicy="no-referrer"
           />
-        ) : (
+        ) : loading ? null : (
           initial
         )}
       </button>
@@ -95,7 +100,7 @@ export function AccountMenu() {
               className="px-4 py-3"
               style={{ borderBottom: `1px solid ${COLORS.border}` }}
             >
-              {me.name && (
+              {me?.name && (
                 <div
                   className="text-[13px] font-semibold truncate"
                   style={{ color: COLORS.w }}
@@ -107,7 +112,7 @@ export function AccountMenu() {
                 className="text-[12px] truncate"
                 style={{ color: COLORS.t3 }}
               >
-                {me.email ?? "—"}
+                {me?.email ?? (loading ? "Loading…" : "Signed in")}
               </div>
             </div>
             <button
