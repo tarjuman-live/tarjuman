@@ -49,3 +49,6 @@ docs/livetranscribe-checklist.pdf
 next-env.d.ts
 
 
+
+# Field-sim audio (downloaded khutbah + degraded PCM — not for VCS)
+bench/audio/
