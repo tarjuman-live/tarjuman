@@ -169,21 +169,22 @@ summarization-prompt problem (`src/app/api/summarize/route.ts`), separate from c
 ## 10. Tuning guide — if results are poor
 
 Each knob below is real, current code. Change one thing at a time and re-test the same condition so
-you can attribute the difference. (Values here reflect the code as of this writing; if the pipeline
-is retuned later, refresh these numbers.)
+you can attribute the difference. (Values **and line numbers re-verified against the code on
+2026-06-22** — all knob values unchanged; line numbers refreshed. If the pipeline is retuned later,
+refresh these again.)
 
 | Symptom | Knob | Where | Direction |
 |---|---|---|---|
-| Too quiet (meter weak even up close) | makeup gain `1.6` | `src/lib/audio-processor.ts` (~line 145) | raise toward `2.0–2.5` (watch for clipping) |
-| Distant speech under-amplified | compressor `threshold -26`, `ratio 4` | `src/lib/audio-processor.ts` (~lines 135–137) | lower threshold to `-32`, raise ratio to `6:1` |
-| Low-frequency rumble / hum | highpass `120 Hz` | `src/lib/audio-processor.ts` (~line 117) | raise to `150–180 Hz` (slight warmth loss) |
-| Hiss / crowd sibilance | lowpass `7000 Hz` | `src/lib/audio-processor.ts` (~line 125) | lower to `5000–6000 Hz` (slight consonant dulling) |
-| Sentences fragment at every pause | `endpointing=500` | `src/app/api/deepgram/route.ts` (~line 140) | raise to `800–1000` ms |
-| Side conversations bleed in | speaker-lock warmup `15 s`, min-duration `5 s` | `src/hooks/use-deepgram.ts` (~lines 102–104) | lower warmup, raise min-duration |
-| Junk / low-confidence lines in transcript | `FINAL_CONFIDENCE_THRESHOLD 0.55` | `src/hooks/use-deepgram.ts` (~line 88) | raise to `0.65–0.75` (drops quieter speech too) |
-| Near-silence padding the transcript | noise gate `−55 dBFS` | `public/pcm-worklet.js` (~line 20) | raise toward `−50 dBFS` (stricter gate) |
+| Too quiet (meter weak even up close) | makeup gain `1.6` | `src/lib/audio-processor.ts` (line 190) | raise toward `2.0–2.5` (watch for clipping) |
+| Distant speech under-amplified | compressor `threshold -26`, `ratio 4` | `src/lib/audio-processor.ts` (lines 180–182) | lower threshold to `-32`, raise ratio to `6:1` |
+| Low-frequency rumble / hum | highpass `120 Hz` | `src/lib/audio-processor.ts` (line 162) | raise to `150–180 Hz` (slight warmth loss) |
+| Hiss / crowd sibilance | lowpass `7000 Hz` | `src/lib/audio-processor.ts` (line 170) | lower to `5000–6000 Hz` (slight consonant dulling) |
+| Sentences fragment at every pause | `endpointing=500` | `src/app/api/deepgram/route.ts` (line 178) | raise to `800–1000` ms |
+| Side conversations bleed in | speaker-lock warmup `15 s`, min-duration `5 s` | `src/hooks/use-deepgram.ts` (lines 97–99) | lower warmup, raise min-duration |
+| Junk / low-confidence lines in transcript | `FINAL_CONFIDENCE_THRESHOLD 0.55` | `src/hooks/use-deepgram.ts` (line 83) | raise to `0.65–0.75` (drops quieter speech too) |
+| Near-silence padding the transcript | noise gate `−55 dBFS` | `public/pcm-worklet.js` (line 20) | raise toward `−50 dBFS` (stricter gate) |
 
-The STT model itself is `nova-3` (`src/app/api/deepgram/route.ts`, ~line 120) — required for
+The STT model itself is `nova-3` (`src/app/api/deepgram/route.ts`, line 140) — required for
 Arabic. If Arabic accuracy is fundamentally poor even with clean capture, the lever is the model,
 not these knobs, and that's a deeper investigation.
 
