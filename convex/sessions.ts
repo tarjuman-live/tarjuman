@@ -195,10 +195,13 @@ export const saveSummary = mutation({
     const session = await ctx.db.get(args.sessionId);
     if (!session) throw new Error("Session not found");
     if (session.userId !== userId) throw new Error("Not your session");
+    const now = Date.now();
     await ctx.db.patch(args.sessionId, {
       summary: args.summary,
       summaryLanguage: args.summaryLanguage,
-      updatedAt: Date.now(),
+      // Stamp generation time so the monthly summary quota can count it.
+      summaryGeneratedAt: now,
+      updatedAt: now,
     });
   },
 });

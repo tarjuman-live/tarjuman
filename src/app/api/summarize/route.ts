@@ -3,7 +3,11 @@ import {
   ISLAMIC_TERMINOLOGY_RULES,
   ISLAMIC_FEW_SHOT_EXAMPLES,
 } from "@/lib/islamic-terminology";
-import { requireAuthFromHeader, checkRateLimit } from "@/lib/api-auth";
+import {
+  requireAuthFromHeader,
+  checkRateLimit,
+  getUsageFromHeader,
+} from "@/lib/api-auth";
 
 interface SummarizeRequest {
   transcript: string;
@@ -79,6 +83,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: `Summary rate limit hit. Try again in ${Math.ceil(limit.retryAfterSec / 60)} min.` },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } }
+    );
+  }
+
+  // Plan cost gate: a free user who's used their monthly summary quota can't
+  // call Claude. Fail open if usage can't be read (reactive UI is primary gate).
+  const usage = await getUsageFromHeader(req);
+  if (usage && !usage.canSummarize) {
+    return NextResponse.json(
+      {
+        error: `You've used all ${usage.summariesLimit} free summaries this month. Upgrade to Tarjuman Pro for unlimited AI summaries.`,
+        code: "limit_reached",
+      },
+      { status: 402 }
     );
   }
 

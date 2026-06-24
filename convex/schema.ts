@@ -48,6 +48,10 @@ export default defineSchema({
     duration: v.number(),
     summary: v.optional(v.string()),
     summaryLanguage: v.optional(v.string()),
+    // When the AI summary was generated (ms). Drives the per-month summary
+    // quota (see convex/billingLimits.ts). Optional: pre-existing summaries
+    // predate this field and simply don't count toward the current month.
+    summaryGeneratedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

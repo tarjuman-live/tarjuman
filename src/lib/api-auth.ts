@@ -65,6 +65,40 @@ export async function requireAuthFromHeader(
 // auth-per-request mutations.
 void cachedClient;
 
+/**
+ * Fetch the caller's this-month plan usage, for the cost gates on
+ * /api/deepgram (sessions) and /api/summarize (summaries). Returns null on any
+ * failure (no bearer token, invalid token, query error) — callers FAIL OPEN:
+ * a transient Convex hiccup must never lock a paying-or-free user out of the
+ * app. The product gate is the reactive UI; this is the can't-bypass-the-UI
+ * backstop.
+ */
+export async function getUsageFromHeader(
+  req: Request
+): Promise<{
+  plan: "free" | "pro";
+  sessionsUsed: number;
+  summariesUsed: number;
+  sessionsLimit: number | null;
+  summariesLimit: number | null;
+  canStartSession: boolean;
+  canSummarize: boolean;
+} | null> {
+  const header = req.headers.get("authorization");
+  if (!header || !header.toLowerCase().startsWith("bearer ")) return null;
+  const token = header.slice(7).trim();
+  if (!token) return null;
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!url) return null;
+  const client = new ConvexHttpClient(url);
+  client.setAuth(token);
+  try {
+    return await client.query(api.subscriptions.getMyUsageThisMonth, {});
+  } catch {
+    return null;
+  }
+}
+
 // ─── Rate limiter (token bucket per user, per action) ──────────────────────
 
 interface Bucket {

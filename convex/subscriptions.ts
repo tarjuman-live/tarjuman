@@ -2,6 +2,7 @@ import { query, internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { auth } from "./auth";
 import { planFromStatus } from "./stripeClient";
+import { PLAN_LIMITS, monthStartMs, limitForWire, atLimit } from "./billingLimits";
 
 /**
  * Billing state for the current user. Read-side is a reactive query so the
@@ -39,6 +40,75 @@ export const getMySubscription = query({
       status: row.status,
       currentPeriodEnd: row.currentPeriodEnd ?? null,
       cancelAtPeriodEnd: row.cancelAtPeriodEnd ?? false,
+    };
+  },
+});
+
+/**
+ * This-month usage + entitlements for the current user — the reactive source of
+ * truth behind the record/summary gates and the Settings usage line. Plan is
+ * read from the subscription row (default "free"); limits come from
+ * billingLimits.ts.
+ *
+ * Pro/Scholar are unlimited, so we SHORT-CIRCUIT without counting (cheap for the
+ * paying majority). Only free users pay for the count, and they have ≤ a handful
+ * of sessions/month, so the date-bounded read is tiny. Unlimited limits go over
+ * the wire as `null` (Infinity isn't a valid Convex value).
+ *
+ * Returns null when unauthenticated (page may render before auth settles).
+ */
+export const getMyUsageThisMonth = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return null;
+
+    const sub = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .unique();
+    const plan = sub?.plan ?? "free";
+    const limits = PLAN_LIMITS[plan];
+
+    if (plan !== "free") {
+      // Unlimited tier — no need to scan sessions.
+      return {
+        plan,
+        sessionsUsed: 0,
+        summariesUsed: 0,
+        sessionsLimit: limitForWire(limits.sessionsPerMonth),
+        summariesLimit: limitForWire(limits.summariesPerMonth),
+        canStartSession: true,
+        canSummarize: true,
+      };
+    }
+
+    const monthStart = monthStartMs(Date.now());
+    // Only this month's rows (cheap for free users). Counting summaries among
+    // this month's sessions is intentionally lenient — a summary generated this
+    // month on an older session won't count, which only ever favors the user.
+    const thisMonth = await ctx.db
+      .query("sessions")
+      .withIndex("by_user_date", (q) =>
+        q.eq("userId", userId).gte("createdAt", monthStart)
+      )
+      .collect();
+
+    const sessionsUsed = thisMonth.filter(
+      (s) => s.status === "completed" && s.segments.length > 0
+    ).length;
+    const summariesUsed = thisMonth.filter(
+      (s) => (s.summaryGeneratedAt ?? 0) >= monthStart
+    ).length;
+
+    return {
+      plan,
+      sessionsUsed,
+      summariesUsed,
+      sessionsLimit: limitForWire(limits.sessionsPerMonth),
+      summariesLimit: limitForWire(limits.summariesPerMonth),
+      canStartSession: !atLimit(sessionsUsed, limits.sessionsPerMonth),
+      canSummarize: !atLimit(summariesUsed, limits.summariesPerMonth),
     };
   },
 });

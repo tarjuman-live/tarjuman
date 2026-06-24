@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { isValidLangCode } from "@/lib/utils";
-import { requireAuthFromHeader, checkRateLimit } from "@/lib/api-auth";
+import {
+  requireAuthFromHeader,
+  checkRateLimit,
+  getUsageFromHeader,
+} from "@/lib/api-auth";
 
 /**
  * Issues credentials for a browser → Deepgram realtime transcription session.
@@ -122,6 +126,20 @@ export async function GET(req: Request) {
     return NextResponse.json(
       { error: `Rate limit hit. Try again in ${limit.retryAfterSec}s.` },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } }
+    );
+  }
+
+  // Plan cost gate: a free user who's used their monthly session quota can't
+  // mint a transcription token (this is what actually spends Deepgram budget).
+  // Fail open if usage can't be read — the reactive UI is the primary gate.
+  const usage = await getUsageFromHeader(req);
+  if (usage && !usage.canStartSession) {
+    return NextResponse.json(
+      {
+        error: `You've used all ${usage.sessionsLimit} free sessions this month. Upgrade to Tarjuman Pro for unlimited recording.`,
+        code: "limit_reached",
+      },
+      { status: 402 }
     );
   }
 

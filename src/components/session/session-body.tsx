@@ -9,6 +9,8 @@ import { isRtl } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
 import { useStickyBottom } from "@/hooks/use-sticky-bottom";
 import { renderTextWithLinks } from "@/lib/citation-renderer";
+import { usePlan } from "@/hooks/use-plan";
+import { UpgradeCard } from "@/components/billing/upgrade-card";
 
 interface NormalizedSegment {
   id: string;
@@ -68,6 +70,7 @@ export function SessionBody({
   );
   const { scrollRef, onScroll } = useStickyBottom<HTMLDivElement>(200);
   const authToken = useAuthToken();
+  const plan = usePlan();
 
   const handleGenerate = async () => {
     if (segments.length === 0) return;
@@ -193,22 +196,30 @@ export function SessionBody({
       onScroll={onScroll}
       className="flex-1 overflow-auto px-5 py-4"
     >
-      {summary.phase === "idle" && (
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={segments.length === 0}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold text-sm cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed mb-5"
-          style={{
-            background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDk})`,
-            color: "#0A0F1C",
-            boxShadow: `0 0 24px ${COLORS.accent}35`,
-          }}
-        >
-          <Icon name="sparkle" size={16} color="#0A0F1C" />
-          Generate AI Summary
-        </button>
-      )}
+      {summary.phase === "idle" &&
+        (plan && !plan.canSummarize ? (
+          <div className="mb-5">
+            <UpgradeCard
+              title="Summary limit reached"
+              message={`You've used all ${plan.summariesLimit} free summaries this month. Upgrade to Tarjuman Pro for unlimited AI summaries.`}
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={segments.length === 0}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold text-sm cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed mb-5"
+            style={{
+              background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDk})`,
+              color: "#0A0F1C",
+              boxShadow: `0 0 24px ${COLORS.accent}35`,
+            }}
+          >
+            <Icon name="sparkle" size={16} color="#0A0F1C" />
+            Generate AI Summary
+          </button>
+        ))}
 
       {summary.phase === "loading" && (
         <div

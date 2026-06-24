@@ -26,6 +26,8 @@ import { useRecorder } from "@/hooks/use-recorder";
 import { useDeepgram } from "@/hooks/use-deepgram";
 import { useTranslator } from "@/hooks/use-translator";
 import { useSessionTimer } from "@/hooks/use-session-timer";
+import { usePlan } from "@/hooks/use-plan";
+import { UpgradeCard } from "@/components/billing/upgrade-card";
 
 // localStorage key holding an in-progress recording's transcript, so an
 // abnormal exit (tab close, mobile tab-discard, pause-then-kill) doesn't lose
@@ -123,6 +125,12 @@ export default function RecordPage() {
     }
   };
 
+  // This-month plan usage. `canStartSession` is false once a free user hits
+  // their monthly session cap — we then swap the record button for an upgrade
+  // card and keep the Deepgram WS closed (no token mint = no cost).
+  const plan = usePlan();
+  const overSessionLimit = plan ? !plan.canStartSession : false;
+
   const recorder = useRecorder();
   const isActive =
     recorder.phase === "recording" || recorder.phase === "paused";
@@ -171,8 +179,9 @@ export default function RecordPage() {
     pcmNode: recorder.pcmNode,
     sourceLanguage: sourceLang,
     // Keep the WS alive across prewarm + active recording. paused gates
-    // outbound frames so prewarm doesn't accidentally leak audio.
-    enabled: isActive || isPrewarmed,
+    // outbound frames so prewarm doesn't accidentally leak audio. A free user
+    // over their session cap never opens the WS (no Deepgram token minted).
+    enabled: (isActive || isPrewarmed) && !overSessionLimit,
     paused: recorder.phase === "paused" || isPrewarmed,
   });
 
@@ -669,10 +678,27 @@ export default function RecordPage() {
           }}
         />
 
-        <IdleRecordButton
-          onStart={handleStart}
-          disabled={recorder.phase === "starting"}
-        />
+        {overSessionLimit ? (
+          <UpgradeCard
+            title="Monthly limit reached"
+            message={`You've used all ${plan?.sessionsLimit} free sessions this month. Upgrade to Tarjuman Pro for unlimited recording.`}
+          />
+        ) : (
+          <>
+            <IdleRecordButton
+              onStart={handleStart}
+              disabled={recorder.phase === "starting"}
+            />
+            {plan && plan.plan === "free" && plan.sessionsLimit !== null && (
+              <div
+                className="text-[12px] text-center"
+                style={{ color: COLORS.t3 }}
+              >
+                {plan.sessionsUsed} of {plan.sessionsLimit} sessions this month
+              </div>
+            )}
+          </>
+        )}
 
         <RecentSessionsPreview />
       </div>

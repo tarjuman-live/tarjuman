@@ -1,0 +1,106 @@
+/**
+ * Plan tiers + limits — the SINGLE SOURCE OF TRUTH for what each plan unlocks.
+ *
+ * Pure constants + pure helpers only (no Convex/Node imports) so this file is
+ * safe to import from three places that must agree:
+ *   - Convex functions (convex/subscriptions.ts) — compute server-side usage
+ *   - Next.js API routes (/api/deepgram, /api/summarize) — enforce the cost gate
+ *   - Client components (Settings, Record, SessionBody) — show usage + CTAs
+ *
+ * Tuning the product is a one-line edit here. The numbers below are the
+ * post-discussion defaults (2026-06-24); they are deliberately easy to change
+ * because real pricing/limits are a post-field-test decision.
+ *
+ * DESIGN NOTE — recording length is intentionally UNLIMITED on every tier.
+ * The unit of value is a *class*, not a minute: an al-Badr dars runs 1–3 hours,
+ * so capping minutes would kill the app mid-khutbah. We gate the *count* of
+ * sessions/summaries, never their length. The only length bound is the
+ * anti-runaway fuse below (not a product limit).
+ *
+ * The `scholar` tier is forward-design: its hero feature (follow scholars +
+ * class reminders) ships post-field-test, so `scholar` is config-only for now —
+ * the DB `plan` union (schema.ts) is still just "free" | "pro". When Scholar
+ * goes live we add the literal + a second Stripe price.
+ */
+
+export type Plan = "free" | "pro" | "scholar";
+
+export interface PlanLimits {
+  /** Max NEW sessions creatable per calendar month. Infinity = unlimited. */
+  sessionsPerMonth: number;
+  /** Max AI summaries generatable per calendar month. Infinity = unlimited. */
+  summariesPerMonth: number;
+  /** How many scholars a user can follow (future reminders feature). */
+  scholarsFollowable: number;
+}
+
+export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
+  free: { sessionsPerMonth: 4, summariesPerMonth: 4, scholarsFollowable: 0 },
+  pro: {
+    sessionsPerMonth: Infinity,
+    summariesPerMonth: Infinity,
+    scholarsFollowable: 5,
+  },
+  scholar: {
+    sessionsPerMonth: Infinity,
+    summariesPerMonth: Infinity,
+    scholarsFollowable: Infinity,
+  },
+};
+
+export interface PlanMeta {
+  name: string;
+  /** Monthly price in USD (0 for free). Keep in sync with the Stripe price. */
+  priceMonthly: number;
+  priceLabel: string;
+  tagline: string;
+}
+
+/**
+ * Display metadata for the pricing UI. The single place a price string lives,
+ * so the app never hardcodes a number that drifts from the Stripe price.
+ * (Current Stripe sandbox price is $10/mo — see [[stripe-billing-experiment]].)
+ */
+export const PLAN_META: Record<Plan, PlanMeta> = {
+  free: {
+    name: "Free",
+    priceMonthly: 0,
+    priceLabel: "Free",
+    tagline: "4 sessions & summaries / month",
+  },
+  pro: {
+    name: "Pro",
+    priceMonthly: 10,
+    priceLabel: "$10 / month",
+    tagline: "Unlimited sessions & summaries",
+  },
+  scholar: {
+    name: "Scholar",
+    priceMonthly: 20,
+    priceLabel: "$20 / month",
+    tagline: "Everything unlimited + follow scholars",
+  },
+};
+
+/**
+ * Anti-runaway fuse — NOT a product limit. A phone left recording (or a session
+ * the user never stops) shouldn't bill us for hours of Deepgram. No real dars
+ * approaches this; al-Badr's longest runs ~3h. Applies to every tier.
+ */
+export const MAX_SESSION_HOURS = 6;
+
+/** Start of the current calendar month in ms (UTC) — the monthly usage window. */
+export function monthStartMs(now: number): number {
+  const d = new Date(now);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+}
+
+/** Infinity isn't a valid Convex/JSON value — surface unlimited as `null`. */
+export function limitForWire(n: number): number | null {
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Has the user hit a (finite) limit? Unlimited (Infinity) is never hit. */
+export function atLimit(used: number, limit: number): boolean {
+  return Number.isFinite(limit) && used >= limit;
+}

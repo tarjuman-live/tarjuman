@@ -6,8 +6,10 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
+import { PLAN_META } from "../../../../convex/billingLimits";
 import { COLORS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import { usePlan } from "@/hooks/use-plan";
 import { Icon } from "@/components/shared/icon";
 import { LanguageSelector } from "@/components/recording/language-selector";
 import { Toggle } from "@/components/settings/toggle";
@@ -24,6 +26,7 @@ export default function SettingsPage() {
   const updateProfile = useMutation(api.users.updateProfile);
   const deleteAccount = useMutation(api.users.deleteAccount);
   const subscription = useQuery(api.subscriptions.getMySubscription);
+  const plan = usePlan();
   const createCheckoutSession = useAction(api.stripe.createCheckoutSession);
   const createPortalSession = useAction(api.stripe.createPortalSession);
   const { signOut } = useAuthActions();
@@ -269,12 +272,24 @@ export default function SettingsPage() {
                 Upgrade to Pro
               </span>
               <span className="block text-[12px] mt-0.5" style={{ color: COLORS.t3 }}>
-                {billingBusy ? "Opening checkout…" : "$9 / month · cancel anytime"}
+                {billingBusy
+                  ? "Opening checkout…"
+                  : `${PLAN_META.pro.priceLabel} · cancel anytime`}
               </span>
             </span>
             <Icon name="sparkle" size={16} color={COLORS.accent} />
           </button>
         )}
+        {!isPro &&
+          plan &&
+          plan.sessionsLimit !== null &&
+          plan.summariesLimit !== null && (
+            <div className="text-[12px] mt-2" style={{ color: COLORS.t3 }}>
+              {plan.sessionsUsed} of {plan.sessionsLimit} sessions ·{" "}
+              {plan.summariesUsed} of {plan.summariesLimit} summaries used this
+              month.
+            </div>
+          )}
       </div>
 
       {/* Audio & voice */}
