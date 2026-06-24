@@ -54,6 +54,10 @@ export interface PlanMeta {
   priceMonthly: number;
   priceLabel: string;
   tagline: string;
+  /** Bullet highlights for the /plans comparison cards. */
+  highlights: string[];
+  /** Not yet purchasable — show as "Coming soon", no checkout. */
+  comingSoon?: boolean;
 }
 
 /**
@@ -67,18 +71,36 @@ export const PLAN_META: Record<Plan, PlanMeta> = {
     priceMonthly: 0,
     priceLabel: "Free",
     tagline: "4 sessions & summaries / month",
+    highlights: [
+      "4 sessions per month",
+      "4 AI summaries per month",
+      "Unlimited recording length",
+      "Your full history, always",
+    ],
   },
   pro: {
     name: "Pro",
     priceMonthly: 10,
     priceLabel: "$10 / month",
     tagline: "Unlimited sessions & summaries",
+    highlights: [
+      "Unlimited sessions",
+      "Unlimited AI summaries",
+      "Unlimited recording length",
+      "Your full history, always",
+    ],
   },
   scholar: {
     name: "Scholar",
     priceMonthly: 20,
     priceLabel: "$20 / month",
     tagline: "Everything unlimited + follow scholars",
+    comingSoon: true,
+    highlights: [
+      "Everything in Pro",
+      "Follow scholars + class reminders",
+      "Unlimited scholars",
+    ],
   },
 };
 

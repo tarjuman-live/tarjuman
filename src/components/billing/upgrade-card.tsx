@@ -37,14 +37,14 @@ export function UpgradeCard({
         {message}
       </p>
       <Link
-        href="/settings"
+        href="/plans"
         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-bold transition-transform active:scale-[0.98]"
         style={{
           background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDk})`,
           color: "#0A0F1C",
         }}
       >
-        Upgrade to Pro
+        Upgrade
         <Icon name="chevron" size={14} color="#0A0F1C" />
       </Link>
     </div>

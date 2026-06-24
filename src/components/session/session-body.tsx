@@ -112,16 +112,15 @@ export function SessionBody({
       let displayed = ""; // what's currently on screen
       let streamDone = false;
 
-      // ~60 chars/sec feels like natural reading pace. Tweak this if you
-      // want it faster or slower:
-      //   higher number  = faster flow
-      //   lower  number  = slower flow
-      const CHARS_PER_SEC = 120;
+      // Typewriter reveal that KEEPS PACE with the stream instead of throttling
+      // it. The old fixed 120 chars/sec meant a ~1.4k-char summary took ~12s
+      // just to *display* after Haiku had already produced it. Now we drain
+      // proportionally to the backlog: a floor so short trickles still glide,
+      // scaling up (capped) to clear a burst quickly without a jarring jump.
+      // "Slow is smooth, smooth is fast."
       const TICK_MS = 16; // ~60fps refresh
-      const charsPerTick = Math.max(
-        1,
-        Math.round((CHARS_PER_SEC * TICK_MS) / 1000)
-      );
+      const MIN_PER_TICK = 10; // ~625 chars/sec floor — smooth, not a crawl
+      const MAX_PER_TICK = 48; // cap so a backlog flows in, never dumps at once
 
       // Pump 1: read from the network as fast as it arrives, push into buffer.
       const readPump = (async () => {
@@ -139,7 +138,11 @@ export function SessionBody({
       const drainPump = new Promise<void>((resolve) => {
         const timer = setInterval(() => {
           if (buffer.length > 0) {
-            const take = Math.min(charsPerTick, buffer.length);
+            const take = Math.min(
+              buffer.length,
+              Math.max(MIN_PER_TICK, Math.ceil(buffer.length / 6)),
+              MAX_PER_TICK
+            );
             displayed += buffer.slice(0, take);
             buffer = buffer.slice(take);
             setSummary({ phase: "ready", text: displayed });

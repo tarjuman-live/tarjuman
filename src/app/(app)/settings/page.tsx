@@ -27,7 +27,6 @@ export default function SettingsPage() {
   const deleteAccount = useMutation(api.users.deleteAccount);
   const subscription = useQuery(api.subscriptions.getMySubscription);
   const plan = usePlan();
-  const createCheckoutSession = useAction(api.stripe.createCheckoutSession);
   const createPortalSession = useAction(api.stripe.createPortalSession);
   const { signOut } = useAuthActions();
   const router = useRouter();
@@ -260,25 +259,21 @@ export default function SettingsPage() {
             <Icon name="chevron" size={16} color={COLORS.t4} />
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={() => void goToStripe(createCheckoutSession)}
-            disabled={billingBusy}
-            className="w-full rounded-2xl px-4 py-3.5 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/10 transition-colors disabled:opacity-50"
+          <Link
+            href="/plans"
+            className="w-full rounded-2xl px-4 py-3.5 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/10 transition-colors"
             style={cardStyle}
           >
             <span>
               <span className="block text-[14px] font-semibold" style={{ color: COLORS.w }}>
-                Upgrade to Pro
+                Upgrade
               </span>
               <span className="block text-[12px] mt-0.5" style={{ color: COLORS.t3 }}>
-                {billingBusy
-                  ? "Opening checkout…"
-                  : `${PLAN_META.pro.priceLabel} · cancel anytime`}
+                {`${PLAN_META.pro.priceLabel} · see all plans`}
               </span>
             </span>
             <Icon name="sparkle" size={16} color={COLORS.accent} />
-          </button>
+          </Link>
         )}
         {!isPro &&
           plan &&
