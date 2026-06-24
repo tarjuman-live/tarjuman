@@ -111,6 +111,19 @@ export const PLAN_META: Record<Plan, PlanMeta> = {
  */
 export const MAX_SESSION_HOURS = 6;
 
+/** Annual billing discount, advertised as "Save 30%". */
+export const ANNUAL_DISCOUNT_PCT = 30;
+
+/** Per-month price when billed annually (rounded). e.g. $10 → $7. */
+export function annualPerMonth(monthly: number): number {
+  return Math.round(monthly * (1 - ANNUAL_DISCOUNT_PCT / 100));
+}
+
+/** Total charged once per year — consistent with the displayed per-month. */
+export function annualTotal(monthly: number): number {
+  return annualPerMonth(monthly) * 12;
+}
+
 /** Start of the current calendar month in ms (UTC) — the monthly usage window. */
 export function monthStartMs(now: number): number {
   const d = new Date(now);

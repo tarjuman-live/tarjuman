@@ -29,12 +29,18 @@ export function getStripe(): Stripe {
   return cached;
 }
 
-/** The recurring price the Upgrade button subscribes to (Convex env var). */
-export function getPriceId(): string {
-  const priceId = process.env.STRIPE_PRICE_ID;
+/**
+ * The recurring price the Upgrade button subscribes to (Convex env var).
+ * Monthly → STRIPE_PRICE_ID; annual → STRIPE_PRICE_ID_ANNUAL. The annual price
+ * must be created in Stripe (~30% off the monthly ×12) and set with
+ * `npx convex env set STRIPE_PRICE_ID_ANNUAL price_…` before annual checkout works.
+ */
+export function getPriceId(interval: "month" | "year" = "month"): string {
+  const name = interval === "year" ? "STRIPE_PRICE_ID_ANNUAL" : "STRIPE_PRICE_ID";
+  const priceId = process.env[name];
   if (!priceId) {
     throw new Error(
-      "STRIPE_PRICE_ID is not set on the Convex deployment. Run: npx convex env set STRIPE_PRICE_ID price_…"
+      `${name} is not set on the Convex deployment. Run: npx convex env set ${name} price_…`
     );
   }
   return priceId;

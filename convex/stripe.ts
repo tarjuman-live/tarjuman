@@ -23,7 +23,10 @@ function normalizeOrigin(origin: string): string {
 }
 
 export const createCheckoutSession = action({
-  args: { origin: v.string() },
+  args: {
+    origin: v.string(),
+    interval: v.optional(v.union(v.literal("month"), v.literal("year"))),
+  },
   handler: async (ctx, args): Promise<{ url: string }> => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
@@ -52,7 +55,7 @@ export const createCheckoutSession = action({
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [{ price: getPriceId(), quantity: 1 }],
+      line_items: [{ price: getPriceId(args.interval ?? "month"), quantity: 1 }],
       success_url: `${origin}/settings?upgraded=1`,
       cancel_url: `${origin}/settings`,
       allow_promotion_codes: true,
