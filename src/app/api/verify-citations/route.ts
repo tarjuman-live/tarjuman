@@ -13,8 +13,8 @@ import { verifyAndEnrichQuran } from "@/lib/quran";
  * canonical bodies + clickable markdown links to sunnah.com / quran.com.
  * Hallucinated citations get stripped.
  *
- * Quran enrichment runs unconditionally (quran.com is a free public API).
- * Sunnah enrichment short-circuits silently when SUNNAH_API_KEY is unset.
+ * Both enrichments run unconditionally on free public sources — quran.com and
+ * the open hadith CDN (fawazahmed0 dataset) — so NO API keys are required.
  */
 
 interface VerifyRequest {
@@ -59,10 +59,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ text, skipped: true });
   }
 
-  // Hadith pass (sunnah.com — needs SUNNAH_API_KEY) then Quran pass
-  // (quran.com — public API). Order doesn't matter since the two citation
-  // regexes don't overlap, but we run hadith first for consistency with the
-  // translate route.
+  // Hadith pass (open hadith CDN) then Quran pass (quran.com — public API).
+  // Order doesn't matter since the two citation regexes don't overlap, but we
+  // run hadith first for consistency with the translate route.
   const hadithEnriched = await verifyAndEnrich(text);
   const quranEnriched = await verifyAndEnrichQuran(
     hadithEnriched.text,

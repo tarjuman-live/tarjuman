@@ -155,11 +155,10 @@ export function SessionBody({
 
       await Promise.all([readPump, drainPump]);
 
-      // Sunnah.com verification pass on the completed summary text.
-      // Hadith citations get replaced with sunnah.com's canonical body +
-      // a clickable markdown link; hallucinated numbers get stripped.
-      // Falls back silently to the un-enriched text on any error or when
-      // SUNNAH_API_KEY isn't set on the server.
+      // Hadith/Quran verification pass on the completed summary text.
+      // Hadith citations get replaced with the canonical body + a clickable
+      // sunnah.com markdown link; hallucinated numbers get stripped. No API key
+      // needed (open CDN). Falls back silently to the un-enriched text on error.
       let finalText = displayed;
       try {
         const vRes = await fetch("/api/verify-citations", {

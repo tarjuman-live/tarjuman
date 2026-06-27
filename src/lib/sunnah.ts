@@ -1,23 +1,27 @@
 /**
- * Sunnah.com API client + citation enrichment.
+ * Hadith citation verification + enrichment.
  *
- * The LLM is the recognizer (Sonnet outputs `(Sahih al-Bukhari 4422)` from
- * memory). This module is the verifier + authoritative-text source:
+ * The LLM is the recognizer (it outputs `(Sahih al-Bukhari 4422)` from memory).
+ * This module is the verifier + authoritative-text source:
  *
  *   parseCitations(text)          → extract (Collection Number) patterns
- *   lookupHadith(slug, number)    → GET api.sunnah.com (with cache)
+ *   lookupHadith(slug, number)    → GET the open hadith dataset CDN (cached)
  *   verifyAndEnrich(text)         → orchestrates the above; returns text
- *                                    with verified citations replaced by
- *                                    sunnah.com's canonical body + a
- *                                    markdown link, and 404 citations
- *                                    stripped
+ *                                    with verified citations replaced by the
+ *                                    canonical body + a sunnah.com markdown
+ *                                    link, and 404 citations stripped
+ *
+ * SOURCE: the fawazahmed0 hadith-api dataset (Unlicense / public domain), served
+ * from GitHub raw — NOT sunnah.com's gated production API. It uses sunnah.com's
+ * exact continuous numbering and the Muhsin Khan English (verified aligned), so
+ * no API key is required. The user-facing link still points at sunnah.com.
  *
  * Fail-safe: a hadith citation is only ever presented as authentic once it's
- * been verified against sunnah.com. When verification is unavailable — no
- * `SUNNAH_API_KEY`, or a transient lookup failure — the citation is marked
- * `— unverified` instead of passing through as if confirmed. (Hallucinated
- * numbers that 404 are stripped.) So the app never puts an unconfirmed hadith
- * reference on screen with false authority, even before a sunnah.com key is set.
+ * been verified against the dataset. When verification is unavailable — a
+ * transient lookup failure, or a collection not in the dataset (e.g. Musnad
+ * Ahmad) — the citation is marked `— unverified` instead of passing through as
+ * if confirmed. (Hallucinated numbers that 404 are stripped.) So the app never
+ * puts an unconfirmed hadith reference on screen with false authority.
  */
 
 // Citation pattern matches the (Collection Number) format the prompt
@@ -81,8 +85,9 @@ export interface VerifiedCitation {
   verified: boolean;
 }
 
-interface SunnahHadithResponse {
-  hadith?: { lang: "ar" | "en"; body: string }[];
+// Per-hadith shape from the fawazahmed0 hadith-api CDN dataset.
+interface FawazHadithResponse {
+  hadiths?: { hadithnumber: number; text: string }[];
 }
 
 // Cache hadith lookups across requests within the same serverless instance.
@@ -94,8 +99,42 @@ type CacheEntry =
   | { kind: "unknown" }; // network / rate-limit / config failure — don't cache forever
 const lookupCache = new Map<string, CacheEntry>();
 
-const API_BASE = "https://api.sunnah.com/v1";
+// GitHub raw (NOT jsDelivr): the full hadith-api package exceeds jsDelivr's
+// 150MB serving limit, so jsDelivr 403s many files. GitHub raw serves the
+// per-hadith files reliably. Volume is low (a few per summary, cached in-memory)
+// and any transient raw failure degrades safely to "— unverified" (never wrong).
+// If this ever needs to scale, mirror the editions into a Convex `hadiths` table.
+const CDN_BASE =
+  "https://raw.githubusercontent.com/fawazahmed0/hadith-api/1/editions";
 const LOOKUP_TIMEOUT_MS = 3000;
+
+// Collections present in the dataset (eng-<slug> + ara-<slug>). Musnad Ahmad
+// ("ahmad") is NOT in it — those citations resolve to "unknown" (marked
+// "— unverified") rather than being stripped as if hallucinated.
+const SUPPORTED_EDITIONS = new Set([
+  "bukhari",
+  "muslim",
+  "abudawud",
+  "tirmidhi",
+  "nasai",
+  "ibnmajah",
+  "malik",
+]);
+
+// Fetch one hadith's text. Returns the (trimmed) text, "" when the file 200s
+// but has no usable text, or null on a 404 (genuinely no such number).
+async function fetchBody(
+  edition: string,
+  number: string
+): Promise<string | null> {
+  const res = await fetch(`${CDN_BASE}/${edition}/${number}.json`, {
+    signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const body = (await res.json()) as FawazHadithResponse;
+  return body.hadiths?.[0]?.text?.trim() ?? "";
+}
 
 export async function lookupHadith(
   slug: string,
@@ -107,52 +146,37 @@ export async function lookupHadith(
   // is retried next time.
   if (cached && cached.kind !== "unknown") return cached;
 
-  const apiKey = process.env.SUNNAH_API_KEY;
-  if (!apiKey) return { kind: "unknown" };
+  // Collection we can't verify (e.g. Musnad Ahmad) → "unknown" so it's marked
+  // unverified, NOT stripped as hallucinated.
+  if (!SUPPORTED_EDITIONS.has(slug)) return { kind: "unknown" };
 
   try {
-    const res = await fetch(
-      `${API_BASE}/collections/${slug}/hadiths/${number}`,
-      {
-        headers: { "X-API-Key": apiKey },
-        cache: "no-store",
-        signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-      }
-    );
-    if (res.status === 404) {
+    const en = await fetchBody(`eng-${slug}`, number);
+    if (en === null) {
+      // 404 — the cited number doesn't exist (hallucinated). Strip it.
       const entry: CacheEntry = { kind: "not-found" };
       lookupCache.set(key, entry);
       return entry;
     }
-    if (!res.ok) {
-      // Rate limit, 5xx, etc. — don't strip the citation on a transient
-      // failure; just skip verification this time.
-      console.warn(
-        `[sunnah] lookup ${slug}:${number} returned ${res.status} — keeping citation as-is`
-      );
-      return { kind: "unknown" };
+    // A 200 with no usable English body must NOT count as "found": the enrich
+    // step displays the English body, so an empty one would emit a bare link
+    // AND delete the speaker's own rendering. Treat it as unverifiable.
+    if (!en) return { kind: "unknown" };
+
+    // Arabic is best-effort — its absence shouldn't block the verified English.
+    let ar = "";
+    try {
+      ar = (await fetchBody(`ara-${slug}`, number)) ?? "";
+    } catch {
+      /* arabic optional */
     }
-    const body = (await res.json()) as SunnahHadithResponse;
-    const en = body.hadith?.find((h) => h.lang === "en")?.body ?? "";
-    const ar = body.hadith?.find((h) => h.lang === "ar")?.body ?? "";
-    // A 200 with no usable English body must NOT count as "found": the
-    // enrich step displays the English body, so an empty one would emit a
-    // bare citation link AND delete the speaker's own rendering of the
-    // hadith. Treat it as unverifiable (don't cache) so the fail-safe marks
-    // it "— unverified" and keeps the original text.
-    if (!en) {
-      return { kind: "unknown" };
-    }
-    const entry: CacheEntry = {
-      kind: "found",
-      englishBody: en,
-      arabicBody: ar,
-    };
+
+    const entry: CacheEntry = { kind: "found", englishBody: en, arabicBody: ar };
     lookupCache.set(key, entry);
     return entry;
   } catch (e) {
     console.warn(
-      `[sunnah] lookup ${slug}:${number} threw: ${
+      `[sunnah] lookup ${slug}:${number} failed: ${
         e instanceof Error ? e.message : String(e)
       } — keeping citation as-is`
     );
@@ -211,7 +235,7 @@ function unverifiedCitation(collectionDisplay: string, number: string): string {
 /**
  * Pipeline:
  *   - parse citations
- *   - lookup each (cached) when a SUNNAH_API_KEY is configured
+ *   - lookup each (cached) against the open hadith dataset
  *   - "found"     → replace the lead-in (LLM's own rendering) + citation with
  *                   `<sunnah canonical body> [(Collection Number)](url)`
  *   - "not-found" → strip the parenthetical (hallucinated number)
@@ -231,13 +255,13 @@ export async function verifyAndEnrich(text: string): Promise<{
     return { text, citations: [], skipped: true };
   }
 
-  // Verify against sunnah.com when we have a key. Without one we cannot check
-  // any citation — but we must NOT let an unverified hadith reference read as
-  // authentic, so every lookup resolves to "unknown" and is marked below.
-  const hasKey = !!process.env.SUNNAH_API_KEY;
-  const results: CacheEntry[] = hasKey
-    ? await Promise.all(matches.map((m) => lookupHadith(m.slug, m.number)))
-    : matches.map(() => ({ kind: "unknown" as const }));
+  // Verify each citation against the open hadith dataset (no key needed). Any
+  // that can't be confirmed (transient failure, or an unsupported collection
+  // like Musnad Ahmad) resolve to "unknown" and are marked "— unverified"
+  // below — never presented as authentic.
+  const results: CacheEntry[] = await Promise.all(
+    matches.map((m) => lookupHadith(m.slug, m.number))
+  );
 
   // Walk the original text and build the enriched one piece by piece.
   const out: string[] = [];

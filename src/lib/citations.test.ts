@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { parseCitations, verifyAndEnrich } from "./sunnah";
 import { parseQuranCitations } from "./quran";
 
-// These tests cover the PURE paths only (no SUNNAH_API_KEY → no network):
-// citation recognition + the fail-safe that marks an unverifiable citation
-// "— unverified" instead of letting it read as authentic. Verified/404
-// branches hit sunnah.com / quran.com and are left to integration testing.
+// These tests cover citation recognition + the fail-safe that marks an
+// unverifiable citation "— unverified" instead of letting it read as authentic.
+// The hadith lookup is stubbed unreachable (no real network); the verified/404
+// branches hit the live CDN / quran.com and are left to integration testing.
 
 describe("parseCitations (hadith) — every rendering variant resolves to a slug", () => {
   // The slug map missed apostrophe/hyphen variants before the fail-safe work;
@@ -38,9 +38,15 @@ describe("parseCitations (hadith) — every rendering variant resolves to a slug
   });
 });
 
-describe("verifyAndEnrich fail-safe (no SUNNAH_API_KEY)", () => {
+describe("verifyAndEnrich fail-safe (lookup unavailable)", () => {
+  // Stub the hadith dataset as unreachable (transient failure): every lookup
+  // resolves to "unknown", so citations must be marked "— unverified" rather
+  // than presented as authentic. No real network in unit tests.
   beforeEach(() => {
-    delete process.env.SUNNAH_API_KEY;
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("marks an unverifiable hadith citation '— unverified' and keeps the text", async () => {
