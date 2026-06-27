@@ -65,6 +65,58 @@ export const createCheckoutSession = action({
   },
 });
 
+/**
+ * Embedded (Custom Checkout) variant for the on-domain DARK checkout. Same
+ * customer reuse/create as above, but `ui_mode: "custom"` returns a
+ * `client_secret` the client mounts with <CheckoutElementsProvider> + the dark
+ * Appearance API (Stripe-hosted Checkout can't be themed dark; Custom Checkout
+ * can). Stripe still manages the subscription. On confirm, Stripe redirects to
+ * `return_url`; the webhook flips the plan to Pro as usual.
+ */
+export const createElementsCheckout = action({
+  args: {
+    origin: v.string(),
+    interval: v.optional(v.union(v.literal("month"), v.literal("year"))),
+  },
+  handler: async (ctx, args): Promise<{ clientSecret: string }> => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const stripe = getStripe();
+    const existing = await ctx.runQuery(
+      internal.subscriptions.getMineInternal,
+      { userId }
+    );
+    let customerId = existing?.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({ metadata: { userId } });
+      customerId = customer.id;
+      await ctx.runMutation(internal.subscriptions.linkCustomer, {
+        userId,
+        stripeCustomerId: customerId,
+      });
+    }
+
+    const origin = normalizeOrigin(args.origin);
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer: customerId,
+      line_items: [{ price: getPriceId(args.interval ?? "month"), quantity: 1 }],
+      // Custom ui_mode redirects here after confirm (no success_url/cancel_url).
+      return_url: `${origin}/plans/complete?session_id={CHECKOUT_SESSION_ID}`,
+      // `ui_mode: "custom"` is supported by the account's API version (added in
+      // basil 2025-03-31; we're on 2025-09-30.clover) but the pinned stripe-node
+      // types predate it, so we inject it via a spread the types can't object to.
+      // Runtime passes it straight through to the API unchanged.
+      ...({ ui_mode: "custom" } as object),
+    });
+    if (!session.client_secret) {
+      throw new Error("Stripe did not return a client secret");
+    }
+    return { clientSecret: session.client_secret };
+  },
+});
+
 export const createPortalSession = action({
   args: { origin: v.string() },
   handler: async (ctx, args): Promise<{ url: string }> => {

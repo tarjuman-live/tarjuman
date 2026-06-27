@@ -22,6 +22,8 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@sentry-internal/feedback": "^10.52.0",
     "@sentry/nextjs": "^10.56.0",
+    "@stripe/react-stripe-js": "^6.6.0",
+    "@stripe/stripe-js": "^9.8.0",
     "@types/ws": "^8.18.1",
     "@vercel/analytics": "^1.1.4",
     "@vercel/speed-insights": "^2.0.0",

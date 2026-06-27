@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAction } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
 import {
   PLAN_META,
   annualPerMonth,
@@ -14,7 +12,6 @@ import {
 } from "../../../../convex/billingLimits";
 import { COLORS } from "@/lib/constants";
 import { Icon } from "@/components/shared/icon";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { usePlan } from "@/hooks/use-plan";
 
 const ORDER: Plan[] = ["free", "pro", "scholar"];
@@ -31,31 +28,12 @@ export default function PlansPage() {
   const router = useRouter();
   const plan = usePlan();
   const currentPlan: Plan = plan?.plan ?? "free";
-  const createCheckoutSession = useAction(api.stripe.createCheckoutSession);
 
   const [annual, setAnnual] = useState(false);
-  const [busy, setBusy] = useState<Plan | null>(null);
-  const [errorOpen, setErrorOpen] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
 
-  const upgrade = async (tier: Plan) => {
-    setBusy(tier);
-    try {
-      const { url } = await createCheckoutSession({
-        origin: window.location.origin,
-        interval: annual ? "year" : "month",
-      });
-      window.location.assign(url);
-    } catch (e) {
-      setBusy(null);
-      setErrorMsg(
-        e instanceof Error
-          ? e.message
-          : "Something went wrong. Please try again."
-      );
-      setErrorOpen(true);
-    }
-  };
+  // Open the on-domain DARK embedded checkout (only Pro is purchasable today).
+  const openCheckout = () =>
+    router.push(`/plans/checkout?interval=${annual ? "year" : "month"}`);
 
   return (
     <div className="flex flex-col flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+84px)]">
@@ -229,15 +207,14 @@ export default function PlansPage() {
               ) : canBuy ? (
                 <button
                   type="button"
-                  onClick={() => void upgrade(tier)}
-                  disabled={busy !== null}
-                  className="w-full h-11 rounded-xl flex items-center justify-center text-[13px] font-bold mb-4 cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-50"
+                  onClick={openCheckout}
+                  className="w-full h-11 rounded-xl flex items-center justify-center text-[13px] font-bold mb-4 cursor-pointer transition-transform active:scale-[0.98]"
                   style={{
                     background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDk})`,
                     color: "#0A0F1C",
                   }}
                 >
-                  {busy === tier ? "Opening checkout…" : `Upgrade to ${meta.name}`}
+                  Upgrade to {meta.name}
                 </button>
               ) : (
                 <div className="mb-4" />
@@ -264,16 +241,6 @@ export default function PlansPage() {
       <p className="text-[11px] text-center px-5" style={{ color: COLORS.t4 }}>
         Cancel anytime — you keep access until the end of your billing period.
       </p>
-
-      <ConfirmDialog
-        open={errorOpen}
-        onOpenChange={setErrorOpen}
-        title="Billing unavailable"
-        message={errorMsg}
-        confirmLabel="OK"
-        cancelLabel={null}
-        onConfirm={() => setErrorOpen(false)}
-      />
     </div>
   );
 }
