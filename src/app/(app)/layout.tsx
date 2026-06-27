@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { NavVisibilityProvider } from "@/components/layout/nav-visibility";
@@ -18,6 +18,11 @@ import { COLORS } from "@/lib/constants";
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { isLoading, isAuthenticated } = useConvexAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  // The app is a 420px phone column everywhere — except the pricing page, which
+  // is a comparison grid that needs room to lay the tiers out side by side on
+  // desktop (it stays a stacked single column on mobile).
+  const wide = pathname === "/plans";
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -48,9 +53,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <NavVisibilityProvider>
       <div
-        className="w-full mx-auto relative overflow-hidden flex flex-col"
+        className={`w-full mx-auto relative overflow-hidden flex flex-col max-w-[420px] ${
+          wide ? "md:max-w-4xl" : ""
+        }`}
         style={{
-          maxWidth: 420,
           minHeight: "100dvh",
           background: COLORS.bg,
         }}

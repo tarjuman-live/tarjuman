@@ -97,11 +97,8 @@ export default function PlansPage() {
         </span>
       </div>
 
-      {/* Cards — horizontal scroll-snap carousel */}
-      <div
-        className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-5 py-4 [&::-webkit-scrollbar]:hidden"
-        style={{ scrollbarWidth: "none" }}
-      >
+      {/* Cards — stacked on mobile, side-by-side grid on desktop */}
+      <div className="flex flex-col md:flex-row md:items-stretch gap-3 px-5 py-4">
         {ORDER.map((tier) => {
           const meta = PLAN_META[tier];
           const isFree = tier === "free";
@@ -112,7 +109,7 @@ export default function PlansPage() {
           return (
             <div
               key={tier}
-              className="snap-center shrink-0 w-[270px] rounded-2xl px-4 py-4 flex flex-col transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl"
+              className="w-full md:flex-1 md:min-w-0 rounded-2xl px-4 py-4 flex flex-col transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl"
               style={{
                 background: COLORS.surface,
                 border: `1px solid ${popular ? `${COLORS.accent}66` : COLORS.border}`,

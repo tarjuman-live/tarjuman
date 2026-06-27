@@ -102,13 +102,14 @@ export const createElementsCheckout = action({
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: getPriceId(args.interval ?? "month"), quantity: 1 }],
-      // Custom ui_mode redirects here after confirm (no success_url/cancel_url).
+      // Elements ui_mode redirects here after confirm (no success_url/cancel_url).
       return_url: `${origin}/plans/complete?session_id={CHECKOUT_SESSION_ID}`,
-      // `ui_mode: "custom"` is supported by the account's API version (added in
-      // basil 2025-03-31; we're on 2025-09-30.clover) but the pinned stripe-node
-      // types predate it, so we inject it via a spread the types can't object to.
-      // Runtime passes it straight through to the API unchanged.
-      ...({ ui_mode: "custom" } as object),
+      // `ui_mode: "elements"` is what the account's API version (2025-09-30.clover)
+      // expects — `"custom"` was the older basil name and is rejected now. The
+      // pinned stripe-node types don't include it, so we inject it via a spread
+      // the types can't object to; runtime passes it straight through. This is
+      // the session the React <CheckoutElementsProvider> consumes.
+      ...({ ui_mode: "elements" } as object),
     });
     if (!session.client_secret) {
       throw new Error("Stripe did not return a client secret");
