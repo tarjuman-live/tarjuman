@@ -8,12 +8,12 @@ import { formatDate, formatDuration, getLangName } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PromptDialog } from "@/components/shared/prompt-dialog";
-import type { StoredSession } from "@/hooks/use-sessions";
+import type { SessionListItem } from "@/hooks/use-sessions";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 interface SessionCardProps {
-  session: StoredSession;
+  session: SessionListItem;
 }
 
 export function SessionCard({ session }: SessionCardProps) {

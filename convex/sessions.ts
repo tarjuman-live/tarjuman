@@ -5,7 +5,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Id, Doc } from "./_generated/dataModel";
 import { auth } from "./auth";
 
 /**
@@ -260,11 +260,8 @@ export const sweepStaleSessions = internalMutation({
     const cutoff = Date.now() - STALE_SESSION_MS;
     const stale = await ctx.db
       .query("sessions")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("status"), "recording"),
-          q.lt(q.field("updatedAt"), cutoff)
-        )
+      .withIndex("by_status_updated", (q) =>
+        q.eq("status", "recording").lt("updatedAt", cutoff)
       )
       .collect();
     let completed = 0;
@@ -311,8 +308,10 @@ export const getUserSessions = query({
       .order("desc")
       .collect();
     // Hide empty rows (e.g. the createSession-on-prewarm phantom from an idle
-    // /record visit) — they have no transcript to show.
-    return all.filter((s) => s.segments.length > 0);
+    // /record visit), and DROP the (potentially huge) segments array — the
+    // history list renders metadata only, so shipping every transcript segment
+    // to the client is pure read amplification.
+    return all.filter((s) => s.segments.length > 0).map(toListItem);
   },
 });
 
@@ -327,12 +326,22 @@ export const getRecentSessions = query({
       .withIndex("by_user_date", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
-    // Skip empty phantom rows, then take the limit.
-    return recent.filter((s) => s.segments.length > 0).slice(0, limit);
+    // Skip empty phantom rows, take the limit, drop segments (metadata only).
+    return recent
+      .filter((s) => s.segments.length > 0)
+      .slice(0, limit)
+      .map(toListItem);
   },
 });
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
+
+/** Metadata-only session for list/card views — drops the heavy segments array. */
+function toListItem(s: Doc<"sessions">): Omit<Doc<"sessions">, "segments"> {
+  const copy: Record<string, unknown> = { ...s };
+  delete copy.segments;
+  return copy as Omit<Doc<"sessions">, "segments">;
+}
 
 function deriveTitle(
   segments: { sourceText: string; translatedText: string }[]

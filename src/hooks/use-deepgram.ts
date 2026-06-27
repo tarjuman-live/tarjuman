@@ -9,6 +9,12 @@ import {
 } from "@/lib/constants";
 import { isOffLanguageScript } from "@/lib/script";
 
+// Connection/transcript debug logs — DEV ONLY. In production this is a no-op so
+// transcript text is never written to the browser console (privacy) and the
+// per-segment log firehose is silenced. Use `dbg(...)` instead of console.log.
+const DBG = process.env.NODE_ENV !== "production";
+const dbg: typeof console.log = DBG ? console.log.bind(console) : () => {};
+
 export interface UseDeepgramOptions {
   /**
    * Source of Int16 PCM frames. Built by `createAudioPipeline` — its
@@ -322,7 +328,7 @@ export function useDeepgram({
       //     short-lived Deepgram temp key. Pass it as the `token` subprotocol
       //     so the browser authenticates directly with Deepgram.
       const isDirectDeepgram = creds.url.startsWith("wss://api.deepgram.com");
-      console.log("[deepgram] opening WS:", creds.url, {
+      dbg("[deepgram] opening WS:", creds.url, {
         direct: isDirectDeepgram,
       });
       try {
@@ -340,7 +346,7 @@ export function useDeepgram({
       liveControlsRef.current.ws = currentWs;
 
       currentWs.onopen = () => {
-        console.log("[deepgram] ws onopen — authenticated successfully", {
+        dbg("[deepgram] ws onopen — authenticated successfully", {
           subprotocolUsed: currentWs.protocol || "(none echoed back)",
         });
         if (cancelled || !isLive() || ws !== currentWs) {
@@ -387,7 +393,7 @@ export function useDeepgram({
           const alt = msg.channel.alternatives[0];
           const confidence = alt?.confidence ?? 0;
           if (confidence < FINAL_CONFIDENCE_THRESHOLD) {
-            console.log(
+            dbg(
               `[deepgram] dropped low-confidence final (${confidence.toFixed(
                 2
               )}): "${transcript.slice(0, 60)}"`
@@ -402,7 +408,7 @@ export function useDeepgram({
           // it enters the transcript — this replaced the removed Whisper
           // language ID. Shares src/lib/script.ts with the server noise filter.
           if (isOffLanguageScript(transcript, sourceLanguage)) {
-            console.log(
+            dbg(
               `[deepgram] dropped off-language segment (script): "${transcript.slice(
                 0,
                 60
@@ -422,7 +428,7 @@ export function useDeepgram({
             langConf >= LANGUAGE_MISMATCH_DROP_THRESHOLD &&
             !detectedLang.toLowerCase().startsWith(sourceLanguage.toLowerCase())
           ) {
-            console.log(
+            dbg(
               `[deepgram] dropped off-language segment (detected=${detectedLang} @ ${langConf.toFixed(
                 2
               )}, source=${sourceLanguage}): "${transcript.slice(0, 60)}"`
@@ -501,7 +507,7 @@ export function useDeepgram({
                   bestDur >= SPEAKER_LOCK_MIN_DURATION_S
                 ) {
                   lockedSpeakerRef.current = bestSpeaker;
-                  console.log(
+                  dbg(
                     `[deepgram] locked to speaker ${bestSpeaker} after ${(
                       sessionAgeMs / 1000
                     ).toFixed(1)}s (${bestDur.toFixed(1)}s of speech)`
@@ -514,7 +520,7 @@ export function useDeepgram({
             ) {
               // Locked, and this segment's dominant speaker isn't the locked
               // one. Drop it — it's a side conversation.
-              console.log(
+              dbg(
                 `[deepgram] dropped side-speaker segment (speaker=${rawSpeaker}, locked=${lockedSpeakerRef.current}): "${transcript.slice(
                   0,
                   60
@@ -571,11 +577,11 @@ export function useDeepgram({
         // The browser hides the actual cause for security reasons; this is
         // a generic Event with no useful detail. The follow-up `onclose`
         // gets the close code which is what we actually act on.
-        console.log("[deepgram] ws onerror (details hidden by browser)", event);
+        dbg("[deepgram] ws onerror (details hidden by browser)", event);
       };
 
       currentWs.onclose = (event) => {
-        console.log("[deepgram] ws onclose", {
+        dbg("[deepgram] ws onclose", {
           code: event.code,
           reason: event.reason || "(empty)",
           wasClean: event.wasClean,

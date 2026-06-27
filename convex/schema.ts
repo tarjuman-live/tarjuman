@@ -57,7 +57,9 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_date", ["userId", "createdAt"])
-    .index("by_date", ["createdAt"]),
+    // Drives the stale-session cron sweep (status="recording" + updatedAt<cutoff)
+    // without a full-table scan. Replaced the unused by_date index.
+    .index("by_status_updated", ["status", "updatedAt"]),
 
   // Per-user app preferences. One row per user (upserted). All fields optional
   // so the row can be created lazily and new prefs can be added without a

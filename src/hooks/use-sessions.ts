@@ -23,11 +23,18 @@ import type { Doc } from "../../convex/_generated/dataModel";
 
 export type StoredSession = Doc<"sessions">;
 
-export function useRecentSessions(limit = 3): StoredSession[] | undefined {
+/**
+ * List/card views get sessions WITHOUT the heavy `segments` array — the history
+ * and recent-sessions queries project it out (see convex/sessions.ts:toListItem)
+ * to avoid shipping every transcript segment just to render metadata cards.
+ */
+export type SessionListItem = Omit<Doc<"sessions">, "segments">;
+
+export function useRecentSessions(limit = 3): SessionListItem[] | undefined {
   return useQuery(api.sessions.getRecentSessions, { limit });
 }
 
-export function useAllSessions(): StoredSession[] | undefined {
+export function useAllSessions(): SessionListItem[] | undefined {
   return useQuery(api.sessions.getUserSessions, {});
 }
 

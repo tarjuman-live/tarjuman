@@ -9,8 +9,10 @@
  * To enable in your environment:
  *   1. sentry.io → Create Project → Next.js platform
  *   2. Copy the DSN
- *   3. Set NEXT_PUBLIC_SENTRY_DSN in .env.local (and as a Fly.io secret
- *      when deployed)
+ *   3. Set NEXT_PUBLIC_SENTRY_DSN in .env.local (and as a Vercel env var
+ *      when deployed). For UNMINIFIED prod stack traces also set SENTRY_ORG,
+ *      SENTRY_PROJECT, and SENTRY_AUTH_TOKEN in Vercel (source-map upload —
+ *      wired in next.config.mjs via withSentryConfig).
  *   4. Restart the dev server
  *
  * What's captured:
