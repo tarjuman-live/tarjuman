@@ -16,6 +16,11 @@ import { usePlan } from "@/hooks/use-plan";
 
 const ORDER: Plan[] = ["free", "pro", "scholar"];
 
+// Annual billing is hidden until an annual Stripe price exists
+// (STRIPE_PRICE_ID_ANNUAL on Convex). Without it, annual checkout throws — so we
+// ship monthly-only and flip this to true once the $84/yr price is created.
+const ANNUAL_ENABLED: boolean = false;
+
 /**
  * Plans comparison. The app shell is a 420px phone column, so the tiers sit in
  * a horizontal scroll-snap carousel (cards genuinely next to each other,
@@ -56,7 +61,8 @@ export default function PlansPage() {
         </div>
       </div>
 
-      {/* Monthly / Annual toggle (sliding indicator) */}
+      {/* Monthly / Annual toggle — hidden until STRIPE_PRICE_ID_ANNUAL exists. */}
+      {ANNUAL_ENABLED && (
       <div className="flex items-center justify-center gap-2.5 px-5 pt-5">
         <div
           className="relative inline-flex p-1 rounded-full"
@@ -96,6 +102,7 @@ export default function PlansPage() {
           Save {ANNUAL_DISCOUNT_PCT}%
         </span>
       </div>
+      )}
 
       {/* Cards — stacked on mobile, side-by-side grid on desktop */}
       <div className="flex flex-col md:flex-row md:items-stretch gap-3 px-5 py-4">

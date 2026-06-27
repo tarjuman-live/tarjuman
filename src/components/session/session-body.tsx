@@ -262,6 +262,7 @@ export function SessionBody({
             </span>
           </div>
           <div
+            dir={targetRtl ? "rtl" : "ltr"}
             className="summary-markdown"
             style={{
               color: COLORS.w,
@@ -414,6 +415,7 @@ export function SessionBody({
             return (
               <div key={seg.id} className="mb-4">
                 <div
+                  dir={sourceRtl ? "rtl" : "ltr"}
                   className="px-4 py-3 rounded-2xl mb-[6px]"
                   style={{
                     background: `${COLORS.blue}14`,
@@ -435,6 +437,7 @@ export function SessionBody({
                 </div>
                 {translatedForDisplay && (
                   <div
+                    dir={targetRtl ? "rtl" : "ltr"}
                     className="px-4 py-3 rounded-2xl"
                     style={{
                       background: `${COLORS.accent}10`,

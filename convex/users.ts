@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { auth } from "./auth";
 
 /**
@@ -101,13 +102,22 @@ export const deleteAccount = mutation({
       await ctx.db.delete(acc._id);
     }
 
-    // Sessions table from authTables (auth sessions, not transcript sessions).
+    // Auth sessions (authTables) + the refresh tokens that hang off them — so a
+    // surviving refresh token can't keep minting access tokens for the now-deleted
+    // identity (closing the "dead-identity window"). Mirrors admin.ts cleanup.
     const authSessions = await ctx.db
       .query("authSessions")
       .withIndex("userId", (q) => q.eq("userId", userId))
       .collect();
+    const killedSessionIds = new Set<Id<"authSessions">>();
     for (const s of authSessions) {
+      killedSessionIds.add(s._id);
       await ctx.db.delete(s._id);
+    }
+    for (const rt of await ctx.db.query("authRefreshTokens").collect()) {
+      if (killedSessionIds.has(rt.sessionId)) {
+        await ctx.db.delete(rt._id);
+      }
     }
 
     // Per-user preferences row (one or none).

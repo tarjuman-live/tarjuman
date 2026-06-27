@@ -170,7 +170,10 @@ function shouldFilterAsNoise(
   if (!trimmed) return { filter: true, reason: "empty" };
 
   const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
-  if (wordCount < 3) {
+  // Allow 2-word segments: the most common dhikr is exactly two words —
+  // "الله أكبر", "سبحان الله", "الحمد لله" — and dropping them mangles the
+  // primary use case. Only a single isolated word is treated as noise.
+  if (wordCount < 2) {
     return { filter: true, reason: `too-short (${wordCount} word(s))` };
   }
 

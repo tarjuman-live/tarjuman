@@ -34,6 +34,11 @@ const segmentValidator = v.object({
 async function requireUserId(ctx: QueryCtx): Promise<Id<"users">> {
   const userId = await auth.getUserId(ctx);
   if (!userId) throw new Error("Not authenticated");
+  // Fail-closed on a deleted identity: a still-valid JWT whose user row is gone
+  // must NOT be allowed to write orphan rows. (This is identity, not
+  // off-language — closing is correct here.) One extra read on the write path.
+  const user = await ctx.db.get(userId);
+  if (!user) throw new Error("Account no longer exists");
   return userId;
 }
 

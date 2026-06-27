@@ -2,7 +2,9 @@
 
 import { ReactNode, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { api } from "../../../convex/_generated/api";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { NavVisibilityProvider } from "@/components/layout/nav-visibility";
 import { COLORS } from "@/lib/constants";
@@ -17,6 +19,8 @@ import { COLORS } from "@/lib/constants";
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { isLoading, isAuthenticated } = useConvexAuth();
+  const me = useQuery(api.users.me);
+  const { signOut } = useAuthActions();
   const router = useRouter();
   const pathname = usePathname();
   // The app is a 420px phone column everywhere — except the pricing page, which
@@ -29,6 +33,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       router.replace("/login");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Dead-identity guard: a still-valid JWT whose user row was deleted leaves
+  // isAuthenticated=true but me=null. Don't render a broken shell — sign out.
+  // (me === undefined = still loading; only act on a resolved null.)
+  useEffect(() => {
+    if (isAuthenticated && me === null) {
+      void signOut().then(() => router.replace("/login"));
+    }
+  }, [isAuthenticated, me, signOut, router]);
 
   if (isLoading || !isAuthenticated) {
     return (

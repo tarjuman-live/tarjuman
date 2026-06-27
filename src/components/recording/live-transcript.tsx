@@ -178,6 +178,7 @@ export function LiveTranscript({
           return (
             <div key={seg.id} className="mb-5">
               <div
+                dir={sourceRtl ? "rtl" : "ltr"}
                 className="px-4 py-3 rounded-2xl mb-[6px]"
                 style={{
                   background: `${sc}14`,
@@ -207,6 +208,7 @@ export function LiveTranscript({
               </div>
               {translated !== undefined ? (
                 <div
+                  dir={targetRtl ? "rtl" : "ltr"}
                   className="px-4 py-3 rounded-2xl"
                   style={{
                     background: `${COLORS.accent}10`,
@@ -274,6 +276,7 @@ export function LiveTranscript({
 
         {interimText && (
           <div
+            dir={sourceRtl ? "rtl" : "ltr"}
             className="px-4 py-3 rounded-2xl opacity-50"
             style={{
               background: `${COLORS.blue}0D`,

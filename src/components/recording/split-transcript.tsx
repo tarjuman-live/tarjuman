@@ -83,6 +83,7 @@ export function SplitTranscript({
         <div
           ref={srcRef}
           onScroll={srcScroll}
+          dir={sourceRtl ? "rtl" : "ltr"}
           className="flex-1 overflow-auto px-4 pb-4 transcript-scroll"
           style={{ direction: sourceRtl ? "rtl" : "ltr" }}
         >
@@ -150,6 +151,7 @@ export function SplitTranscript({
         <div
           ref={tgtRef}
           onScroll={tgtScroll}
+          dir={targetRtl ? "rtl" : "ltr"}
           className="flex-1 overflow-auto px-4 pb-4 transcript-scroll"
           style={{ direction: targetRtl ? "rtl" : "ltr" }}
         >
