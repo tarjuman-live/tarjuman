@@ -302,10 +302,13 @@ export async function verifyAndEnrichQuran(
   text: string,
   targetLang: string
 ): Promise<{ text: string; citations: VerifiedQuranCitation[] }> {
-  const matches = parseQuranCitations(text);
-  if (matches.length === 0) {
+  const all = parseQuranCitations(text);
+  if (all.length === 0) {
     return { text, citations: [] };
   }
+  // Bound outbound lookups (see sunnah.ts): cap to the first 50 so a crafted
+  // input can't fan out an unbounded burst of quran.com fetches.
+  const matches = all.length > 50 ? all.slice(0, 50) : all;
 
   const results = await Promise.all(
     matches.map((m) => lookupVerse(m.surahNumber, m.ayahNumber))

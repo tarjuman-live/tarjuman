@@ -113,23 +113,6 @@ export function LiveTranscript({
   const sourceFontSize = fontSizeForLang(sourceLang);
   const targetFontSize = fontSizeForLang(targetLang ?? "en");
 
-  // Track unread count: every time a new segment arrives while the user is
-  // scrolled up (not stuck), increment. When user scrolls back to the
-  // bottom (sticky re-engages), reset.
-  const [unread, setUnread] = useState(0);
-  const lastSeenLenRef = useRef(0);
-
-  useEffect(() => {
-    if (isStuck) {
-      lastSeenLenRef.current = segments.length;
-      setUnread(0);
-      return;
-    }
-    if (segments.length > lastSeenLenRef.current) {
-      setUnread(segments.length - lastSeenLenRef.current);
-    }
-  }, [segments.length, isStuck]);
-
   const dominant = dominantSpeaker(segments);
   const speakerFiltered = mainSpeakerOnly
     ? segments.filter((s) => s.speaker === undefined || s.speaker === dominant)
@@ -143,6 +126,25 @@ export function LiveTranscript({
     if (filteredIds?.has(s.id)) return false;
     return true;
   });
+
+  // Track unread count: every time a new VISIBLE segment arrives while the user
+  // is scrolled up (not stuck), increment; reset when they scroll back to the
+  // bottom. Counts visibleSegments — NOT raw segments — so a server-filtered /
+  // merged-child / off-speaker segment that never renders doesn't inflate the
+  // "N new" pill (which would otherwise scroll to no actual new line).
+  const [unread, setUnread] = useState(0);
+  const lastSeenLenRef = useRef(0);
+
+  useEffect(() => {
+    if (isStuck) {
+      lastSeenLenRef.current = visibleSegments.length;
+      setUnread(0);
+      return;
+    }
+    if (visibleSegments.length > lastSeenLenRef.current) {
+      setUnread(visibleSegments.length - lastSeenLenRef.current);
+    }
+  }, [visibleSegments.length, isStuck]);
 
   const speakerSet = new Set<number>();
   for (const s of segments) {
@@ -182,7 +184,9 @@ export function LiveTranscript({
                 className="px-4 py-3 rounded-2xl mb-[6px]"
                 style={{
                   background: `${sc}14`,
-                  borderLeft: `3px solid ${sc}66`,
+                  // Logical property so the accent bar hugs the START (right for
+                  // Arabic/Urdu RTL source), not always the physical left.
+                  borderInlineStart: `3px solid ${sc}66`,
                   direction: sourceRtl ? "rtl" : "ltr",
                   textAlign: sourceRtl ? "right" : "left",
                 }}
@@ -206,13 +210,13 @@ export function LiveTranscript({
                   {sourceTextForDisplay}
                 </div>
               </div>
-              {translated !== undefined ? (
+              {translated && translated.length > 0 ? (
                 <div
                   dir={targetRtl ? "rtl" : "ltr"}
                   className="px-4 py-3 rounded-2xl"
                   style={{
                     background: `${COLORS.accent}10`,
-                    borderLeft: `3px solid ${COLORS.accent}66`,
+                    borderInlineStart: `3px solid ${COLORS.accent}66`,
                     direction: targetRtl ? "rtl" : "ltr",
                     textAlign: targetRtl ? "right" : "left",
                   }}
@@ -225,11 +229,19 @@ export function LiveTranscript({
                       fontWeight: targetRtl ? 600 : 500,
                     }}
                   >
-                    {translated
-                      ? renderTextWithLinks(translated)
-                      : translated === ""
-                        ? "…translating"
-                        : translated}
+                    {renderTextWithLinks(translated)}
+                  </div>
+                </div>
+              ) : pending?.has(seg.id) ? (
+                <div
+                  className="px-4 py-3 rounded-2xl"
+                  style={{
+                    background: `${COLORS.accent}10`,
+                    borderInlineStart: `3px solid ${COLORS.accent}66`,
+                  }}
+                >
+                  <div className="text-[14px]" style={{ color: COLORS.t3 }}>
+                    …translating
                   </div>
                 </div>
               ) : errors?.[seg.id] ? (
@@ -257,19 +269,7 @@ export function LiveTranscript({
                     {errors[seg.id]}
                   </div>
                 </button>
-              ) : pending?.has(seg.id) ? (
-                <div
-                  className="px-4 py-3 rounded-2xl"
-                  style={{
-                    background: `${COLORS.accent}10`,
-                    borderLeft: `3px solid ${COLORS.accent}66`,
-                  }}
-                >
-                  <div className="text-[14px]" style={{ color: COLORS.t3 }}>
-                    …translating
-                  </div>
-                </div>
-              ) : null}
+              ) : null /* fail-open: source-only (no translation), render nothing */}
             </div>
           );
         })}
@@ -280,7 +280,7 @@ export function LiveTranscript({
             className="px-4 py-3 rounded-2xl opacity-50"
             style={{
               background: `${COLORS.blue}0D`,
-              borderLeft: `3px solid ${COLORS.blue}33`,
+              borderInlineStart: `3px solid ${COLORS.blue}33`,
               direction: sourceRtl ? "rtl" : "ltr",
               textAlign: sourceRtl ? "right" : "left",
             }}

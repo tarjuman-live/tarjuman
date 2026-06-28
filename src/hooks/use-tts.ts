@@ -64,9 +64,20 @@ function isKnownMaleVoice(voice: SpeechSynthesisVoice): boolean {
   if (KNOWN_MALE_VOICE_NAMES.has(name)) return true;
   // "Male" appears literally in some Android / Chrome voice names
   if (/\bmale\b/.test(name) && !/\bfemale\b/.test(name)) return true;
-  // Some platforms prefix the language code: "en-us-x-tpd-local male"
+  // Token-wise match — NOT substring. Platforms wrap the name in other words
+  // ("Microsoft David Desktop", "Daniel (Enhanced)"), so we match whole tokens.
+  // Substring matching here is a male-only-policy (locked req #6) HAZARD: a
+  // female/unisex voice whose name merely CONTAINS a male token would pass —
+  // e.g. "Winifred" ⊃ "fred", "...tom..." ⊃ "tom", "...mark..." ⊃ "mark" — and
+  // the khutbah would be read aloud in a female voice.
+  const tokens = new Set(name.split(/[^a-z0-9]+/).filter(Boolean));
   for (const known of KNOWN_MALE_VOICE_NAMES) {
-    if (name.includes(known)) return true;
+    if (known.includes(" ")) {
+      // Multi-word known names (e.g. "google uk english male") — substring ok.
+      if (name.includes(known)) return true;
+    } else if (tokens.has(known)) {
+      return true;
+    }
   }
   return false;
 }

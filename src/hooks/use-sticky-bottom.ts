@@ -30,13 +30,17 @@ const MIN_STEP = 0.75; // px floor so the glide always finishes (no sub-pixel cr
 const SETTLE_EPS = 0.5; // px: within this of the bottom, snap and stop the loop
 
 export function useStickyBottom<T extends HTMLElement = HTMLDivElement>(
-  threshold = 200
+  threshold = 200,
+  { startStuck = true }: { startStuck?: boolean } = {}
 ) {
   const scrollRef = useRef<T | null>(null);
   // Whether the user is pinned to the bottom. Ref drives the loop; state drives
-  // the caller's "scroll to latest" UI.
-  const stickyRef = useRef(true);
-  const [isStuck, setIsStuck] = useState(true);
+  // the caller's "scroll to latest" UI. `startStuck=false` is for STATIC views
+  // (a completed/saved session) that should open at the TOP — otherwise the
+  // mount layout-effect + ResizeObserver glide straight to the bottom of the
+  // transcript, hiding the summary and the Generate-Summary CTA above it.
+  const stickyRef = useRef(startStuck);
+  const [isStuck, setIsStuck] = useState(startStuck);
 
   const lastTopRef = useRef(0); // last known scrollTop (to tell a user-up apart from our glide)
   const runningRef = useRef(false);

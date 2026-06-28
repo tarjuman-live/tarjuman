@@ -37,13 +37,22 @@ export function ConfirmDialog({
   onConfirm,
 }: ConfirmDialogProps) {
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleConfirm = async () => {
     if (busy) return;
     setBusy(true);
+    setError(null);
     try {
       await onConfirm();
       onOpenChange(false);
+    } catch (e) {
+      // Surface the failure inline and keep the dialog open, instead of
+      // silently reverting the button (which reads as a no-op) and leaking an
+      // unhandled promise rejection.
+      setError(
+        e instanceof Error ? e.message : "Something went wrong. Try again."
+      );
     } finally {
       setBusy(false);
     }
@@ -89,6 +98,16 @@ export function ConfirmDialog({
           >
             {message}
           </AlertDialog.Description>
+
+          {error && (
+            <div
+              className="text-[12px] mb-4 px-3 py-2 rounded-lg"
+              role="alert"
+              style={{ color: COLORS.red, background: `${COLORS.red}14` }}
+            >
+              {error}
+            </div>
+          )}
 
           <div className="flex gap-2 justify-end">
             {cancelLabel !== null && (

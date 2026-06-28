@@ -58,6 +58,13 @@ export async function POST(req: NextRequest) {
   if (text.length === 0) {
     return NextResponse.json({ text, skipped: true });
   }
+  // Input cap: a generated summary is a few KB. A much larger body would only
+  // be a crafted payload trying to fan out thousands of outbound citation
+  // fetches (function DoS + hammering the shared egress IP at GitHub-raw /
+  // quran.com). The enrichers additionally cap the number of distinct lookups.
+  if (text.length > 16000) {
+    return NextResponse.json({ error: "Text too large" }, { status: 413 });
+  }
 
   // Hadith pass (open hadith CDN) then Quran pass (quran.com — public API).
   // Order doesn't matter since the two citation regexes don't overlap, but we

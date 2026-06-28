@@ -124,6 +124,11 @@ export function useRecorder(): UseRecorderReturn {
   }, []);
 
   const resume = useCallback(() => {
+    // Also resume the AudioContext: iOS suspends it on calls/Siri/app-switch
+    // and a plain phase flip wouldn't restart the worklet. This runs inside the
+    // user's tap (a gesture), which iOS requires to resume an interrupted ctx.
+    const ctx = pipelineRef.current?.audioContext;
+    if (ctx && ctx.state !== "running") void ctx.resume().catch(() => {});
     setPhase((p) => (p === "paused" ? "recording" : p));
   }, []);
 
@@ -152,6 +157,24 @@ export function useRecorder(): UseRecorderReturn {
         });
       }
     };
+  }, []);
+
+  // Re-resume a suspended/interrupted AudioContext when the user returns to the
+  // app while recording. On iOS an incoming call, Siri, Control Center, a
+  // notification, or switching apps suspends the context; once suspended the
+  // worklet stops emitting PCM frames while the Deepgram WS stays open (KeepAlive)
+  // and the UI still shows "Recording" — silent transcript loss for the rest of
+  // the session. The wake lock prevents screen-sleep but NOT these interruptions.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      const ph = phaseRef.current;
+      if (ph !== "recording" && ph !== "paused") return;
+      const ctx = pipelineRef.current?.audioContext;
+      if (ctx && ctx.state !== "running") void ctx.resume().catch(() => {});
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
   return {

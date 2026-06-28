@@ -34,6 +34,7 @@ export function SplitTranscript({
   suppressedIds,
   filteredIds,
   errors,
+  pending,
   onRetry,
 }: LiveTranscriptProps) {
   const {
@@ -170,7 +171,7 @@ export function SplitTranscript({
                 className="mb-3"
                 style={{ textAlign: targetRtl ? "right" : "left" }}
               >
-                {translated ? (
+                {translated && translated.length > 0 ? (
                   <div
                     style={{
                       color: COLORS.w,
@@ -181,6 +182,10 @@ export function SplitTranscript({
                   >
                     {renderTextWithLinks(translated)}
                   </div>
+                ) : pending?.has(seg.id) ? (
+                  <div className="text-[14px]" style={{ color: COLORS.t3 }}>
+                    …translating
+                  </div>
                 ) : errors?.[seg.id] ? (
                   <button
                     type="button"
@@ -190,12 +195,7 @@ export function SplitTranscript({
                   >
                     Translation failed — tap to retry
                   </button>
-                ) : (
-                  // pending, or final landed but translation not back yet
-                  <div className="text-[14px]" style={{ color: COLORS.t3 }}>
-                    …translating
-                  </div>
-                )}
+                ) : null /* fail-open: source-only, no translation for this segment */}
               </div>
             );
           })}

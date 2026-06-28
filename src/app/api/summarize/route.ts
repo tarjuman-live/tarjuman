@@ -113,6 +113,16 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  // Outer size cap. Even a 6h dars transcript (the longest supported session)
+  // is comfortably under this; a much larger body is abuse — forwarding a giant
+  // input to Claude in a loop to burn budget — so reject it before the upstream
+  // call rather than amplifying cost.
+  if (transcript.length > 400_000) {
+    return NextResponse.json(
+      { error: "Transcript too long to summarize." },
+      { status: 413 }
+    );
+  }
 
   const targetLangName = LANGUAGE_NAMES[targetLanguage] ?? "English";
 
@@ -186,9 +196,14 @@ ${transcript}`;
   }
 
   if (!upstream.ok || !upstream.body) {
+    // Log the provider body server-side; return a generic message so Anthropic
+    // diagnostics (model ids / account hints) aren't echoed to the client.
     const errText = await upstream.text().catch(() => "");
+    console.error(
+      `[summarize] upstream HTTP ${upstream.status}: ${errText.slice(0, 300)}`
+    );
     return NextResponse.json(
-      { error: `Claude API failed: HTTP ${upstream.status} ${errText.slice(0, 200)}` },
+      { error: "Summary temporarily unavailable." },
       { status: 502 }
     );
   }

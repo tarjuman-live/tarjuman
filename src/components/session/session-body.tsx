@@ -68,13 +68,22 @@ export function SessionBody({
   const [summary, setSummary] = useState<SummaryState>(() =>
     existingSummary ? { phase: "ready", text: existingSummary } : { phase: "idle" }
   );
-  const { scrollRef, onScroll } = useStickyBottom<HTMLDivElement>(200);
+  // Static view (completed session after Stop + the saved-session detail page):
+  // open at the TOP so the summary + Generate-Summary CTA are visible, instead
+  // of auto-gliding to the bottom of the transcript on mount.
+  const { scrollRef, onScroll } = useStickyBottom<HTMLDivElement>(200, {
+    startStuck: false,
+  });
   const authToken = useAuthToken();
   const plan = usePlan();
 
   const handleGenerate = async () => {
     if (segments.length === 0) return;
     setSummary({ phase: "loading" });
+    // Hoisted so the catch can clear it: the typewriter interval must never
+    // outlive a stream error/timeout (orphaned 60fps timer) and must not flip
+    // the error state back to a partial "ready" summary on a late tick.
+    let timer: ReturnType<typeof setInterval> | null = null;
     const transcriptForLLM = segments
       .map((s) => s.translatedText || s.sourceText)
       .join(" ");
@@ -123,20 +132,23 @@ export function SessionBody({
       const MAX_PER_TICK = 48; // cap so a backlog flows in, never dumps at once
 
       // Pump 1: read from the network as fast as it arrives, push into buffer.
+      // streamDone is set in `finally` so a mid-stream read error still lets the
+      // drain pump self-terminate (rather than spinning forever).
       const readPump = (async () => {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            streamDone = true;
-            break;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
           }
-          buffer += decoder.decode(value, { stream: true });
+        } finally {
+          streamDone = true;
         }
       })();
 
       // Pump 2: drip from buffer to screen at a steady rhythm.
       const drainPump = new Promise<void>((resolve) => {
-        const timer = setInterval(() => {
+        timer = setInterval(() => {
           if (buffer.length > 0) {
             const take = Math.min(
               buffer.length,
@@ -147,7 +159,7 @@ export function SessionBody({
             buffer = buffer.slice(take);
             setSummary({ phase: "ready", text: displayed });
           } else if (streamDone) {
-            clearInterval(timer);
+            if (timer) clearInterval(timer);
             resolve();
           }
         }, TICK_MS);
@@ -185,6 +197,9 @@ export function SessionBody({
 
       onSummaryGenerated?.(finalText);
     } catch (e) {
+      // Kill the typewriter interval BEFORE setting the error, so a late tick
+      // can't overwrite the error with a truncated, unverified "ready" summary.
+      if (timer) clearInterval(timer);
       setSummary({
         phase: "error",
         message: e instanceof Error ? e.message : String(e),
@@ -418,7 +433,7 @@ export function SessionBody({
                   className="px-4 py-3 rounded-2xl mb-[6px]"
                   style={{
                     background: `${COLORS.blue}14`,
-                    borderLeft: `3px solid ${COLORS.blue}66`,
+                    borderInlineStart: `3px solid ${COLORS.blue}66`,
                     direction: sourceRtl ? "rtl" : "ltr",
                     textAlign: sourceRtl ? "right" : "left",
                   }}
@@ -440,7 +455,7 @@ export function SessionBody({
                     className="px-4 py-3 rounded-2xl"
                     style={{
                       background: `${COLORS.accent}10`,
-                      borderLeft: `3px solid ${COLORS.accent}66`,
+                      borderInlineStart: `3px solid ${COLORS.accent}66`,
                       direction: targetRtl ? "rtl" : "ltr",
                       textAlign: targetRtl ? "right" : "left",
                     }}

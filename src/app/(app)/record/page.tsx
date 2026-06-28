@@ -28,6 +28,7 @@ import { useTranslator } from "@/hooks/use-translator";
 import { useSessionTimer } from "@/hooks/use-session-timer";
 import { usePlan } from "@/hooks/use-plan";
 import { UpgradeCard } from "@/components/billing/upgrade-card";
+import { isOffLanguageScript } from "@/lib/script";
 
 // localStorage key holding an in-progress recording's transcript, so an
 // abnormal exit (tab close, mobile tab-discard, pause-then-kill) doesn't lose
@@ -275,17 +276,30 @@ export default function RecordPage() {
         };
       });
     if (stored.length === 0) return;
-    try {
+    const writeMirror = (segs: StoredSegment[]) =>
       localStorage.setItem(
         PENDING_KEY,
         JSON.stringify({
           sessionId,
           durationSec: elapsedRef.current,
-          segments: stored,
+          // Freshness marker: a remount / second tab uses this to tell an
+          // actively-recording mirror (written seconds ago) apart from a
+          // crashed-tab leftover, so it never force-completes a live session.
+          lastWriteMs: Date.now(),
+          segments: segs,
         })
       );
+    try {
+      writeMirror(stored);
     } catch {
-      /* quota exceeded / serialization error — best-effort, ignore */
+      // Quota exceeded on a very long (1-3h) session — keep only the most recent
+      // tail (Convex already holds the flushed head) so the crash-recovery
+      // backstop keeps working instead of silently dying at the quota wall.
+      try {
+        writeMirror(stored.slice(-400));
+      } catch {
+        /* still failing — give up silently */
+      }
     }
   };
 
@@ -358,6 +372,17 @@ export default function RecordPage() {
     for (const seg of ready) flushed.add(seg.id);
   };
 
+  // Point the 5s tick at the LATEST flushSegments closure. flushSegments reads
+  // live state (deepgram.segments, translator.*), but the interval effect below
+  // is bound to [recorder.phase], which never changes during an uninterrupted
+  // recording — so without this ref the tick would forever call the closure
+  // captured when recording started (whose deepgram.segments is the empty array
+  // from that render), making incremental Convex persistence a silent no-op.
+  const flushRef = useRef(flushSegments);
+  useEffect(() => {
+    flushRef.current = flushSegments;
+  });
+
   // Late-merge effect: when the translator emits a merge AFTER the parent
   // segment was already flushed to Convex, patch the saved row so the
   // saved-session view shows the merged display.
@@ -385,7 +410,7 @@ export default function RecordPage() {
   useEffect(() => {
     if (recorder.phase !== "recording") return;
     const id = window.setInterval(() => {
-      flushSegments();
+      flushRef.current();
       writePendingMirror();
     }, SEGMENT_FLUSH_INTERVAL_MS);
     return () => window.clearInterval(id);
@@ -435,6 +460,7 @@ export default function RecordPage() {
     let pending: {
       sessionId?: string;
       durationSec?: number;
+      lastWriteMs?: number;
       segments?: StoredSegment[];
     };
     try {
@@ -446,6 +472,17 @@ export default function RecordPage() {
     const pendingId = pending.sessionId;
     if (!pendingId) {
       clearPendingMirror();
+      return;
+    }
+    // Multi-tab safety: if the mirror was written in the last 15s, another tab
+    // is actively recording into the shared key. Do NOT replay/complete its
+    // live session (that would strand the recording at status="completed" while
+    // it keeps recording). Leave the mirror untouched; once that tab stops (or
+    // dies and the timestamp goes stale) a later mount recovers it.
+    if (
+      typeof pending.lastWriteMs === "number" &&
+      Date.now() - pending.lastWriteMs < 15_000
+    ) {
       return;
     }
     void (async () => {
@@ -488,6 +525,24 @@ export default function RecordPage() {
     // writePendingMirror reads only refs — register once.
   }, []);
 
+  // Finalize on unmount if the user leaves /record while still recording (e.g.
+  // the browser/hardware Back gesture — a client-side SPA navigation — instead
+  // of tapping Stop, which is the natural exit since the bottom nav is hidden
+  // while recording). Without this the Convex session stays status="recording"
+  // — a 0:00 phantom card in /history until the 6h cron sweep — and the tail
+  // since the last 5s flush is lost. Reads only refs; mutation ref is stable.
+  useEffect(() => {
+    return () => {
+      if (!activeRef.current) return;
+      writePendingMirror(); // make the <=5s tail recoverable on next visit
+      const id = sessionIdRef.current;
+      if (id) {
+        void completeSessionM({ sessionId: id, duration: elapsedRef.current });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleStart = () => {
     setCompletedSession(null);
     haptics.start();
@@ -513,6 +568,27 @@ export default function RecordPage() {
   const handleStop = () => {
     haptics.stop();
     const finalDuration = elapsedRef.current;
+    // Capture the on-screen interim (the partial the user is currently seeing)
+    // BEFORE teardown. If Stop is tapped mid-utterance — often the closing du'a
+    // — this trailing text would otherwise be lost, since only FINAL segments
+    // are persisted and the post-CloseStream final is dropped during teardown.
+    // Keep it only if it's real source speech (>=2 words, passes the
+    // off-language script gate); persist source-only (blank translation),
+    // consistent with the translation fail-open path.
+    const tailRaw = deepgram.interimText.trim();
+    const tailSeg =
+      tailRaw &&
+      tailRaw.split(/\s+/).filter(Boolean).length >= 2 &&
+      !isOffLanguageScript(tailRaw, sourceLang)
+        ? {
+            id:
+              typeof crypto !== "undefined" && "randomUUID" in crypto
+                ? crypto.randomUUID()
+                : `${Date.now()}-tail`,
+            sourceText: tailRaw,
+            timestamp: finalDuration,
+          }
+        : null;
     const captured = {
       segments: deepgram.segments,
       translations: translator.translations,
@@ -543,12 +619,35 @@ export default function RecordPage() {
         // persist every remaining final segment (even ones whose translation
         // hadn't resolved yet) so the closing content is never lost.
         flushSegments(true);
+        // Persist the captured interim tail (source-only) so the closing words
+        // the user saw on screen aren't lost. addSegments dedupes by id.
+        if (tailSeg) {
+          void addSegments({
+            sessionId,
+            segments: [{ ...tailSeg, translatedText: "" }],
+          });
+        }
         void completeSessionM({ sessionId, duration: finalDuration });
       }
+      // Reflect the tail in the completed view too (source-only).
+      const snapSegments = tailSeg
+        ? [
+            ...captured.segments,
+            {
+              id: tailSeg.id,
+              text: tailSeg.sourceText,
+              isFinal: true,
+              timestamp: tailSeg.timestamp,
+            },
+          ]
+        : captured.segments;
+      const snapTranslations = tailSeg
+        ? { ...captured.translations, [tailSeg.id]: "" }
+        : captured.translations;
       const snapshot: CompletedSession = {
         _id: sessionId,
-        segments: captured.segments,
-        translations: captured.translations,
+        segments: snapSegments,
+        translations: snapTranslations,
         merges: captured.merges,
         filteredIds: captured.filteredIds,
         durationSec: finalDuration,

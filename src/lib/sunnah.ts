@@ -250,10 +250,15 @@ export async function verifyAndEnrich(text: string): Promise<{
   citations: VerifiedCitation[];
   skipped: boolean;
 }> {
-  const matches = parseCitations(text);
-  if (matches.length === 0) {
+  const all = parseCitations(text);
+  if (all.length === 0) {
     return { text, citations: [], skipped: true };
   }
+  // Bound outbound lookups: a real summary cites a handful of hadith. A
+  // pathological input could list thousands; cap to the first 50 so a single
+  // request can't fan out an unbounded burst of CDN fetches. Citations beyond
+  // the cap stay in the text verbatim (only reachable via deliberate abuse).
+  const matches = all.length > 50 ? all.slice(0, 50) : all;
 
   // Verify each citation against the open hadith dataset (no key needed). Any
   // that can't be confirmed (transient failure, or an unsupported collection

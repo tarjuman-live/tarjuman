@@ -40,6 +40,7 @@ export function PromptDialog({
 }: PromptDialogProps) {
   const [value, setValue] = useState(defaultValue);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Re-seed the input each time the dialog opens so reusing the same
@@ -60,9 +61,16 @@ export function PromptDialog({
     const trimmed = value.trim();
     if (!trimmed) return;
     setBusy(true);
+    setError(null);
     try {
       await onSave(trimmed);
       onOpenChange(false);
+    } catch (e) {
+      // Surface the failure inline + keep the dialog open, instead of silently
+      // reverting the button and leaking an unhandled promise rejection.
+      setError(
+        e instanceof Error ? e.message : "Something went wrong. Try again."
+      );
     } finally {
       setBusy(false);
     }
@@ -135,6 +143,16 @@ export function PromptDialog({
               e.currentTarget.style.borderColor = COLORS.borderLight;
             }}
           />
+
+          {error && (
+            <div
+              className="text-[12px] mb-4 px-3 py-2 rounded-lg"
+              role="alert"
+              style={{ color: COLORS.red, background: `${COLORS.red}14` }}
+            >
+              {error}
+            </div>
+          )}
 
           <div className="flex gap-2 justify-end">
             <Dialog.Close asChild>
