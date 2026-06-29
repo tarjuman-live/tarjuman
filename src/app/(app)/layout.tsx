@@ -9,6 +9,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { NavVisibilityProvider } from "@/components/layout/nav-visibility";
 import { Icon } from "@/components/shared/icon";
 import { COLORS } from "@/lib/constants";
+import { LocaleProvider } from "@/lib/i18n/locale-context";
 
 /**
  * Auth-guarded shell. Three states:
@@ -70,19 +71,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <NavVisibilityProvider>
-      <div
-        className={`w-full mx-auto relative overflow-hidden flex flex-col max-w-[420px] ${
-          wide ? "md:max-w-4xl" : ""
-        }`}
-        style={{
-          minHeight: "100dvh",
-          background: COLORS.bg,
-        }}
-      >
-        {children}
-        <BottomNav />
-      </div>
-    </NavVisibilityProvider>
+    <LocaleProvider>
+      <NavVisibilityProvider>
+        <div
+          className={`w-full mx-auto relative overflow-hidden flex flex-col max-w-[420px] ${
+            wide ? "md:max-w-4xl" : ""
+          }`}
+          style={{
+            minHeight: "100dvh",
+            background: COLORS.bg,
+          }}
+        >
+          {children}
+          <BottomNav />
+        </div>
+      </NavVisibilityProvider>
+    </LocaleProvider>
   );
 }

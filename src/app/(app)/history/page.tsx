@@ -7,9 +7,11 @@ import { Icon } from "@/components/shared/icon";
 import { Skeleton } from "@/components/shared/skeleton";
 import { SessionCard } from "@/components/session/session-card";
 import { useAllSessions } from "@/hooks/use-sessions";
+import { useLocale } from "@/lib/i18n/locale-context";
 
 export default function HistoryPage() {
   const sessions = useAllSessions();
+  const { t } = useLocale();
   const [query, setQuery] = useState("");
 
   // Filter by title text + language names + summary text. Simple
@@ -41,14 +43,14 @@ export default function HistoryPage() {
         className="px-5 py-5"
         style={{ borderBottom: `1px solid ${COLORS.border}` }}
       >
-        <div className="section-label mb-1">History</div>
+        <div className="section-label mb-1">{t("nav.history")}</div>
         <div className="flex items-baseline justify-between mb-4">
           <div className="text-2xl font-bold" style={{ color: COLORS.w }}>
-            Your sessions
+            {t("history.title")}
           </div>
           <div className="text-[12px]" style={{ color: COLORS.t3 }}>
             {sessions === undefined
-              ? "Loading…"
+              ? t("history.loading")
               : query.trim()
                 ? `${visible} of ${total}`
                 : total === 1
@@ -70,7 +72,7 @@ export default function HistoryPage() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by title, language, or summary…"
+              placeholder={t("history.searchPlaceholder")}
               className="flex-1 bg-transparent outline-none text-[13px] placeholder:text-[var(--color-text-4)]"
               style={{ color: COLORS.w }}
             />
@@ -101,10 +103,10 @@ export default function HistoryPage() {
         <div className="flex-1 grid place-items-center px-8 text-center">
           <div>
             <div className="text-sm" style={{ color: COLORS.t3 }}>
-              Your recorded sessions will appear here.
+              {t("history.emptyTitle")}
             </div>
             <div className="text-xs mt-1" style={{ color: COLORS.t4 }}>
-              Tap the mic to start your first one.
+              {t("history.emptySub")}
             </div>
           </div>
         </div>
@@ -122,7 +124,7 @@ export default function HistoryPage() {
               className="mt-2 text-xs font-semibold underline"
               style={{ color: COLORS.accent }}
             >
-              Clear search
+              {t("history.clearSearch")}
             </button>
           </div>
         </div>

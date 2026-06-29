@@ -125,6 +125,57 @@ html {
   }
 }
 
+/* Recording controls — circular pause/resume/stop. Base + hover live here (not
+   inline) so the :hover color-intensify + scale actually apply (inline styles
+   would win over a stylesheet :hover rule). */
+.rec-ctl {
+  border-width: 1px;
+  border-style: solid;
+  transition: transform 150ms ease, background-color 150ms ease,
+    border-color 150ms ease;
+}
+.rec-ctl:hover {
+  transform: scale(1.06);
+}
+.rec-ctl:active {
+  transform: scale(0.95);
+}
+.rec-ctl-pause {
+  background: var(--color-amber-soft);
+  border-color: color-mix(in srgb, var(--color-amber-main) 40%, transparent);
+}
+.rec-ctl-pause:hover {
+  background: color-mix(in srgb, var(--color-amber-main) 22%, transparent);
+  border-color: var(--color-amber-main);
+}
+.rec-ctl-resume {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+.rec-ctl-resume:hover {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  border-color: var(--color-accent);
+}
+.rec-ctl-stop {
+  background: var(--color-red-soft);
+  border-color: color-mix(in srgb, var(--color-red-main) 30%, transparent);
+}
+.rec-ctl-stop:hover {
+  background: color-mix(in srgb, var(--color-red-main) 22%, transparent);
+  border-color: var(--color-red-main);
+}
+
+/* Legal pages (terms/privacy): the inline links/emails are accent-green but
+   had no hover — light them up on hover so they read as clickable. */
+.legal-article a {
+  text-underline-offset: 2px;
+  transition: filter 150ms ease;
+}
+.legal-article a:hover {
+  text-decoration: underline;
+  filter: brightness(1.25);
+}
+
 /* Smooth in-page scrolling for the marketing-nav section anchors, with an
    offset so the sticky nav doesn't cover the target heading. Motion-gated. */
 html {

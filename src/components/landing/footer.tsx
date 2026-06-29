@@ -1,10 +1,5 @@
 import Link from "next/link";
-import {
-  SITE_NAME,
-  SITE_NAME_AR,
-  SOCIAL_LINKS,
-  CONTACT_EMAIL,
-} from "@/lib/site";
+import { SITE_NAME, SOCIAL_LINKS, CONTACT_EMAIL } from "@/lib/site";
 import { Reveal } from "./reveal";
 
 // Monochrome brand glyphs (simple-icons paths). currentColor so they inherit
@@ -30,15 +25,14 @@ const SOCIALS: { label: string; href: string; path: string }[] = [
 
 export function Footer() {
   return (
-    <footer className="w-full border-t border-[var(--color-border-light)] bg-[var(--color-surface)]">
+    // Soft fade from the page background into the footer surface — no hard
+    // seam/border, so the section blends into the one above it.
+    <footer className="w-full bg-gradient-to-b from-transparent to-[var(--color-surface)]">
       <Reveal>
-        <div className="max-w-5xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="max-w-5xl mx-auto px-6 py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2 text-[var(--color-text-2)]">
             <span className="font-bold text-[var(--color-text-1)]">
               {SITE_NAME}
-            </span>
-            <span className="text-[var(--color-text-3)]" lang="ar" dir="rtl">
-              {SITE_NAME_AR}
             </span>
           </div>
 
@@ -46,25 +40,25 @@ export function Footer() {
             <nav className="flex items-center gap-6 text-sm text-[var(--color-text-2)]">
               <Link
                 href="/record"
-                className="hover:text-[var(--color-text-1)] transition"
+                className="hover:text-[var(--color-accent)] transition-colors"
               >
                 Record
               </Link>
               <Link
                 href="/privacy"
-                className="hover:text-[var(--color-text-1)] transition"
+                className="hover:text-[var(--color-accent)] transition-colors"
               >
                 Privacy
               </Link>
               <Link
                 href="/terms"
-                className="hover:text-[var(--color-text-1)] transition"
+                className="hover:text-[var(--color-accent)] transition-colors"
               >
                 Terms
               </Link>
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                className="hover:text-[var(--color-text-1)] transition"
+                className="px-4 py-1.5 rounded-full border border-[var(--color-border-light)] text-[var(--color-text-2)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent-soft)] transition-colors"
               >
                 Contact
               </a>
@@ -78,7 +72,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={s.label}
-                  className="text-[var(--color-text-3)] hover:text-[var(--color-accent)] transition-colors"
+                  className="text-[var(--color-text-3)] hover:text-[var(--color-accent)] transition-all duration-200 hover:-translate-y-0.5 hover:scale-110"
                 >
                   <svg
                     viewBox="0 0 24 24"

@@ -555,6 +555,9 @@ export function TryLive() {
   );
 }
 
+// Custom dropdown — the native <select> renders the OS-accent (red on macOS)
+// highlight, which clashes with the app. This matches the app: dark surface
+// menu, green check + green text on the selected option, hover lift.
 function LangSelect({
   value,
   onChange,
@@ -568,24 +571,100 @@ function LangSelect({
   disabled?: boolean;
   ariaLabel: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  const current = options.find((o) => o.code === value);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <select
-      aria-label={ariaLabel}
-      value={value}
-      disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-9 px-2.5 rounded-lg text-[13px] font-semibold outline-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-      style={{
-        background: COLORS.surfaceLight,
-        border: `1px solid ${COLORS.borderLight}`,
-        color: COLORS.w,
-      }}
-    >
-      {options.map((o) => (
-        <option key={o.code} value={o.code} style={{ background: COLORS.surface }}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => setOpen((o) => !o)}
+        className="h-9 pl-3 pr-2 rounded-lg text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        style={{
+          background: COLORS.surfaceLight,
+          border: `1px solid ${open ? COLORS.accent : COLORS.borderLight}`,
+          color: COLORS.w,
+        }}
+      >
+        {current?.label ?? value}
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          aria-hidden
+        >
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          className="absolute right-0 mt-1.5 z-30 min-w-[150px] rounded-xl overflow-hidden py-1 animate-in fade-in slide-in-from-top-1 duration-150"
+          style={{
+            background: COLORS.surface,
+            border: `1px solid ${COLORS.borderLight}`,
+            boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
+          }}
+        >
+          {options.map((o) => {
+            const selected = o.code === value;
+            return (
+              <button
+                key={o.code}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={() => {
+                  onChange(o.code);
+                  setOpen(false);
+                }}
+                className="w-full px-3 py-2 flex items-center justify-between gap-3 text-left text-[13px] font-semibold cursor-pointer transition-colors hover:bg-[var(--color-surface-light)]"
+                style={{ color: selected ? COLORS.accent : COLORS.t2 }}
+              >
+                {o.label}
+                {selected && (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={COLORS.accent}
+                    strokeWidth="3"
+                    aria-hidden
+                  >
+                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

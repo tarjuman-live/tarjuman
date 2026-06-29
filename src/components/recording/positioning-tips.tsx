@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { COLORS } from "@/lib/constants";
+import { useLocale } from "@/lib/i18n/locale-context";
 import { Icon } from "@/components/shared/icon";
 
 const ACK_KEY = "livetranscribe:positioning-tips-ack";
@@ -28,6 +29,7 @@ export function PositioningTips({
   forceOpen = false,
   onClose,
 }: PositioningTipsProps) {
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -93,7 +95,7 @@ export function PositioningTips({
               className="text-lg font-bold mb-1"
               style={{ color: COLORS.w }}
             >
-              For best results
+              {t("record.tipsTitle")}
             </Dialog.Title>
             <Dialog.Description
               className="text-[13px] leading-relaxed mb-4"
@@ -165,7 +167,7 @@ export function PositioningTips({
                 boxShadow: `0 0 24px ${COLORS.accent}35`,
               }}
             >
-              Got it
+              {t("record.gotIt")}
             </button>
           </div>
         </Dialog.Content>

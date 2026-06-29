@@ -7,19 +7,21 @@ import { Icon, IconName } from "@/components/shared/icon";
 import { useNavVisibility } from "@/components/layout/nav-visibility";
 import { COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/locale-context";
+import type { MessageKey } from "@/lib/i18n/messages";
 
-const TABS: { id: string; icon: IconName; label: string; href: string; matches: (p: string) => boolean }[] = [
+const TABS: { id: string; icon: IconName; labelKey: MessageKey; href: string; matches: (p: string) => boolean }[] = [
   {
     id: "record",
     icon: "mic",
-    label: "Record",
+    labelKey: "nav.record",
     href: "/record",
     matches: (p) => p === "/record",
   },
   {
     id: "history",
     icon: "history",
-    label: "History",
+    labelKey: "nav.history",
     href: "/history",
     matches: (p) => p === "/history" || p.startsWith("/session/"),
   },
@@ -38,6 +40,7 @@ const FLIGHT_MS = 480;
 export function BottomNav() {
   const pathname = usePathname();
   const { hidden } = useNavVisibility();
+  const { t } = useLocale();
   const activeIndex = Math.max(
     TABS.findIndex((t) => t.matches(pathname)),
     0
@@ -188,10 +191,10 @@ export function BottomNav() {
               className="transition-colors duration-200"
             />
             <span
-              className="text-[11px] font-semibold transition-colors duration-200"
+              className="text-[11px] font-semibold transition-colors duration-200 w-full text-center truncate px-1"
               style={{ color }}
             >
-              {tab.label}
+              {t(tab.labelKey)}
             </span>
           </Link>
         );

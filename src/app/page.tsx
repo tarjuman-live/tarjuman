@@ -1,6 +1,7 @@
 import { MarketingNav } from "@/components/landing/marketing-nav";
 import { LiveDemo } from "@/components/landing/live-demo";
 import { TryLive } from "@/components/landing/try-live";
+import { RotatingText } from "@/components/landing/rotating-text";
 import { Features } from "@/components/landing/features";
 import { TryItFree } from "@/components/landing/try-it-free";
 import { UseCases } from "@/components/landing/use-cases";
@@ -60,7 +61,7 @@ export default function Home() {
                 <TryItFree />
                 <a
                   href="#features"
-                  className="px-5 py-3 rounded-xl font-semibold text-[var(--color-text-2)] border border-[var(--color-border-light)] hover:border-[var(--color-accent)] hover:text-[var(--color-text-1)] transition-colors"
+                  className="px-5 py-3 rounded-xl font-semibold border transition-colors duration-200 text-[var(--color-text-2)] border-[var(--color-border-light)] hover:bg-[var(--color-accent)] hover:text-[#0A0F1C] hover:border-[var(--color-accent)]"
                 >
                   See how it works
                 </a>
@@ -69,8 +70,19 @@ export default function Home() {
 
             <Reveal delay={350} className={HERO_ITEM} fade={false}>
               <p className="text-xs text-[var(--color-text-4)]">
-                Free to start · Arabic → English &amp; 30+ languages · No card
-                required
+                Free to start ·{" "}
+                <RotatingText
+                  items={[
+                    "Arabic",
+                    "Urdu",
+                    "Spanish",
+                    "French",
+                    "Turkish",
+                    "Indonesian",
+                  ]}
+                  className="font-semibold text-[var(--color-accent)]"
+                />{" "}
+                → English &amp; 30+ languages · No card required
               </p>
             </Reveal>
           </div>

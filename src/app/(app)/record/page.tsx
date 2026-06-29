@@ -6,6 +6,7 @@ import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { COLORS, SEGMENT_FLUSH_INTERVAL_MS } from "@/lib/constants";
 import { Icon } from "@/components/shared/icon";
+import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { LanguageSelector } from "@/components/recording/language-selector";
 import { IdleRecordButton } from "@/components/recording/record-button";
 import { RecentSessionsPreview } from "@/components/recording/recent-sessions-preview";
@@ -764,7 +765,10 @@ export default function RecordPage() {
             Tarjuman
           </span>
         </div>
-        <AccountMenu />
+        <div className="flex items-center gap-2">
+          <LocaleSwitcher compact />
+          <AccountMenu />
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col p-5 gap-4">

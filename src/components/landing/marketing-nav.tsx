@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
-import { SITE_NAME, SITE_NAME_AR } from "@/lib/site";
+import { SITE_NAME } from "@/lib/site";
 
 // Same code-split pattern as the hero CTA — the auth popup (AuthForm + Convex
 // auth client + Radix Dialog) only loads when a visitor signals intent to sign
@@ -106,13 +106,6 @@ export function MarketingNav() {
           </span>
           <span className="font-bold text-[var(--color-text-1)]">
             {SITE_NAME}
-          </span>
-          <span
-            className="hidden sm:inline text-[var(--color-text-3)]"
-            lang="ar"
-            dir="rtl"
-          >
-            {SITE_NAME_AR}
           </span>
         </Link>
 

@@ -89,6 +89,9 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [focused, setFocused] = useState<
+    "email" | "password" | "confirmPassword" | null
+  >(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [topError, setTopError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -192,6 +195,12 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
         </span>
       </div>
 
+      {/* Heading + form crossfade/slide whenever the mode flips, so sign-up ↔
+          sign-in changes fluidly in place (key={mode} remounts the block). */}
+      <div
+        key={mode}
+        className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300"
+      >
       <div>
         <h1 className="text-2xl font-bold" style={{ color: COLORS.w }}>
           {isSignUp ? "Create your account" : "Welcome back"}
@@ -222,13 +231,20 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
               if (fieldErrors.email)
                 setFieldErrors({ ...fieldErrors, email: undefined });
             }}
+            onFocus={() => setFocused("email")}
+            onBlur={() => setFocused(null)}
             className="w-full h-11 px-3 rounded-2xl outline-none text-[14px]"
             style={{
               background: COLORS.surface,
               border: `1px solid ${
-                fieldErrors.email ? `${COLORS.red}80` : COLORS.borderLight
+                fieldErrors.email
+                  ? `${COLORS.red}80`
+                  : focused === "email"
+                    ? COLORS.accent
+                    : COLORS.borderLight
               }`,
               color: COLORS.w,
+              transition: "border-color 150ms ease",
             }}
           />
         </Field>
@@ -260,13 +276,20 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
                 if (fieldErrors.password)
                   setFieldErrors({ ...fieldErrors, password: undefined });
               }}
+              onFocus={() => setFocused("password")}
+              onBlur={() => setFocused(null)}
               className="w-full h-11 pl-3 pr-12 rounded-2xl outline-none text-[14px]"
               style={{
                 background: COLORS.surface,
                 border: `1px solid ${
-                  fieldErrors.password ? `${COLORS.red}80` : COLORS.borderLight
+                  fieldErrors.password
+                    ? `${COLORS.red}80`
+                    : focused === "password"
+                      ? COLORS.accent
+                      : COLORS.borderLight
                 }`,
                 color: COLORS.w,
+                transition: "border-color 150ms ease",
               }}
             />
             <button
@@ -305,15 +328,20 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
                     confirmPassword: undefined,
                   });
               }}
+              onFocus={() => setFocused("confirmPassword")}
+              onBlur={() => setFocused(null)}
               className="w-full h-11 px-3 rounded-2xl outline-none text-[14px]"
               style={{
                 background: COLORS.surface,
                 border: `1px solid ${
                   fieldErrors.confirmPassword
                     ? `${COLORS.red}80`
-                    : COLORS.borderLight
+                    : focused === "confirmPassword"
+                      ? COLORS.accent
+                      : COLORS.borderLight
                 }`,
                 color: COLORS.w,
+                transition: "border-color 150ms ease",
               }}
             />
           </Field>
@@ -336,7 +364,7 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
         <button
           type="submit"
           disabled={submitting}
-          className="h-12 rounded-2xl font-bold text-sm cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-60 mt-2"
+          className="h-12 rounded-2xl font-bold text-sm cursor-pointer transition-all duration-200 active:scale-[0.98] hover:-translate-y-0.5 hover:brightness-110 disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:brightness-100 mt-2"
           style={{
             background: COLORS.accent,
             color: "#0A0F1C",
@@ -346,6 +374,7 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
           {submitting ? "…" : isSignUp ? "Create account" : "Sign in"}
         </button>
       </form>
+      </div>
 
       <div className="flex items-center gap-3">
         <div
@@ -367,12 +396,8 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
       <button
         type="button"
         onClick={handleGoogle}
-        className="h-12 rounded-2xl font-semibold text-sm cursor-pointer transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
-        style={{
-          background: COLORS.surface,
-          border: `1px solid ${COLORS.borderLight}`,
-          color: COLORS.w,
-        }}
+        className="h-12 rounded-2xl font-semibold text-sm cursor-pointer transition-all duration-200 active:scale-[0.98] hover:-translate-y-0.5 flex items-center justify-center gap-2 border bg-[var(--color-surface)] border-[var(--color-border-light)] hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-light)]"
+        style={{ color: COLORS.w }}
       >
         <GoogleGlyph />
         Continue with Google

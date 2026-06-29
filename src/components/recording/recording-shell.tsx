@@ -8,6 +8,7 @@ import { AudioVisualizer } from "./audio-visualizer";
 import { LiveTranscript } from "./live-transcript";
 import { SplitTranscript } from "./split-transcript";
 import { useSessionTimer } from "@/hooks/use-session-timer";
+import { useLocale } from "@/lib/i18n/locale-context";
 import type { ConnectionState, LiveSegment } from "@/types";
 
 /** Transcript view mode: stacked source+translation cards, or two split panes. */
@@ -79,6 +80,7 @@ export function RecordingShell({
   onResume,
   onStop,
 }: RecordingShellProps) {
+  const { t } = useLocale();
   const elapsed = useSessionTimer(active, paused);
   const [pulsePhase, setPulsePhase] = useState(0);
 
@@ -120,7 +122,7 @@ export function RecordingShell({
   const isTranscriptionError = connectionState === "error";
 
   const statusColor = paused ? COLORS.amber : COLORS.red;
-  const statusLabel = paused ? "Paused" : "Recording";
+  const statusLabel = paused ? t("record.paused") : t("record.recording");
 
   // Identical props for both transcript views, so the toggle is a true drop-in.
   const transcriptProps = {
@@ -346,11 +348,7 @@ export function RecordingShell({
             type="button"
             onClick={onResume}
             aria-label="Resume recording"
-            className="w-14 h-14 rounded-2xl cursor-pointer grid place-items-center transition-transform active:scale-95"
-            style={{
-              background: COLORS.accentSoft,
-              border: `1px solid ${COLORS.accent}40`,
-            }}
+            className="rec-ctl rec-ctl-resume w-14 h-14 rounded-full cursor-pointer grid place-items-center"
           >
             <Icon name="play" size={22} color={COLORS.accent} />
           </button>
@@ -359,11 +357,7 @@ export function RecordingShell({
             type="button"
             onClick={onPause}
             aria-label="Pause recording"
-            className="w-14 h-14 rounded-2xl cursor-pointer grid place-items-center transition-transform active:scale-95"
-            style={{
-              background: COLORS.amberSoft,
-              border: `1px solid ${COLORS.amber}40`,
-            }}
+            className="rec-ctl rec-ctl-pause w-14 h-14 rounded-full cursor-pointer grid place-items-center"
           >
             <Icon name="pause" size={22} color={COLORS.amber} />
           </button>
@@ -372,11 +366,7 @@ export function RecordingShell({
           type="button"
           onClick={onStop}
           aria-label="Stop recording"
-          className="w-14 h-14 rounded-2xl cursor-pointer grid place-items-center transition-transform active:scale-95"
-          style={{
-            background: COLORS.redSoft,
-            border: `1px solid ${COLORS.red}30`,
-          }}
+          className="rec-ctl rec-ctl-stop w-14 h-14 rounded-full cursor-pointer grid place-items-center"
         >
           <Icon name="stop" size={22} color={COLORS.red} />
         </button>

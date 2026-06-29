@@ -12,6 +12,8 @@ import { formatDate } from "@/lib/utils";
 import { usePlan } from "@/hooks/use-plan";
 import { Icon } from "@/components/shared/icon";
 import { Skeleton } from "@/components/shared/skeleton";
+import { LocaleSwitcher } from "@/components/shared/locale-switcher";
+import { useLocale } from "@/lib/i18n/locale-context";
 import { LanguageSelector } from "@/components/recording/language-selector";
 import { Toggle } from "@/components/settings/toggle";
 import { PromptDialog } from "@/components/shared/prompt-dialog";
@@ -23,6 +25,7 @@ const POSITIONING_TIPS_ACK_KEY = "livetranscribe:positioning-tips-ack";
 export default function SettingsPage() {
   const me = useQuery(api.users.me);
   const prefs = useQuery(api.preferences.get);
+  const { t } = useLocale();
   const updatePrefs = useMutation(api.preferences.update);
   const updateProfile = useMutation(api.users.updateProfile);
   const deleteAccount = useMutation(api.users.deleteAccount);
@@ -169,13 +172,13 @@ export default function SettingsPage() {
           <Icon name="back" size={18} color={COLORS.t2} />
         </Link>
         <div className="text-[15px] font-bold" style={{ color: COLORS.w }}>
-          Settings
+          {t("settings.title")}
         </div>
       </div>
 
       {/* Account */}
       <div className="px-5 pt-5">
-        <div className={sectionLabel}>Account</div>
+        <div className={sectionLabel}>{t("settings.account")}</div>
         <div className="rounded-2xl overflow-hidden" style={cardStyle}>
           <div className="px-4 py-4 flex items-center gap-3">
             <div
@@ -205,10 +208,10 @@ export default function SettingsPage() {
           >
             <span>
               <span className="block text-[14px] font-semibold" style={{ color: COLORS.w }}>
-                Display name
+                {t("settings.displayName")}
               </span>
               <span className="block text-[12px] mt-0.5" style={{ color: COLORS.t3 }}>
-                {me.name ?? "Add your name"}
+                {me.name ?? t("settings.addName")}
               </span>
             </span>
             <Icon name="edit" size={16} color={COLORS.t3} />
@@ -218,7 +221,7 @@ export default function SettingsPage() {
 
       {/* Default languages */}
       <div className="px-5 pt-6">
-        <div className={sectionLabel}>Default languages</div>
+        <div className={sectionLabel}>{t("settings.defaultLanguages")}</div>
         <LanguageSelector
           sourceLang={sourceLang}
           targetLang={targetLang}
@@ -229,9 +232,23 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* App language (UI locale) */}
+      <div className="px-5 pt-6">
+        <div className={sectionLabel}>{t("settings.appLanguage")}</div>
+        <div
+          className="rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3"
+          style={cardStyle}
+        >
+          <span className="text-[14px] font-semibold" style={{ color: COLORS.w }}>
+            {t("settings.appLanguage")}
+          </span>
+          <LocaleSwitcher />
+        </div>
+      </div>
+
       {/* Subscription */}
       <div className="px-5 pt-6">
-        <div className={sectionLabel}>Subscription</div>
+        <div className={sectionLabel}>{t("settings.subscription")}</div>
         {subscription === undefined ? (
           <div
             className="w-full rounded-2xl px-4 py-3.5"
@@ -272,10 +289,10 @@ export default function SettingsPage() {
           // checkout we can't fulfill. Just confirm everything's unlocked.
           <div className="w-full rounded-2xl px-4 py-3.5" style={cardStyle}>
             <span className="block text-[14px] font-semibold" style={{ color: COLORS.w }}>
-              Free
+              {t("settings.free")}
             </span>
             <span className="block text-[12px] mt-0.5" style={{ color: COLORS.t3 }}>
-              All features unlocked
+              {t("settings.allUnlocked")}
             </span>
           </div>
         ) : (
@@ -309,7 +326,7 @@ export default function SettingsPage() {
 
       {/* Audio & voice */}
       <div className="px-5 pt-6">
-        <div className={sectionLabel}>Audio &amp; voice</div>
+        <div className={sectionLabel}>{t("settings.audioVoice")}</div>
         <div className="rounded-2xl overflow-hidden" style={cardStyle}>
           <Toggle
             label="Focus on main speaker"
@@ -322,7 +339,7 @@ export default function SettingsPage() {
 
       {/* Onboarding */}
       <div className="px-5 pt-6">
-        <div className={sectionLabel}>Onboarding</div>
+        <div className={sectionLabel}>{t("settings.onboarding")}</div>
         <button
           type="button"
           onClick={resetTips}
@@ -351,7 +368,7 @@ export default function SettingsPage() {
       {/* Danger zone */}
       <div className="px-5 pt-6">
         <div className={sectionLabel} style={{ color: COLORS.red }}>
-          Danger zone
+          {t("settings.dangerZone")}
         </div>
         <button
           type="button"
@@ -365,7 +382,7 @@ export default function SettingsPage() {
           }}
         >
           <Icon name="trash" size={16} color={COLORS.red} />
-          {deleting ? "Deleting…" : "Delete account"}
+          {deleting ? "Deleting…" : t("settings.deleteAccount")}
         </button>
         <div className="text-[12px] mt-2" style={{ color: COLORS.t3 }}>
           Permanently removes your account, sessions, and summaries. This cannot
