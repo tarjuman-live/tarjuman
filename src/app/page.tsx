@@ -61,7 +61,7 @@ export default function Home() {
                 <TryItFree />
                 <a
                   href="#features"
-                  className="px-5 py-3 rounded-xl font-semibold border transition-colors duration-200 text-[var(--color-text-2)] border-[var(--color-border-light)] hover:bg-[var(--color-accent)] hover:text-[#0A0F1C] hover:border-[var(--color-accent)]"
+                  className="px-5 py-3 rounded-xl font-semibold border transition-all duration-200 text-[var(--color-text-2)] border-[var(--color-border-light)] hover:bg-[var(--color-accent)] hover:text-[#0A0F1C] hover:border-[var(--color-accent)] hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(46,204,113,0.5)]"
                 >
                   See how it works
                 </a>

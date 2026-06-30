@@ -115,7 +115,7 @@ export function MarketingNav() {
             <a
               key={l.href}
               href={l.href}
-              className="hover:text-[var(--color-text-1)] transition-colors"
+              className="hover:text-[var(--color-accent)] transition-colors"
             >
               {l.label}
             </a>
@@ -128,7 +128,7 @@ export function MarketingNav() {
             <button
               type="button"
               onClick={() => router.push("/record")}
-              className="px-4 py-2 rounded-xl text-sm font-bold cursor-pointer transition-transform active:scale-95 bg-[var(--color-accent)] text-[#0A0F1C] hover:brightness-105 shadow-[0_0_20px_rgba(46,204,113,0.3)]"
+              className="px-4 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all duration-200 active:scale-95 bg-[var(--color-accent)] text-[#0A0F1C] hover:brightness-110 hover:-translate-y-0.5 shadow-[0_0_20px_rgba(46,204,113,0.3)] hover:shadow-[0_0_30px_rgba(46,204,113,0.6)]"
             >
               Open recorder
             </button>
@@ -139,7 +139,7 @@ export function MarketingNav() {
                 onClick={() => openAuth("signIn")}
                 onPointerEnter={preload}
                 onFocus={preload}
-                className="hidden sm:inline-block px-3 py-2 rounded-xl text-sm font-semibold text-[var(--color-text-2)] hover:text-[var(--color-text-1)] cursor-pointer transition-colors"
+                className="hidden sm:inline-block px-3 py-2 rounded-xl text-sm font-semibold text-[var(--color-text-2)] hover:text-[var(--color-accent)] cursor-pointer transition-colors"
               >
                 Sign in
               </button>
@@ -148,7 +148,7 @@ export function MarketingNav() {
                 onClick={() => openAuth("signUp")}
                 onPointerEnter={preload}
                 onFocus={preload}
-                className="px-4 py-2 rounded-xl text-sm font-bold cursor-pointer transition-transform active:scale-95 bg-[var(--color-accent)] text-[#0A0F1C] hover:brightness-105 shadow-[0_0_20px_rgba(46,204,113,0.3)]"
+                className="px-4 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all duration-200 active:scale-95 bg-[var(--color-accent)] text-[#0A0F1C] hover:brightness-110 hover:-translate-y-0.5 shadow-[0_0_20px_rgba(46,204,113,0.3)] hover:shadow-[0_0_30px_rgba(46,204,113,0.6)]"
               >
                 Get started
               </button>

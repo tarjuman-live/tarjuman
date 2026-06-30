@@ -195,13 +195,11 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
         </span>
       </div>
 
-      {/* Heading + form crossfade/slide whenever the mode flips, so sign-up ↔
-          sign-in changes fluidly in place (key={mode} remounts the block). */}
-      <div
-        key={mode}
-        className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300"
-      >
-      <div>
+      {/* Heading + form stay mounted; only the heading text crossfades on mode
+          flip and the confirm-password field animates its height open/closed —
+          so sign-up ↔ sign-in transitions smoothly instead of hard-swapping. */}
+      <div className="flex flex-col gap-6">
+      <div key={mode} className="animate-in fade-in duration-300">
         <h1 className="text-2xl font-bold" style={{ color: COLORS.w }}>
           {isSignUp ? "Create your account" : "Welcome back"}
         </h1>
@@ -223,7 +221,9 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
           <input
             type="email"
             inputMode="email"
-            autoComplete="email"
+            // Don't let the browser autofill a saved login on the SIGN-UP form
+            // (it should be a fresh account); keep autofill on sign-in.
+            autoComplete={isSignUp ? "off" : "email"}
             required
             value={email}
             onChange={(e) => {
@@ -310,14 +310,26 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
           )}
         </Field>
 
-        {isSignUp && (
-          <Field
-            label="Confirm password"
-            error={fieldErrors.confirmPassword}
-          >
+        {/* Confirm password — always mounted, height-animated so the modal
+            grows/shrinks smoothly on sign-up ↔ sign-in. The negative margin
+            reclaims the flex gap slot when collapsed (no empty gap). */}
+        <div
+          aria-hidden={!isSignUp}
+          className="overflow-hidden"
+          style={{
+            maxHeight: isSignUp ? 160 : 0,
+            opacity: isSignUp ? 1 : 0,
+            marginBottom: isSignUp ? 0 : -12,
+            transition:
+              "max-height 320ms cubic-bezier(0.22,1,0.36,1), opacity 220ms ease, margin-bottom 320ms cubic-bezier(0.22,1,0.36,1)",
+          }}
+        >
+          <Field label="Confirm password" error={fieldErrors.confirmPassword}>
             <input
               type={showPassword ? "text" : "password"}
-              required
+              required={isSignUp}
+              disabled={!isSignUp}
+              tabIndex={isSignUp ? undefined : -1}
               autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => {
@@ -345,7 +357,7 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
               }}
             />
           </Field>
-        )}
+        </div>
 
         {topError && (
           <div

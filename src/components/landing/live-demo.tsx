@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { COLORS } from "@/lib/constants";
+import { RotatingText } from "./rotating-text";
 
 /**
  * Self-contained, looping preview of the recording screen — a scripted
@@ -165,9 +166,11 @@ export function LiveDemo() {
             </div>
             <div className="mt-2 flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-[11px]" style={{ color: COLORS.t3 }}>
-                <span dir="rtl" lang="ar" style={{ color: COLORS.t2 }}>
-                  العربية
-                </span>
+                <RotatingText
+                  items={["Arabic", "Urdu", "Spanish", "French", "Turkish", "Indonesian"]}
+                  intervalMs={2400}
+                  className="font-semibold"
+                />
                 <span>→</span>
                 <span style={{ color: COLORS.accent }}>English</span>
               </div>
