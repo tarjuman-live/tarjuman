@@ -61,7 +61,6 @@ export const MESSAGES = {
   "lp.tryIt": { en: "Try it", ar: "جرّب", ur: "آزمائیں", fr: "Essayer", es: "Probar", id: "Coba", tr: "Dene", bn: "চেষ্টা করুন", ms: "Cuba", de: "Testen" },
   "lp.features": { en: "Features", ar: "المزايا", ur: "خصوصیات", fr: "Fonctions", es: "Funciones", id: "Fitur", tr: "Özellikler", bn: "বৈশিষ্ট্য", ms: "Ciri", de: "Funktionen" },
   "lp.useCases": { en: "Use cases", ar: "الاستخدامات", ur: "استعمالات", fr: "Cas d'usage", es: "Casos de uso", id: "Penggunaan", tr: "Kullanım", bn: "ব্যবহার", ms: "Kegunaan", de: "Anwendungen" },
-  "lp.pricing": { en: "Pricing", ar: "الأسعار", ur: "قیمتیں", fr: "Tarifs", es: "Precios", id: "Harga", tr: "Fiyatlar", bn: "মূল্য", ms: "Harga", de: "Preise" },
   "lp.faq": { en: "FAQ", ar: "الأسئلة الشائعة", ur: "سوالات", fr: "FAQ", es: "Preguntas", id: "FAQ", tr: "SSS", bn: "প্রশ্নোত্তর", ms: "Soalan", de: "FAQ" },
   "lp.signIn": { en: "Sign in", ar: "تسجيل الدخول", ur: "سائن ان", fr: "Se connecter", es: "Iniciar sesión", id: "Masuk", tr: "Giriş", bn: "সাইন ইন", ms: "Log masuk", de: "Anmelden" },
   "lp.getStarted": { en: "Get started", ar: "ابدأ الآن", ur: "شروع کریں", fr: "Commencer", es: "Empezar", id: "Mulai", tr: "Başla", bn: "শুরু করুন", ms: "Mula", de: "Loslegen" },
@@ -81,13 +80,6 @@ export const MESSAGES = {
   "lp.useCasesHeading": { en: "Where people use Tarjuman", ar: "أين يستخدم الناس ترجمان", ur: "لوگ ترجمان کہاں استعمال کرتے ہیں", fr: "Où les gens utilisent Tarjuman", es: "Dónde se usa Tarjuman", id: "Di mana orang memakai Tarjuman", tr: "İnsanlar Tarjuman'ı nerede kullanıyor", bn: "মানুষ কোথায় তরজুমান ব্যবহার করে", ms: "Di mana orang menggunakan Tarjuman", de: "Wo Menschen Tarjuman nutzen" },
   "lp.faqHeading": { en: "Frequently asked questions", ar: "الأسئلة الشائعة", ur: "اکثر پوچھے گئے سوالات", fr: "Questions fréquentes", es: "Preguntas frecuentes", id: "Pertanyaan umum", tr: "Sıkça sorulan sorular", bn: "প্রায়শই জিজ্ঞাসিত প্রশ্ন", ms: "Soalan lazim", de: "Häufige Fragen" },
   "lp.earlyHeading": { en: "New — and honest about it", ar: "جديد — ونقولها بصراحة", ur: "نیا — اور ہم اس بارے میں ایماندار ہیں", fr: "Nouveau — et on l'assume", es: "Nuevo — y somos honestos", id: "Baru — dan kami jujur soal itu", tr: "Yeni — ve bunu açıkça söylüyoruz", bn: "নতুন — এবং সে বিষয়ে সৎ", ms: "Baharu — dan kami jujur tentangnya", de: "Neu — und ehrlich darüber" },
-
-  // ── Landing — pricing ──
-  "lp.pricingHeading": { en: "Simple, honest pricing", ar: "أسعار بسيطة وصادقة", ur: "سادہ، ایماندار قیمتیں", fr: "Des tarifs simples et honnêtes", es: "Precios simples y honestos", id: "Harga sederhana dan jujur", tr: "Basit, dürüst fiyatlandırma", bn: "সহজ, সৎ মূল্য", ms: "Harga ringkas dan jujur", de: "Einfache, ehrliche Preise" },
-  "lp.pricingSub": { en: "Start free. Upgrade to Pro when you need more.", ar: "ابدأ مجانًا. ترقَّ إلى Pro عندما تحتاج إلى المزيد.", ur: "مفت شروع کریں۔ مزید ضرورت ہو تو Pro میں اپ گریڈ کریں۔", fr: "Commencez gratuitement. Passez à Pro quand vous avez besoin de plus.", es: "Empieza gratis. Mejora a Pro cuando necesites más.", id: "Mulai gratis. Tingkatkan ke Pro saat butuh lebih.", tr: "Ücretsiz başla. Daha fazlası gerektiğinde Pro'ya geç.", bn: "বিনামূল্যে শুরু করুন। আরও দরকার হলে Pro-তে আপগ্রেড করুন।", ms: "Mula percuma. Naik taraf ke Pro apabila perlukan lebih.", de: "Kostenlos starten. Wechsle zu Pro, wenn du mehr brauchst." },
-  "lp.perMonth": { en: "/ month", ar: "/ شهريًا", ur: "/ ماہانہ", fr: "/ mois", es: "/ mes", id: "/ bulan", tr: "/ ay", bn: "/ মাস", ms: "/ bulan", de: "/ Monat" },
-  "lp.comingSoon": { en: "Coming soon", ar: "قريبًا", ur: "جلد آ رہا ہے", fr: "Bientôt disponible", es: "Próximamente", id: "Segera hadir", tr: "Yakında", bn: "শীঘ্রই আসছে", ms: "Akan datang", de: "Demnächst" },
-  "lp.mostPopular": { en: "Most popular", ar: "الأكثر شيوعًا", ur: "سب سے مقبول", fr: "Le plus populaire", es: "Más popular", id: "Paling populer", tr: "En popüler", bn: "সবচেয়ে জনপ্রিয়", ms: "Paling popular", de: "Am beliebtesten" },
 } as const satisfies Record<string, Record<LocaleCode, string>>;
 
 export type MessageKey = keyof typeof MESSAGES;

@@ -22,7 +22,6 @@ const LINKS: { href: string; key: MessageKey }[] = [
   { href: "#try", key: "lp.tryIt" },
   { href: "#features", key: "lp.features" },
   { href: "#use-cases", key: "lp.useCases" },
-  { href: "#pricing", key: "lp.pricing" },
   { href: "#faq", key: "lp.faq" },
 ];
 

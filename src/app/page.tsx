@@ -8,7 +8,6 @@ import { UseCases } from "@/components/landing/use-cases";
 import { EarlyNote } from "@/components/landing/early-note";
 import { Faq } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
-import { Pricing } from "@/components/landing/pricing";
 import { Reveal } from "@/components/landing/reveal";
 import { T } from "@/components/landing/t";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -119,7 +118,6 @@ export default function Home() {
       {/* Sections self-animate (heading first, then items stagger in) */}
       <Features />
       <UseCases />
-      <Pricing />
       <EarlyNote />
       <Faq />
       <Footer />
