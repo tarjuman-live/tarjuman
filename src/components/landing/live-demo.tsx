@@ -188,28 +188,63 @@ export function LiveDemo() {
         }}
       />
 
-      {/* Phone frame */}
-      <div
-        className="mx-auto w-[300px] sm:w-[320px] rounded-[2.5rem] p-2.5"
-        style={{
-          background: "linear-gradient(160deg, #1b2438, #0c1322)",
-          border: `1px solid ${COLORS.borderLight}`,
-          boxShadow:
-            "0 30px 70px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.06)",
-        }}
-      >
-        <div
-          className="relative rounded-[2rem] overflow-hidden flex flex-col"
-          style={{ background: COLORS.bg, height: 520 }}
-        >
-          {/* notch */}
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-1.5 rounded-full bg-black/60" />
+      {/* iPhone 17 Pro Max */}
+      <div className="relative mx-auto w-[300px] sm:w-[320px]">
+        {/* titanium side buttons — left: Action + volume up/down; right:
+            Camera Control + side (power) button */}
+        {[
+          { side: "left", top: 112, h: 26 },
+          { side: "left", top: 152, h: 46 },
+          { side: "left", top: 208, h: 46 },
+          { side: "right", top: 150, h: 34 },
+          { side: "right", top: 198, h: 64 },
+        ].map((b, i) => (
+          <span
+            key={i}
+            aria-hidden
+            className={`absolute w-[3px] ${
+              b.side === "left" ? "-left-[2px] rounded-l-[2px]" : "-right-[2px] rounded-r-[2px]"
+            }`}
+            style={{
+              top: b.top,
+              height: b.h,
+              background: "linear-gradient(180deg,#5b6478,#2a3140)",
+            }}
+          />
+        ))}
 
-          {/* Recording header */}
+        {/* titanium rim + black bezel */}
+        <div
+          className="rounded-[3rem] p-[10px]"
+          style={{
+            background: "#05070c",
+            boxShadow:
+              "0 0 0 2px #343d50, 0 0 0 3px #0c0f17, 0 30px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)",
+          }}
+        >
           <div
-            className="pt-7 px-4 pb-3"
-            style={{ borderBottom: `1px solid ${COLORS.border}` }}
+            className="relative rounded-[2.35rem] overflow-hidden flex flex-col"
+            style={{ background: COLORS.bg, height: 600 }}
           >
+            {/* Dynamic Island */}
+            <div
+              className="absolute top-[10px] left-1/2 -translate-x-1/2 z-20 flex items-center justify-end pe-2.5 rounded-full"
+              style={{ width: 110, height: 31, background: "#000" }}
+            >
+              <span
+                className="w-[9px] h-[9px] rounded-full"
+                style={{
+                  background: "#0a0f1a",
+                  boxShadow: "inset 0 0 0 1px rgba(90,110,140,0.5)",
+                }}
+              />
+            </div>
+
+            {/* Recording header */}
+            <div
+              className="pt-12 px-4 pb-3"
+              style={{ borderBottom: `1px solid ${COLORS.border}` }}
+            >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span
@@ -353,6 +388,7 @@ export function LiveDemo() {
             >
               <span className="w-3.5 h-3.5 rounded-[3px]" style={{ background: COLORS.red }} />
             </span>
+          </div>
           </div>
         </div>
       </div>
