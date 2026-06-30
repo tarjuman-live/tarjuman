@@ -4,6 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
+import { useLocale } from "@/lib/i18n/locale-context";
 
 // Code-split the auth popup (AuthForm + Convex-auth client + Radix Dialog) out
 // of the landing's initial bundle — it only loads when the visitor intends to
@@ -20,6 +21,7 @@ const AuthModal = dynamic(
  */
 export function TryItFree() {
   const { isAuthenticated } = useConvexAuth();
+  const { t } = useLocale();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -66,7 +68,7 @@ export function TryItFree() {
             "background-color 200ms ease, color 200ms ease, transform 200ms ease",
         }}
       >
-        Try it free
+        {t("lp.tryFree")}
       </button>
       {mounted && (
         <AuthModal open={open} onOpenChange={setOpen} initialMode="signUp" />

@@ -1,5 +1,6 @@
 import { Languages, BookOpen, Waves, Sparkles } from "lucide-react";
 import { Reveal } from "./reveal";
+import { T } from "./t";
 
 const FEATURES = [
   {
@@ -29,7 +30,7 @@ export function Features() {
     <section id="features" className="w-full max-w-5xl mx-auto px-6 py-16 sm:py-24">
       <Reveal>
         <h2 className="text-2xl sm:text-3xl font-bold text-center max-w-2xl mx-auto leading-tight">
-          Everything you need to follow an Arabic lecture
+          <T k="lp.featuresHeading" />
         </h2>
         <p className="mt-3 text-center text-[var(--color-text-2)] max-w-xl mx-auto">
           Tarjuman is built for the real environment — a khateeb on a PA system,

@@ -8,8 +8,11 @@ import { UseCases } from "@/components/landing/use-cases";
 import { EarlyNote } from "@/components/landing/early-note";
 import { Faq } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
+import { Pricing } from "@/components/landing/pricing";
 import { Reveal } from "@/components/landing/reveal";
+import { T } from "@/components/landing/t";
 import { JsonLd } from "@/components/seo/json-ld";
+import { LocaleProvider } from "@/lib/i18n/locale-context";
 
 // Hero left-column items center on mobile, left-align from lg up (beside the
 // demo) — mirrors the column's own alignment so Reveal doesn't shift layout.
@@ -18,6 +21,9 @@ const HERO_ITEM = "w-full flex flex-col items-center lg:items-start";
 export default function Home() {
   return (
     <main className="flex-1 flex flex-col">
+      {/* applyDir=false: only nav/hero/headings are translated, so we don't
+          flip the whole marketing layout RTL (the English bodies stay LTR). */}
+      <LocaleProvider applyDir={false}>
       <JsonLd />
       <MarketingNav />
 
@@ -38,21 +44,19 @@ export default function Home() {
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left gap-6">
             <Reveal delay={0} className={HERO_ITEM} fade={false}>
               <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold bg-[var(--color-accent-soft)] text-[var(--color-accent)] border border-[var(--color-accent)]/30">
-                ✦ Real-time khutbah translation
+                ✦ <T k="lp.heroEyebrow" />
               </span>
             </Reveal>
 
             <Reveal delay={90} className={HERO_ITEM} fade={false}>
               <h1 className="text-3xl sm:text-5xl font-bold max-w-xl leading-[1.1]">
-                Understand every khutbah, as it&apos;s spoken
+                <T k="lp.heroTitle" />
               </h1>
             </Reveal>
 
             <Reveal delay={180} className={HERO_ITEM} fade={false}>
               <p className="max-w-md text-[var(--color-text-2)] text-base sm:text-lg leading-relaxed">
-                Tarjuman turns Arabic speech into on-screen English the moment
-                it&apos;s said — preserving Islamic terms — and writes your
-                summary when the lecture ends.
+                <T k="lp.heroSubhead" />
               </p>
             </Reveal>
 
@@ -63,7 +67,7 @@ export default function Home() {
                   href="#features"
                   className="px-5 py-3 rounded-xl font-semibold border transition-all duration-200 text-[var(--color-text-2)] border-[var(--color-border-light)] hover:bg-[var(--color-accent)] hover:text-[#0A0F1C] hover:border-[var(--color-accent)] hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(46,204,113,0.5)]"
                 >
-                  See how it works
+                  <T k="lp.seeHow" />
                 </a>
               </div>
             </Reveal>
@@ -101,11 +105,10 @@ export default function Home() {
       <section id="try" className="w-full max-w-5xl mx-auto px-6 py-16 sm:py-24">
         <Reveal>
           <h2 className="text-2xl sm:text-3xl font-bold text-center leading-tight">
-            Test it right now — no sign-up
+            <T k="lp.trialHeading" />
           </h2>
           <p className="mt-3 text-center text-[var(--color-text-2)] max-w-xl mx-auto">
-            Pick a language, tap the mic, and start talking. You&apos;ll see it
-            transcribed and translated live, right here in your browser.
+            <T k="lp.trialSub" />
           </p>
         </Reveal>
         <Reveal delay={120} className="mt-10">
@@ -116,9 +119,11 @@ export default function Home() {
       {/* Sections self-animate (heading first, then items stagger in) */}
       <Features />
       <UseCases />
+      <Pricing />
       <EarlyNote />
       <Faq />
       <Footer />
+      </LocaleProvider>
     </main>
   );
 }

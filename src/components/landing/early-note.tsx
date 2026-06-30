@@ -1,5 +1,6 @@
 import { Reveal } from "./reveal";
 import { TryItFree } from "./try-it-free";
+import { T } from "./t";
 
 /**
  * Honest early-stage trust band — the slot where real testimonials will go.
@@ -15,7 +16,7 @@ export function EarlyNote() {
     <section className="w-full max-w-5xl mx-auto px-6 py-16 sm:py-24">
       <Reveal>
         <h2 className="text-2xl sm:text-3xl font-bold text-center leading-tight">
-          New — and honest about it
+          <T k="lp.earlyHeading" />
         </h2>
       </Reveal>
 

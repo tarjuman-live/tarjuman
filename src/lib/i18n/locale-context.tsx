@@ -35,7 +35,19 @@ const Ctx = createContext<LocaleContextValue | null>(null);
  * <html> while mounted (restored on unmount, so the landing — which is outside
  * this provider — stays LTR/English).
  */
-export function LocaleProvider({ children }: { children: ReactNode }) {
+export function LocaleProvider({
+  children,
+  applyDir = true,
+}: {
+  children: ReactNode;
+  /**
+   * Set <html dir/lang> while mounted. True for the dashboard (full RTL). The
+   * landing passes false: only nav/hero/headings are translated, so flipping
+   * the whole marketing layout RTL would right-align the still-English bodies —
+   * the translated (pure-script) text renders correctly on its own.
+   */
+  applyDir?: boolean;
+}) {
   const [locale, setLocaleState] = useState<LocaleCode>(DEFAULT_LOCALE);
 
   // Resolve the initial locale after mount (localStorage/navigator aren't
@@ -68,6 +80,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   // Apply dir/lang to <html> only while the dashboard is mounted.
   useEffect(() => {
+    if (!applyDir) return;
     const html = document.documentElement;
     const prevDir = html.getAttribute("dir");
     const prevLang = html.getAttribute("lang");
@@ -78,7 +91,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       else html.removeAttribute("dir");
       html.setAttribute("lang", prevLang ?? "en");
     };
-  }, [dir, locale]);
+  }, [dir, locale, applyDir]);
 
   const t = useCallback(
     (key: MessageKey, vars?: Record<string, string | number>) => {

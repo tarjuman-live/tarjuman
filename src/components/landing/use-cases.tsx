@@ -1,4 +1,5 @@
 import { Reveal } from "./reveal";
+import { T } from "./t";
 
 const USE_CASES = [
   {
@@ -25,7 +26,7 @@ export function UseCases() {
       <div className="max-w-5xl mx-auto px-6 py-16 sm:py-24">
         <Reveal>
           <h2 className="text-2xl sm:text-3xl font-bold text-center leading-tight">
-            Where people use Tarjuman
+            <T k="lp.useCasesHeading" />
           </h2>
         </Reveal>
         <div className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">

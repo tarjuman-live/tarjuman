@@ -6,6 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
 import { SITE_NAME } from "@/lib/site";
+import { useLocale } from "@/lib/i18n/locale-context";
+import { LocaleSwitcher } from "@/components/shared/locale-switcher";
+import type { MessageKey } from "@/lib/i18n/messages";
 
 // Same code-split pattern as the hero CTA — the auth popup (AuthForm + Convex
 // auth client + Radix Dialog) only loads when a visitor signals intent to sign
@@ -15,11 +18,12 @@ const AuthModal = dynamic(
   { ssr: false }
 );
 
-const LINKS = [
-  { href: "#try", label: "Try it" },
-  { href: "#features", label: "Features" },
-  { href: "#use-cases", label: "Use cases" },
-  { href: "#faq", label: "FAQ" },
+const LINKS: { href: string; key: MessageKey }[] = [
+  { href: "#try", key: "lp.tryIt" },
+  { href: "#features", key: "lp.features" },
+  { href: "#use-cases", key: "lp.useCases" },
+  { href: "#pricing", key: "lp.pricing" },
+  { href: "#faq", key: "lp.faq" },
 ];
 
 /**
@@ -32,6 +36,7 @@ const LINKS = [
  */
 export function MarketingNav() {
   const { isAuthenticated } = useConvexAuth();
+  const { t } = useLocale();
   const router = useRouter();
 
   const [scrolled, setScrolled] = useState(false);
@@ -117,20 +122,22 @@ export function MarketingNav() {
               href={l.href}
               className="hover:text-[var(--color-accent)] transition-colors"
             >
-              {l.label}
+              {t(l.key)}
             </a>
           ))}
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* App-language picker (top corner) */}
+          <LocaleSwitcher compact />
           {isAuthenticated ? (
             <button
               type="button"
               onClick={() => router.push("/record")}
               className="px-4 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all duration-200 active:scale-95 bg-[var(--color-accent)] text-[#0A0F1C] hover:brightness-110 hover:-translate-y-0.5 shadow-[0_0_20px_rgba(46,204,113,0.3)] hover:shadow-[0_0_30px_rgba(46,204,113,0.6)]"
             >
-              Open recorder
+              {t("lp.openRecorder")}
             </button>
           ) : (
             <>
@@ -141,7 +148,7 @@ export function MarketingNav() {
                 onFocus={preload}
                 className="hidden sm:inline-block px-3 py-2 rounded-xl text-sm font-semibold text-[var(--color-text-2)] hover:text-[var(--color-accent)] cursor-pointer transition-colors"
               >
-                Sign in
+                {t("lp.signIn")}
               </button>
               <button
                 type="button"
@@ -150,7 +157,7 @@ export function MarketingNav() {
                 onFocus={preload}
                 className="px-4 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all duration-200 active:scale-95 bg-[var(--color-accent)] text-[#0A0F1C] hover:brightness-110 hover:-translate-y-0.5 shadow-[0_0_20px_rgba(46,204,113,0.3)] hover:shadow-[0_0_30px_rgba(46,204,113,0.6)]"
               >
-                Get started
+                {t("lp.getStarted")}
               </button>
             </>
           )}
