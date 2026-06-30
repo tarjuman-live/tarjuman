@@ -8,6 +8,7 @@ import { useConvexAuth } from "convex/react";
 import { SITE_NAME } from "@/lib/site";
 import { useLocale } from "@/lib/i18n/locale-context";
 import { LocaleSwitcher } from "@/components/shared/locale-switcher";
+import { SHOW_PRICING } from "@/lib/constants";
 import type { MessageKey } from "@/lib/i18n/messages";
 
 // Same code-split pattern as the hero CTA — the auth popup (AuthForm + Convex
@@ -22,6 +23,7 @@ const LINKS: { href: string; key: MessageKey }[] = [
   { href: "#try", key: "lp.tryIt" },
   { href: "#features", key: "lp.features" },
   { href: "#use-cases", key: "lp.useCases" },
+  { href: "#pricing", key: "lp.pricing" },
   { href: "#faq", key: "lp.faq" },
 ];
 
@@ -115,7 +117,9 @@ export function MarketingNav() {
 
         {/* Section anchors — desktop only */}
         <div className="hidden md:flex items-center gap-7 text-sm text-[var(--color-text-2)]">
-          {LINKS.map((l) => (
+          {LINKS.filter(
+            (l) => SHOW_PRICING || l.href !== "#pricing"
+          ).map((l) => (
             <a
               key={l.href}
               href={l.href}

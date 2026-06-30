@@ -56,6 +56,12 @@ export const COLORS = {
   t4: "#455A64",
 } as const;
 
+// The landing pricing section + "Pricing" nav link are built but NOT public
+// yet. Show them only on localhost (next dev → NODE_ENV "development"); they
+// stay hidden on the live domain (Vercel prod build → "production"). Flip to a
+// hard `true` to launch pricing to the live site.
+export const SHOW_PRICING = process.env.NODE_ENV === "development";
+
 export const SEGMENT_FLUSH_INTERVAL_MS = 5000;
 export const DEEPGRAM_KEEPALIVE_INTERVAL_MS = 5000;
 export const RECONNECT_BACKOFF = [1000, 2000, 4000, 8000, 16000, 30000] as const;

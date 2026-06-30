@@ -11,11 +11,14 @@
  * post-discussion defaults (2026-06-24); they are deliberately easy to change
  * because real pricing/limits are a post-field-test decision.
  *
- * DESIGN NOTE — recording length is intentionally UNLIMITED on every tier.
- * The unit of value is a *class*, not a minute: an al-Badr dars runs 1–3 hours,
- * so capping minutes would kill the app mid-khutbah. We gate the *count* of
- * sessions/summaries, never their length. The only length bound is the
- * anti-runaway fuse below (not a product limit).
+ * DESIGN NOTE — recording length is UNLIMITED on Pro/Scholar; Free is capped at
+ * 2 hours per recording (founder decision 2026-06-30, reversing the earlier
+ * "unlimited on every tier"). The unit of value is a *class*, not a minute, so
+ * Pro never cuts off a 1–3h al-Badr dars; Free's 2h covers khutbahs but a long
+ * duroos would hit the cap (upgrade nudge). NOTE: this 2h cap is currently
+ * MARKETING-ONLY — it is not yet enforced anywhere (and nothing is enforced
+ * while BILLING_ENABLED=false). Wire a per-tier length cap when billing goes
+ * live. The global MAX_SESSION_HOURS below is a separate anti-runaway fuse.
  *
  * The `scholar` tier is forward-design: its hero feature (follow scholars +
  * class reminders) ships post-field-test, so `scholar` is config-only for now —
@@ -91,7 +94,7 @@ export const PLAN_META: Record<Plan, PlanMeta> = {
     highlights: [
       "4 sessions per month",
       "4 AI summaries per month",
-      "Unlimited recording length",
+      "Recordings up to 2 hours",
       "Your full history, always",
     ],
   },

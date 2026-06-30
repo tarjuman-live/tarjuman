@@ -8,10 +8,12 @@ import { UseCases } from "@/components/landing/use-cases";
 import { EarlyNote } from "@/components/landing/early-note";
 import { Faq } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
+import { Pricing } from "@/components/landing/pricing";
 import { Reveal } from "@/components/landing/reveal";
 import { T } from "@/components/landing/t";
 import { JsonLd } from "@/components/seo/json-ld";
 import { LocaleProvider } from "@/lib/i18n/locale-context";
+import { SHOW_PRICING } from "@/lib/constants";
 
 // Hero left-column items center on mobile, left-align from lg up (beside the
 // demo) — mirrors the column's own alignment so Reveal doesn't shift layout.
@@ -118,6 +120,8 @@ export default function Home() {
       {/* Sections self-animate (heading first, then items stagger in) */}
       <Features />
       <UseCases />
+      {/* Pricing built but localhost-only until launch (see SHOW_PRICING) */}
+      {SHOW_PRICING && <Pricing />}
       <EarlyNote />
       <Faq />
       <Footer />
