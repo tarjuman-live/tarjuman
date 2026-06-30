@@ -4,94 +4,74 @@ import { useEffect, useState } from "react";
 import { COLORS } from "@/lib/constants";
 
 /**
- * Self-contained, looping preview of the recording screen. It cycles through
- * several languages — each "lesson" types its own source text in real time
- * (word-by-word) and fades the English translation in beneath, with the header
- * language label changing to match. So the demo actually demonstrates the
- * multilingual capability instead of always showing Arabic.
+ * Looping preview of the recording screen, framed as an iPhone 17 Pro Max. It
+ * cycles through different language PAIRS (not just everything → English): each
+ * "lesson" types its own source text word-by-word and fades in a translation in
+ * the matching target language, with the header showing that pair. So the demo
+ * shows real translation between many languages, both directions.
  *
- * Visual demo, not a live capture (real transcription needs a mic + an
- * authenticated Deepgram token). Hand-authored, accurate content — the same
- * well-known opening ("All praise is due to Allah, Lord of the worlds") in each
- * language, with "Allah" preserved to show the terminology handling. Respects
- * prefers-reduced-motion.
+ * Visual demo, not a live capture. Hand-authored, accurate content — well-known
+ * phrases (Basmala, Shahada, Alhamdulillah, a famous saying / hadith) rendered
+ * by hand in each language, with "Allah" preserved to show the terminology
+ * handling. Respects prefers-reduced-motion.
  */
-interface Segment {
-  src: string;
-  en: string;
-  ref?: string;
-}
 interface Lesson {
-  lang: string;
-  rtl: boolean;
-  segments: Segment[];
+  srcLang: string;
+  tgtLang: string;
+  srcRtl: boolean;
+  tgtRtl: boolean;
+  src: string;
+  tgt: string;
 }
 
 const LESSONS: Lesson[] = [
   {
-    lang: "Arabic",
-    rtl: true,
-    segments: [
-      {
-        src: "الحمد لله رب العالمين، والصلاة والسلام على رسول الله ﷺ",
-        en: "All praise is due to Allah, Lord of all the worlds, and peace and blessings be upon the Messenger of Allah ﷺ.",
-      },
-      {
-        src: "قال رسول الله ﷺ: إنما الأعمال بالنيات",
-        en: "The Messenger of Allah ﷺ said: “Actions are but by intentions,”",
-        ref: "Sahih al-Bukhari 1",
-      },
-    ],
+    srcLang: "Arabic",
+    tgtLang: "English",
+    srcRtl: true,
+    tgtRtl: false,
+    src: "الحمد لله رب العالمين، والصلاة والسلام على رسول الله ﷺ",
+    tgt: "All praise is due to Allah, Lord of the worlds, and peace be upon the Messenger of Allah ﷺ.",
   },
   {
-    lang: "Urdu",
-    rtl: true,
-    segments: [
-      {
-        src: "تمام تعریفیں اللہ کے لیے ہیں جو سارے جہانوں کا رب ہے",
-        en: "All praise belongs to Allah, the Lord of all the worlds.",
-      },
-    ],
+    srcLang: "French",
+    tgtLang: "Spanish",
+    srcRtl: false,
+    tgtRtl: false,
+    src: "Au nom d'Allah, le Tout Miséricordieux, le Très Miséricordieux.",
+    tgt: "En el nombre de Allah, el Compasivo, el Misericordioso.",
   },
   {
-    lang: "Spanish",
-    rtl: false,
-    segments: [
-      {
-        src: "Todas las alabanzas pertenecen a Allah, Señor de los mundos.",
-        en: "All praise belongs to Allah, Lord of the worlds.",
-      },
-    ],
+    srcLang: "Turkish",
+    tgtLang: "German",
+    srcRtl: false,
+    tgtRtl: false,
+    src: "Allah'tan başka ilah yoktur, Muhammed O'nun elçisidir.",
+    tgt: "Es gibt keinen Gott außer Allah, und Muhammad ist Sein Gesandter.",
   },
   {
-    lang: "French",
-    rtl: false,
-    segments: [
-      {
-        src: "Toutes les louanges reviennent à Allah, Seigneur des mondes.",
-        en: "All praise belongs to Allah, Lord of the worlds.",
-      },
-    ],
+    srcLang: "English",
+    tgtLang: "Arabic",
+    srcRtl: false,
+    tgtRtl: true,
+    src: "Seek knowledge from the cradle to the grave.",
+    tgt: "اطلبوا العلم من المهد إلى اللحد.",
   },
   {
-    lang: "Turkish",
-    rtl: false,
-    segments: [
-      {
-        src: "Hamd, âlemlerin Rabbi olan Allah'a mahsustur.",
-        en: "All praise is due to Allah, Lord of the worlds.",
-      },
-    ],
+    srcLang: "Indonesian",
+    tgtLang: "French",
+    srcRtl: false,
+    tgtRtl: false,
+    src: "Segala puji bagi Allah, Tuhan semesta alam.",
+    tgt: "Toutes les louanges appartiennent à Allah, Seigneur des mondes.",
   },
   {
-    lang: "Indonesian",
-    rtl: false,
-    segments: [
-      {
-        src: "Segala puji bagi Allah, Tuhan semesta alam.",
-        en: "All praise be to Allah, Lord of the worlds.",
-      },
-    ],
+    srcLang: "Urdu",
+    tgtLang: "Turkish",
+    srcRtl: true,
+    tgtRtl: false,
+    src: "بے شک اعمال کا دارومدار نیتوں پر ہے",
+    tgt: "Şüphesiz ameller niyetlere göredir.",
   },
 ];
 
@@ -100,10 +80,8 @@ const MS_PER_WORD = 150;
 export function LiveDemo() {
   const [reduce, setReduce] = useState(false);
   const [lesson, setLesson] = useState(0);
-  // idx = segment within the current lesson being revealed; earlier ones are done.
-  const [idx, setIdx] = useState(0);
   const [words, setWords] = useState(0);
-  const [enShown, setEnShown] = useState(false);
+  const [tgtShown, setTgtShown] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -115,10 +93,9 @@ export function LiveDemo() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setReduce(true);
       setLesson(0);
-      setIdx(LESSONS[0].segments.length - 1);
       setWords(999);
-      setEnShown(true);
-      setElapsed(8);
+      setTgtShown(true);
+      setElapsed(6);
       return;
     }
 
@@ -131,33 +108,20 @@ export function LiveDemo() {
       timers.push(id);
     };
 
-    const runSeg = (lessonIdx: number, i: number) => {
-      const segs = LESSONS[lessonIdx].segments;
-      if (i >= segs.length) {
-        // Hold the finished lesson, then advance to the next language.
-        after(2400, () => playLesson((lessonIdx + 1) % LESSONS.length));
-        return;
-      }
-      const count = segs[i].src.split(" ").length;
-      setIdx(i);
-      setWords(0);
-      setEnShown(false);
-      for (let w = 1; w <= count; w++) after(MS_PER_WORD * w, () => setWords(w));
-      const doneWords = MS_PER_WORD * count + 300;
-      after(doneWords, () => setEnShown(true));
-      after(doneWords + 1500, () => runSeg(lessonIdx, i + 1));
-    };
-
-    const playLesson = (lessonIdx: number) => {
+    const play = (lessonIdx: number) => {
+      const l = LESSONS[lessonIdx];
+      const count = l.src.split(" ").length;
       setLesson(lessonIdx);
-      setIdx(0);
       setWords(0);
-      setEnShown(false);
+      setTgtShown(false);
       setElapsed(0);
-      runSeg(lessonIdx, 0);
+      for (let w = 1; w <= count; w++) after(MS_PER_WORD * w, () => setWords(w));
+      const doneWords = MS_PER_WORD * count + 350;
+      after(doneWords, () => setTgtShown(true));
+      after(doneWords + 2400, () => play((lessonIdx + 1) % LESSONS.length));
     };
 
-    playLesson(0);
+    play(0);
 
     return () => {
       cancelled = true;
@@ -174,7 +138,8 @@ export function LiveDemo() {
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");
-  const current = LESSONS[lesson];
+  const l = LESSONS[lesson];
+  const srcWords = l.src.split(" ");
 
   return (
     <div className="relative">
@@ -245,150 +210,131 @@ export function LiveDemo() {
               className="pt-12 px-4 pb-3"
               style={{ borderBottom: `1px solid ${COLORS.border}` }}
             >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-2 h-2 rounded-full animate-pulse"
+                    style={{ background: COLORS.red }}
+                  />
+                  <span className="text-[12px] font-semibold" style={{ color: COLORS.w }}>
+                    Recording
+                  </span>
+                </div>
                 <span
-                  className="w-2 h-2 rounded-full animate-pulse"
-                  style={{ background: COLORS.red }}
-                />
-                <span className="text-[12px] font-semibold" style={{ color: COLORS.w }}>
-                  Recording
+                  className="text-[13px] font-bold tabular-nums"
+                  style={{ color: COLORS.w }}
+                >
+                  {mm}:{ss}
                 </span>
               </div>
-              <span
-                className="text-[13px] font-bold tabular-nums"
-                style={{ color: COLORS.w }}
-              >
-                {mm}:{ss}
-              </span>
-            </div>
-            <div className="mt-2 flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[11px]" style={{ color: COLORS.t3 }}>
-                {/* language label fades when the lesson (language) changes */}
-                <span
+              <div className="mt-2 flex items-center justify-between">
+                {/* the language pair fades when the lesson changes */}
+                <div
                   key={lesson}
-                  className="font-semibold animate-in fade-in duration-300"
+                  className="flex items-center gap-1.5 text-[11px] font-semibold animate-in fade-in duration-300"
                   style={{ color: COLORS.t2 }}
                 >
-                  {current.lang}
-                </span>
-                <span>→</span>
-                <span style={{ color: COLORS.accent }}>English</span>
-              </div>
-              {/* audio meter */}
-              <div className="flex items-end gap-[3px] h-4">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <span
-                    key={i}
-                    className="demo-eq-bar w-[3px] rounded-full"
-                    style={{
-                      height: "100%",
-                      background: COLORS.accent,
-                      transformOrigin: "bottom",
-                      animationDelay: `${i * 120}ms`,
-                      transform: reduce ? "scaleY(0.5)" : undefined,
-                    }}
-                  />
-                ))}
+                  <span>{l.srcLang}</span>
+                  <span style={{ color: COLORS.t4 }}>→</span>
+                  <span style={{ color: COLORS.accent }}>{l.tgtLang}</span>
+                </div>
+                {/* audio meter */}
+                <div className="flex items-end gap-[3px] h-4">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <span
+                      key={i}
+                      className="demo-eq-bar w-[3px] rounded-full"
+                      style={{
+                        height: "100%",
+                        background: COLORS.accent,
+                        transformOrigin: "bottom",
+                        animationDelay: `${i * 120}ms`,
+                        transform: reduce ? "scaleY(0.5)" : undefined,
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Transcript — keyed on lesson so it cleanly resets per language */}
-          <div
-            key={lesson}
-            className="flex-1 overflow-hidden px-4 py-4 flex flex-col gap-3"
-          >
-            {current.segments.map((seg, i) => {
-              if (i > idx) return null;
-              const isCurrent = i === idx;
-              const srcWords = seg.src.split(" ");
-              const showEn = isCurrent ? enShown : true;
-              return (
+            {/* Transcript — one card per lesson, keyed so it resets cleanly */}
+            <div key={lesson} className="flex-1 overflow-hidden px-4 py-4">
+              <div
+                className="rounded-xl px-3 py-2.5"
+                style={{
+                  background: COLORS.surface,
+                  borderInlineStart: `2px solid ${COLORS.blue}`,
+                }}
+              >
+                {/* source — types word-by-word */}
                 <div
-                  key={i}
-                  className="rounded-xl px-3 py-2.5"
-                  style={{
-                    background: COLORS.surface,
-                    borderInlineStart: `2px solid ${COLORS.blue}`,
-                  }}
+                  dir={l.srcRtl ? "rtl" : "ltr"}
+                  lang={l.srcRtl ? "ar" : undefined}
+                  className="text-[15px] leading-relaxed"
+                  style={{ color: COLORS.w, textAlign: l.srcRtl ? "right" : "left" }}
                 >
-                  <div
-                    dir={current.rtl ? "rtl" : "ltr"}
-                    lang={current.rtl ? "ar" : undefined}
-                    className="text-[15px] leading-relaxed"
-                    style={{
-                      color: COLORS.w,
-                      textAlign: current.rtl ? "right" : "left",
-                    }}
-                  >
-                    {isCurrent
-                      ? srcWords.map((word, wi) => (
-                          <span
-                            key={wi}
-                            style={{
-                              opacity: wi < words ? 1 : 0,
-                              transition: "opacity 280ms ease",
-                            }}
-                          >
-                            {word}
-                            {wi < srcWords.length - 1 ? " " : ""}
-                          </span>
-                        ))
-                      : seg.src}
-                    {isCurrent && words < srcWords.length && (
-                      <span
-                        className="inline-block align-middle ms-0.5 w-[2px] h-[1em] animate-pulse"
-                        style={{ background: COLORS.accent }}
-                      />
-                    )}
-                  </div>
-
-                  {showEn && (
-                    <div
-                      className="mt-2 text-[13px] leading-relaxed animate-in fade-in slide-in-from-bottom-1 duration-500"
+                  {srcWords.map((word, wi) => (
+                    <span
+                      key={wi}
                       style={{
-                        color: COLORS.t2,
-                        borderTop: `1px solid ${COLORS.border}`,
-                        paddingTop: 8,
+                        opacity: wi < words ? 1 : 0,
+                        transition: "opacity 280ms ease",
                       }}
                     >
-                      {seg.en}
-                      {seg.ref && (
-                        <span className="ms-1" style={{ color: COLORS.accent }}>
-                          ({seg.ref})
-                        </span>
-                      )}
-                    </div>
+                      {word}
+                      {wi < srcWords.length - 1 ? " " : ""}
+                    </span>
+                  ))}
+                  {words < srcWords.length && (
+                    <span
+                      className="inline-block align-middle ms-0.5 w-[2px] h-[1em] animate-pulse"
+                      style={{ background: COLORS.accent }}
+                    />
                   )}
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Controls (decorative) */}
-          <div
-            className="px-4 py-3 flex items-center justify-center gap-3"
-            style={{ borderTop: `1px solid ${COLORS.border}` }}
-          >
-            <span
-              className="w-11 h-11 rounded-full grid place-items-center"
-              style={{ background: COLORS.amberSoft }}
-              aria-hidden
+                {/* translation — fades in once the source is read */}
+                {tgtShown && (
+                  <div
+                    dir={l.tgtRtl ? "rtl" : "ltr"}
+                    lang={l.tgtRtl ? "ar" : undefined}
+                    className="mt-2 text-[13px] leading-relaxed animate-in fade-in slide-in-from-bottom-1 duration-500"
+                    style={{
+                      color: COLORS.t2,
+                      borderTop: `1px solid ${COLORS.border}`,
+                      paddingTop: 8,
+                      textAlign: l.tgtRtl ? "right" : "left",
+                    }}
+                  >
+                    {l.tgt}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Controls (decorative) */}
+            <div
+              className="px-4 py-3 flex items-center justify-center gap-3"
+              style={{ borderTop: `1px solid ${COLORS.border}` }}
             >
-              <span className="flex gap-[3px]">
-                <span className="w-1 h-3.5 rounded-sm" style={{ background: COLORS.amber }} />
-                <span className="w-1 h-3.5 rounded-sm" style={{ background: COLORS.amber }} />
+              <span
+                className="w-11 h-11 rounded-full grid place-items-center"
+                style={{ background: COLORS.amberSoft }}
+                aria-hidden
+              >
+                <span className="flex gap-[3px]">
+                  <span className="w-1 h-3.5 rounded-sm" style={{ background: COLORS.amber }} />
+                  <span className="w-1 h-3.5 rounded-sm" style={{ background: COLORS.amber }} />
+                </span>
               </span>
-            </span>
-            <span
-              className="w-11 h-11 rounded-full grid place-items-center"
-              style={{ background: COLORS.redSoft }}
-              aria-hidden
-            >
-              <span className="w-3.5 h-3.5 rounded-[3px]" style={{ background: COLORS.red }} />
-            </span>
-          </div>
+              <span
+                className="w-11 h-11 rounded-full grid place-items-center"
+                style={{ background: COLORS.redSoft }}
+                aria-hidden
+              >
+                <span className="w-3.5 h-3.5 rounded-[3px]" style={{ background: COLORS.red }} />
+              </span>
+            </div>
           </div>
         </div>
       </div>
