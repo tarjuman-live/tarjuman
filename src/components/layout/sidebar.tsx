@@ -51,7 +51,10 @@ export function Sidebar() {
 
   return (
     <aside
-      className="hidden lg:flex lg:flex-col lg:sticky lg:top-0 lg:h-[100dvh] lg:w-60 shrink-0"
+      // z-30 lifts the rail's stacking context above the opaque main column so
+      // the footer's language/account menus float over the content instead of
+      // being clipped at the rail's edge (sticky already makes its own context).
+      className="hidden lg:flex lg:flex-col lg:sticky lg:top-0 lg:h-[100dvh] lg:w-60 shrink-0 lg:z-30"
       style={{
         background: COLORS.surface,
         borderRight: `1px solid ${COLORS.border}`,

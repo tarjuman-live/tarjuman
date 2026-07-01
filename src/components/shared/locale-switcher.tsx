@@ -19,8 +19,22 @@ export function LocaleSwitcher({
 }) {
   const { locale, setLocale } = useLocale();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement | null>(null);
   const current = UI_LOCALES.find((l) => l.code === locale);
+
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? UI_LOCALES.filter((l) =>
+        `${l.native} ${l.label} ${l.code}`.toLowerCase().includes(q)
+      )
+    : UI_LOCALES;
+
+  // Fresh search each time it opens.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!open) setQuery("");
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -79,7 +93,7 @@ export function LocaleSwitcher({
       {open && (
         <div
           role="listbox"
-          className={`absolute z-50 max-h-[60vh] overflow-auto min-w-[180px] rounded-xl py-1 animate-in fade-in duration-150 ${
+          className={`absolute z-50 max-h-[60vh] overflow-auto min-w-[240px] rounded-xl py-1 animate-in fade-in duration-150 ${
             dropUp
               ? "start-0 bottom-full mb-1.5 slide-in-from-bottom-1"
               : "end-0 mt-1.5 slide-in-from-top-1"
@@ -90,7 +104,36 @@ export function LocaleSwitcher({
             boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
           }}
         >
-          {UI_LOCALES.map((l) => {
+          <div
+            className="sticky top-0 px-2 pt-1 pb-1.5 z-10"
+            style={{ background: COLORS.surface }}
+          >
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                // First match on Enter — quick keyboard select.
+                if (e.key === "Enter" && filtered[0]) {
+                  setLocale(filtered[0].code);
+                  setOpen(false);
+                }
+              }}
+              placeholder="Search languages…"
+              className="w-full h-8 px-2.5 rounded-lg text-[13px] outline-none"
+              style={{
+                background: COLORS.surfaceLight,
+                border: `1px solid ${COLORS.borderLight}`,
+                color: COLORS.w,
+              }}
+            />
+          </div>
+          {filtered.length === 0 && (
+            <div className="px-3 py-3 text-[12px]" style={{ color: COLORS.t4 }}>
+              No languages found.
+            </div>
+          )}
+          {filtered.map((l) => {
             const selected = l.code === locale;
             return (
               <button
