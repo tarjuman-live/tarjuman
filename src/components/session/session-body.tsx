@@ -11,6 +11,7 @@ import { useStickyBottom } from "@/hooks/use-sticky-bottom";
 import { renderTextWithLinks } from "@/lib/citation-renderer";
 import { usePlan } from "@/hooks/use-plan";
 import { UpgradeCard } from "@/components/billing/upgrade-card";
+import { SummaryLoading } from "@/components/session/summary-loading";
 
 interface NormalizedSegment {
   id: string;
@@ -238,25 +239,7 @@ export function SessionBody({
           </button>
         ))}
 
-      {summary.phase === "loading" && (
-        <div
-          className="px-4 py-5 rounded-2xl mb-5 flex items-center gap-3"
-          style={{
-            background: COLORS.surface,
-            border: `1px solid ${COLORS.border}`,
-          }}
-        >
-          <div
-            className="w-4 h-4 rounded-full border-2 animate-spin"
-            style={{
-              borderColor: `${COLORS.accent} transparent ${COLORS.accent} ${COLORS.accent}`,
-            }}
-          />
-          <span className="text-sm" style={{ color: COLORS.t2 }}>
-            Generating summary…
-          </span>
-        </div>
-      )}
+      {summary.phase === "loading" && <SummaryLoading />}
 
       {summary.phase === "ready" && (
         <div
