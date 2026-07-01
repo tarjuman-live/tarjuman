@@ -76,7 +76,7 @@ export default function SettingsPage() {
 
   if (me === undefined || prefs === undefined) {
     return (
-      <div className="flex flex-col flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+84px)]">
+      <div className="flex flex-col flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] lg:pb-8 lg:max-w-2xl lg:mx-auto lg:w-full">
         <div
           className="px-5 py-5 flex flex-col gap-2"
           style={{ borderBottom: `1px solid ${COLORS.border}` }}

@@ -81,7 +81,7 @@ export function CompletedView({
   };
 
   return (
-    <div className="flex flex-col flex-1" style={{ paddingBottom: 60 }}>
+    <div className="flex flex-col flex-1 lg:max-w-4xl lg:mx-auto lg:w-full" style={{ paddingBottom: 60 }}>
       <div
         className="px-5 py-4 flex items-center justify-between"
         style={{ borderBottom: `1px solid ${COLORS.border}` }}

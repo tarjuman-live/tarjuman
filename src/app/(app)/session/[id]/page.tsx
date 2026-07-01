@@ -74,7 +74,7 @@ export default function SessionDetailPage() {
   // Not found
   if (session === null) {
     return (
-      <div className="flex flex-col flex-1" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}>
+      <div className="flex flex-col flex-1 lg:max-w-3xl lg:mx-auto lg:w-full" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}>
         <div
           className="px-5 py-4 flex items-center gap-3"
           style={{ borderBottom: `1px solid ${COLORS.border}` }}
@@ -180,7 +180,7 @@ export default function SessionDetailPage() {
   const title = session.title ?? "Untitled session";
 
   return (
-    <div className="flex flex-col flex-1" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}>
+    <div className="flex flex-col flex-1 lg:max-w-3xl lg:mx-auto lg:w-full" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}>
       {/* Header */}
       <div
         className="px-5 py-4 flex items-center gap-3"

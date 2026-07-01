@@ -6,6 +6,7 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../../convex/_generated/api";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Sidebar } from "@/components/layout/sidebar";
 import { NavVisibilityProvider } from "@/components/layout/nav-visibility";
 import { Icon } from "@/components/shared/icon";
 import { COLORS } from "@/lib/constants";
@@ -85,17 +86,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <LocaleProvider>
       <NavVisibilityProvider>
+        {/* Desktop (≥ lg): sidebar rail + flexible main column. Mobile: the
+            main column stays a centered 420px phone layout, unchanged, and the
+            sidebar is `hidden lg:flex`. The sidebar is sticky-full-height so it
+            stays put while the main content scrolls with the page. */}
         <div
-          className={`w-full mx-auto relative overflow-hidden flex flex-col max-w-[420px] ${
-            wide ? "md:max-w-4xl" : ""
-          }`}
-          style={{
-            minHeight: "100dvh",
-            background: COLORS.bg,
-          }}
+          className="lg:flex"
+          style={{ minHeight: "100dvh", background: COLORS.bg }}
         >
-          {children}
-          <BottomNav />
+          <Sidebar />
+          <div
+            className={`w-full mx-auto relative overflow-hidden flex flex-col max-w-[420px] lg:max-w-none lg:mx-0 lg:flex-1 lg:min-w-0 ${
+              wide ? "md:max-w-4xl" : ""
+            }`}
+            style={{
+              minHeight: "100dvh",
+              background: COLORS.bg,
+            }}
+          >
+            {children}
+            <BottomNav />
+          </div>
         </div>
       </NavVisibilityProvider>
     </LocaleProvider>

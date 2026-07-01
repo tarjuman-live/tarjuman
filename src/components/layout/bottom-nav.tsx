@@ -115,7 +115,7 @@ export function BottomNav() {
   return (
     <nav
       aria-hidden={hidden}
-      className="fixed left-1/2 z-50 flex items-center"
+      className="fixed left-1/2 z-50 flex items-center lg:hidden"
       style={{
         // Centered via inline transform (so the hide-slide can compose with
         // it); slides down + fades out when a page asks to hide the nav, e.g.

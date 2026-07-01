@@ -141,7 +141,12 @@ export function RecordingShell({
   };
 
   return (
-    <div className="flex flex-col flex-1" style={{ paddingBottom: 60 }}>
+    // Desktop: center the whole recording view at a comfortable reading width
+    // so the transcript isn't stretched edge-to-edge across a wide monitor.
+    <div
+      className="flex flex-col flex-1 lg:max-w-5xl lg:mx-auto lg:w-full"
+      style={{ paddingBottom: 60 }}
+    >
       {/* Header: status dot + label + timer */}
       <div
         className="px-5 py-4 flex items-center justify-between"

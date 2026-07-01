@@ -113,9 +113,24 @@ export default function RecordPage() {
   useEffect(() => {
     try {
       const v = localStorage.getItem("tarjuman:transcript-layout");
-      if (v === "split" || v === "paired") setTranscriptLayout(v);
+      if (v === "split" || v === "paired") {
+        // Legitimate on-mount read of a stored preference (house convention —
+        // same as locale-context / try-live). Not a cascading render.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTranscriptLayout(v);
+        return;
+      }
     } catch {
       /* localStorage unavailable */
+    }
+    // No stored preference: default to the side-by-side split view on desktop
+    // (roomy two-column reading) and stacked cards on mobile. A later explicit
+    // toggle persists and wins over this default on the next load.
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 1024px)").matches
+    ) {
+      setTranscriptLayout("split");
     }
   }, []);
   const setLayout = (l: TranscriptLayout) => {
@@ -754,9 +769,11 @@ export default function RecordPage() {
   }
 
   return (
-    <div className="flex flex-col flex-1" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}>
+    <div className="flex flex-col flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] lg:pb-0">
+      {/* On desktop the sidebar carries brand + language + account, so this
+          per-page header is redundant — hide it (lg:hidden). */}
       <div
-        className="px-5 py-4 flex items-center justify-between"
+        className="px-5 py-4 flex items-center justify-between lg:hidden"
         style={{ borderBottom: `1px solid ${COLORS.border}` }}
       >
         <div className="flex items-center gap-2">
@@ -771,7 +788,7 @@ export default function RecordPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col p-5 gap-4">
+      <div className="flex-1 flex flex-col p-5 gap-4 lg:max-w-2xl lg:w-full lg:mx-auto lg:px-8 lg:pt-12">
         <LanguageSelector
           sourceLang={sourceLang}
           targetLang={targetLang}

@@ -38,7 +38,7 @@ export default function HistoryPage() {
   const visible = filtered?.length ?? 0;
 
   return (
-    <div className="flex flex-col flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+84px)]">
+    <div className="flex flex-col flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] lg:pb-8 lg:max-w-4xl lg:mx-auto lg:w-full">
       <div
         className="px-5 py-5"
         style={{ borderBottom: `1px solid ${COLORS.border}` }}
