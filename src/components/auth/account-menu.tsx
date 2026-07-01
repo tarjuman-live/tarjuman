@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
 import { COLORS } from "@/lib/constants";
 import { Icon } from "@/components/shared/icon";
+import { PlanBadge } from "@/components/billing/plan-badge";
 
 /**
  * Compact circular avatar in the top-right of the idle record screen.
@@ -102,14 +103,18 @@ export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
               className="px-4 py-3"
               style={{ borderBottom: `1px solid ${COLORS.border}` }}
             >
-              {me?.name && (
-                <div
-                  className="text-[13px] font-semibold truncate"
-                  style={{ color: COLORS.w }}
-                >
-                  {me.name}
-                </div>
-              )}
+              <div className="flex items-center gap-2 min-w-0">
+                {me?.name && (
+                  <span
+                    className="text-[13px] font-semibold truncate"
+                    style={{ color: COLORS.w }}
+                  >
+                    {me.name}
+                  </span>
+                )}
+                {/* Pro/Scholar symbol — renders nothing for free users. */}
+                <PlanBadge />
+              </div>
               <div
                 className="text-[12px] truncate"
                 style={{ color: COLORS.t3 }}

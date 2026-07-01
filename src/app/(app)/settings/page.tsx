@@ -7,7 +7,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import { PLAN_META, BILLING_ENABLED } from "../../../../convex/billingLimits";
-import { COLORS } from "@/lib/constants";
+import { COLORS, SHOW_PRICING } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { usePlan } from "@/hooks/use-plan";
 import { Icon } from "@/components/shared/icon";
@@ -284,9 +284,12 @@ export default function SettingsPage() {
             </span>
             <Icon name="chevron" size={16} color={COLORS.t4} />
           </button>
-        ) : !BILLING_ENABLED ? (
-          // Billing not live yet — don't push a paid upgrade that routes to a
-          // checkout we can't fulfill. Just confirm everything's unlocked.
+        ) : !(BILLING_ENABLED || SHOW_PRICING) ? (
+          // Billing not live yet AND pricing hidden (the live site) — don't push
+          // a paid upgrade that routes to a checkout we can't fulfill. Just
+          // confirm everything's unlocked. On localhost (SHOW_PRICING) the
+          // Upgrade CTA below shows so the flow is testable against test-mode
+          // Stripe; flip BILLING_ENABLED at launch to show it everywhere.
           <div className="w-full rounded-2xl px-4 py-3.5" style={cardStyle}>
             <span className="block text-[14px] font-semibold" style={{ color: COLORS.w }}>
               {t("settings.free")}

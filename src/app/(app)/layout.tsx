@@ -7,6 +7,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../../convex/_generated/api";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Sidebar } from "@/components/layout/sidebar";
+import { UpgradeWatcher } from "@/components/billing/upgrade-watcher";
 import { NavVisibilityProvider } from "@/components/layout/nav-visibility";
 import { Icon } from "@/components/shared/icon";
 import { COLORS } from "@/lib/constants";
@@ -105,6 +106,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             }}
           >
             {children}
+            <UpgradeWatcher />
             <BottomNav />
           </div>
         </div>
