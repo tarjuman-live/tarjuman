@@ -40,9 +40,14 @@ const NAV: {
   },
 ];
 
+// Item height (h-11 = 44px) + gap (gap-1 = 4px) → the sliding pill's per-item
+// vertical offset.
+const NAV_ITEM_PITCH = 48;
+
 export function Sidebar() {
   const pathname = usePathname();
   const { t } = useLocale();
+  const activeIndex = NAV.findIndex((n) => n.matches(pathname));
 
   return (
     <aside
@@ -71,32 +76,43 @@ export function Sidebar() {
         </span>
       </Link>
 
-      {/* Primary nav */}
-      <nav className="flex flex-col gap-1 px-3 mt-2">
-        {NAV.map((item) => {
-          const active = item.matches(pathname);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              // Inline background only when active, so the hover class isn't
-              // overridden by an inline `transparent` on inactive items.
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors hover:bg-[var(--color-surface-light)]"
+      {/* Primary nav — a single active pill glides between items (fluid),
+          with the icon/label color crossfading in sync. */}
+      <div className="px-3 mt-2">
+        <nav className="relative">
+          {activeIndex >= 0 && (
+            <div
+              aria-hidden
+              className="sidebar-nav-pill absolute inset-x-0 top-0 h-11 rounded-xl"
               style={{
-                ...(active ? { background: COLORS.accentSoft } : {}),
-                color: active ? COLORS.accent : COLORS.t2,
+                transform: `translateY(${activeIndex * NAV_ITEM_PITCH}px)`,
+                background: COLORS.accentSoft,
               }}
-            >
-              <Icon
-                name={item.icon}
-                size={20}
-                color={active ? COLORS.accent : COLORS.t2}
-              />
-              {t(item.labelKey)}
-            </Link>
-          );
-        })}
-      </nav>
+            />
+          )}
+          <div className="relative flex flex-col gap-1">
+            {NAV.map((item) => {
+              const active = item.matches(pathname);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="relative z-10 flex items-center gap-3 h-11 px-3 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ color: active ? COLORS.accent : COLORS.t2 }}
+                >
+                  <Icon
+                    name={item.icon}
+                    size={20}
+                    color={active ? COLORS.accent : COLORS.t2}
+                    className="transition-colors"
+                  />
+                  {t(item.labelKey)}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
 
       <div className="flex-1" />
 
@@ -105,8 +121,8 @@ export function Sidebar() {
         className="flex items-center gap-2 px-4 py-4"
         style={{ borderTop: `1px solid ${COLORS.border}` }}
       >
-        <LocaleSwitcher compact />
-        <AccountMenu />
+        <LocaleSwitcher compact dropUp />
+        <AccountMenu dropUp />
       </div>
     </aside>
   );

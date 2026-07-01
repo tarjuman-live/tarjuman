@@ -10,7 +10,13 @@ import { useLocale } from "@/lib/i18n/locale-context";
  * App-language picker (globe). `compact` shows just the globe (for the record
  * header); otherwise it shows the current language's native name (for Settings).
  */
-export function LocaleSwitcher({ compact = false }: { compact?: boolean }) {
+export function LocaleSwitcher({
+  compact = false,
+  dropUp = false,
+}: {
+  compact?: boolean;
+  dropUp?: boolean;
+}) {
   const { locale, setLocale } = useLocale();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -40,11 +46,13 @@ export function LocaleSwitcher({ compact = false }: { compact?: boolean }) {
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`h-9 rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors ${
-          compact ? "w-9 justify-center" : "px-3"
+        className={`rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors ${
+          compact ? "w-9 h-9 justify-center" : "h-9 px-3"
         }`}
         style={{
-          background: COLORS.surface,
+          // Reads as a tile (rounded-xl on a raised surface) rather than a
+          // hairline button — matches the app's tile language.
+          background: compact ? COLORS.surfaceLight : COLORS.surface,
           border: `1px solid ${open ? COLORS.accent : COLORS.borderLight}`,
           color: COLORS.w,
         }}
@@ -71,7 +79,11 @@ export function LocaleSwitcher({ compact = false }: { compact?: boolean }) {
       {open && (
         <div
           role="listbox"
-          className="absolute end-0 mt-1.5 z-50 max-h-[60vh] overflow-auto min-w-[180px] rounded-xl py-1 animate-in fade-in slide-in-from-top-1 duration-150"
+          className={`absolute z-50 max-h-[60vh] overflow-auto min-w-[180px] rounded-xl py-1 animate-in fade-in duration-150 ${
+            dropUp
+              ? "start-0 bottom-full mb-1.5 slide-in-from-bottom-1"
+              : "end-0 mt-1.5 slide-in-from-top-1"
+          }`}
           style={{
             background: COLORS.surface,
             border: `1px solid ${COLORS.borderLight}`,

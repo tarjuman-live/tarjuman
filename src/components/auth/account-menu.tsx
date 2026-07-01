@@ -23,7 +23,7 @@ import { Icon } from "@/components/shared/icon";
  * the avatar vanish and stranded the user with no way to sign out. Sign out
  * works regardless of `me`, so it's always available.
  */
-export function AccountMenu() {
+export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
   const me = useQuery(api.users.me);
   const { signOut } = useAuthActions();
   const router = useRouter();
@@ -89,7 +89,9 @@ export function AccountMenu() {
             onClick={() => setOpen(false)}
           />
           <div
-            className="absolute right-0 top-10 z-50 w-56 rounded-xl overflow-hidden"
+            className={`absolute z-50 w-56 rounded-xl overflow-hidden ${
+              dropUp ? "left-0 bottom-full mb-2" : "right-0 top-10"
+            }`}
             style={{
               background: COLORS.surface,
               border: `1px solid ${COLORS.borderLight}`,
