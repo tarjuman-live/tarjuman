@@ -59,7 +59,7 @@ export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
         onClick={() => setOpen((o) => !o)}
         aria-label="Account menu"
         aria-busy={loading}
-        className={`w-8 h-8 rounded-full grid place-items-center text-[12px] font-bold cursor-pointer transition-transform active:scale-95 overflow-hidden${
+        className={`w-8 h-8 rounded-xl grid place-items-center text-[12px] font-bold cursor-pointer transition-transform active:scale-95 overflow-hidden${
           loading ? " animate-pulse" : ""
         }`}
         style={{

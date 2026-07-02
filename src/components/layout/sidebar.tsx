@@ -51,15 +51,22 @@ export function Sidebar() {
 
   return (
     <aside
-      // z-30 lifts the rail's stacking context above the opaque main column so
-      // the footer's language/account menus float over the content instead of
-      // being clipped at the rail's edge (sticky already makes its own context).
-      className="hidden lg:flex lg:flex-col lg:sticky lg:top-0 lg:h-[100dvh] lg:w-60 shrink-0 lg:z-30"
-      style={{
-        background: COLORS.surface,
-        borderRight: `1px solid ${COLORS.border}`,
-      }}
+      // A floating "island" tile: the rail is detached from the screen edges
+      // (lg:p-3 gutter) into a rounded, bordered panel with a soft shadow —
+      // same island language as the landing nav. z-30 lifts its stacking context
+      // above the opaque main column so the footer's language/account menus
+      // (which open upward) float over the content instead of being clipped.
+      className="hidden lg:block lg:sticky lg:top-0 lg:h-[100dvh] shrink-0 lg:z-30 lg:p-3"
     >
+      <div
+        className="flex flex-col h-full w-60 rounded-2xl"
+        style={{
+          background: COLORS.surface,
+          border: `1px solid ${COLORS.borderLight}`,
+          boxShadow:
+            "0 12px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
+        }}
+      >
       {/* Brand — links home to the recorder */}
       <Link
         href="/record"
@@ -126,6 +133,7 @@ export function Sidebar() {
       >
         <LocaleSwitcher compact dropUp />
         <AccountMenu dropUp />
+      </div>
       </div>
     </aside>
   );
