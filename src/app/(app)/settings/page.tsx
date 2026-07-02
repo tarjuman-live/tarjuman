@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { PLAN_META, BILLING_ENABLED } from "../../../../convex/billingLimits";
 import { COLORS, SHOW_PRICING } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
@@ -18,6 +19,7 @@ import { LanguageSelector } from "@/components/recording/language-selector";
 import { Toggle } from "@/components/settings/toggle";
 import { PromptDialog } from "@/components/shared/prompt-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { PlanBadge } from "@/components/billing/plan-badge";
 
 // First-run mic tips are device-local UI state (see positioning-tips.tsx).
 const POSITIONING_TIPS_ACK_KEY = "livetranscribe:positioning-tips-ack";
@@ -28,6 +30,8 @@ export default function SettingsPage() {
   const { t } = useLocale();
   const updatePrefs = useMutation(api.preferences.update);
   const updateProfile = useMutation(api.users.updateProfile);
+  const generateUploadUrl = useMutation(api.users.generateUploadUrl);
+  const setProfileImage = useMutation(api.users.setProfileImage);
   const deleteAccount = useMutation(api.users.deleteAccount);
   const subscription = useQuery(api.subscriptions.getMySubscription);
   const plan = usePlan();
@@ -36,6 +40,47 @@ export default function SettingsPage() {
   const router = useRouter();
 
   const [nameOpen, setNameOpen] = useState(false);
+
+  // Profile picture upload (Convex storage). `me.image` is reactive, so the
+  // avatar swaps to the new picture the moment setProfileImage lands.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageBroken, setImageBroken] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // reset so re-picking the same file still fires onChange
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setImageError("Please choose an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError("Image must be under 5 MB.");
+      return;
+    }
+    setUploadingImage(true);
+    setImageError(null);
+    setImageBroken(false);
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!res.ok) throw new Error("Upload failed. Please try again.");
+      const { storageId } = (await res.json()) as { storageId: string };
+      await setProfileImage({ storageId: storageId as Id<"_storage"> });
+    } catch (err) {
+      setImageError(
+        err instanceof Error ? err.message : "Couldn't update your picture."
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   // Stripe billing (test-mode experiment). Both actions return a { url } we
   // redirect the whole tab to — Checkout for upgrades, the Customer Portal to
@@ -181,23 +226,71 @@ export default function SettingsPage() {
         <div className={sectionLabel}>{t("settings.account")}</div>
         <div className="rounded-2xl overflow-hidden" style={cardStyle}>
           <div className="px-4 py-4 flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-full grid place-items-center text-[14px] font-bold shrink-0"
+            {/* Avatar — tap to change your picture (upload → Convex storage). */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage}
+              aria-label="Change profile picture"
+              className="group relative w-12 h-12 rounded-full overflow-hidden grid place-items-center text-[15px] font-bold shrink-0 cursor-pointer transition-transform active:scale-95 disabled:cursor-wait"
               style={{
                 background: COLORS.accentSoft,
                 border: `1px solid ${COLORS.accent}40`,
                 color: COLORS.accent,
               }}
             >
-              {initial}
-            </div>
+              {me.image && !imageBroken ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={me.image}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={() => setImageBroken(true)}
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                initial
+              )}
+              {/* Edit overlay on hover / while uploading. */}
+              <span
+                className={`absolute inset-0 grid place-items-center transition-opacity ${
+                  uploadingImage ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                }`}
+                style={{ background: "rgba(0,0,0,0.45)" }}
+              >
+                {uploadingImage ? (
+                  <span
+                    className="w-4 h-4 rounded-full border-2 animate-spin"
+                    style={{ borderColor: `${COLORS.w} transparent ${COLORS.w} ${COLORS.w}` }}
+                  />
+                ) : (
+                  <Icon name="edit" size={15} color={COLORS.w} />
+                )}
+              </span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
             <div className="min-w-0">
-              <div className="text-[14px] font-semibold truncate" style={{ color: COLORS.w }}>
-                {me.name ?? "Your account"}
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[14px] font-semibold truncate" style={{ color: COLORS.w }}>
+                  {me.name ?? "Your account"}
+                </span>
+                {/* Pro/Scholar symbol — renders nothing for free users. */}
+                <PlanBadge />
               </div>
               <div className="text-[12px] truncate" style={{ color: COLORS.t3 }}>
                 {me.email ?? "—"}
               </div>
+              {imageError && (
+                <div className="text-[11px] mt-0.5" style={{ color: COLORS.red }}>
+                  {imageError}
+                </div>
+              )}
             </div>
           </div>
           <div style={{ borderTop: `1px solid ${COLORS.border}` }} />
@@ -246,7 +339,12 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Subscription */}
+      {/* Subscription — only shown when there's an actionable upgrade/downgrade
+          path: billing live, or localhost (SHOW_PRICING) against test-mode
+          Stripe. On the live site while billing is off, a non-actionable
+          "Free · all unlocked" card is just noise, so the whole section is
+          hidden until billing launches. */}
+      {(BILLING_ENABLED || SHOW_PRICING) && (
       <div className="px-5 pt-6">
         <div className={sectionLabel}>{t("settings.subscription")}</div>
         {subscription === undefined ? (
@@ -284,20 +382,6 @@ export default function SettingsPage() {
             </span>
             <Icon name="chevron" size={16} color={COLORS.t4} />
           </button>
-        ) : !(BILLING_ENABLED || SHOW_PRICING) ? (
-          // Billing not live yet AND pricing hidden (the live site) — don't push
-          // a paid upgrade that routes to a checkout we can't fulfill. Just
-          // confirm everything's unlocked. On localhost (SHOW_PRICING) the
-          // Upgrade CTA below shows so the flow is testable against test-mode
-          // Stripe; flip BILLING_ENABLED at launch to show it everywhere.
-          <div className="w-full rounded-2xl px-4 py-3.5" style={cardStyle}>
-            <span className="block text-[14px] font-semibold" style={{ color: COLORS.w }}>
-              {t("settings.free")}
-            </span>
-            <span className="block text-[12px] mt-0.5" style={{ color: COLORS.t3 }}>
-              {t("settings.allUnlocked")}
-            </span>
-          </div>
         ) : (
           <Link
             href="/plans"
@@ -326,6 +410,7 @@ export default function SettingsPage() {
             </div>
           )}
       </div>
+      )}
 
       {/* Audio & voice */}
       <div className="px-5 pt-6">

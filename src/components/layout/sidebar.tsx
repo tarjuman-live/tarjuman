@@ -97,6 +97,10 @@ export function Sidebar() {
               style={{
                 transform: `translateY(${activeIndex * NAV_ITEM_PITCH}px)`,
                 background: COLORS.accentSoft,
+                // The active item's green outline + glow — stays put (glides
+                // with the pill) so the current page reads as selected.
+                border: `1px solid ${COLORS.accent}`,
+                boxShadow: `0 0 16px ${COLORS.accent}40`,
               }}
             />
           )}
@@ -107,7 +111,14 @@ export function Sidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative z-10 flex items-center gap-3 h-11 px-3 rounded-xl text-sm font-semibold transition-colors"
+                  // border-transparent keeps the box size stable; inactive items
+                  // light up with the same green outline + glow on hover (the
+                  // active item's outline is drawn by the pill behind it).
+                  className={`relative z-10 flex items-center gap-3 h-11 px-3 rounded-xl text-sm font-semibold border border-transparent transition-all duration-200 ${
+                    active
+                      ? ""
+                      : "hover:border-[var(--color-accent)] hover:bg-[var(--color-accent-soft)] hover:shadow-[0_0_16px_rgba(46,204,113,0.35)]"
+                  }`}
                   style={{ color: active ? COLORS.accent : COLORS.t2 }}
                 >
                   <Icon

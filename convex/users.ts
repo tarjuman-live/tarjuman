@@ -63,6 +63,37 @@ export const updateProfile = mutation({
 });
 
 /**
+ * Profile picture upload (Convex file storage). The client asks for a
+ * short-lived upload URL, POSTs the image bytes to it, then hands back the
+ * resulting storageId so we can resolve a served URL and store it on the user.
+ */
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Set the signed-in user's profile image from a completed upload. Patches the
+ * `image` field on the authTables `users` doc — the same field OAuth (Google)
+ * populates — so the avatar everywhere (account menu, settings) picks it up
+ * reactively via `me`.
+ */
+export const setProfileImage = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, { storageId }) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const url = await ctx.storage.getUrl(storageId);
+    if (!url) throw new Error("Uploaded image not found");
+    await ctx.db.patch(userId, { image: url });
+  },
+});
+
+/**
  * Deletes the signed-in user's account and all their session data.
  *
  * GDPR Art. 17 (right to erasure) requires this. Cascade-deletes:
