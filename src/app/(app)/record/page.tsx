@@ -688,7 +688,8 @@ export default function RecordPage() {
     });
   };
 
-  const handleNewRecording = () => {
+  // "Done" — leave the results screen and go back to the idle/home screen.
+  const handleDone = () => {
     setCompletedSession(null);
   };
 
@@ -698,7 +699,10 @@ export default function RecordPage() {
     return (
       <CompletedView
         session={completedSession}
-        onNewRecording={handleNewRecording}
+        // "New recording" actually STARTS a recording (handleStart clears the
+        // completed view + begins capture), not just returns to idle.
+        onNewRecording={handleStart}
+        onDone={handleDone}
         onSummaryGenerated={handleSummaryGenerated}
       />
     );
