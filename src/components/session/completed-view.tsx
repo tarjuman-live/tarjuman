@@ -138,7 +138,8 @@ export function CompletedView({
         className="px-5 py-3 flex flex-col gap-2"
         style={{ borderTop: `1px solid ${COLORS.border}` }}
       >
-        {/* Secondary row: Copy + Done. Done leaves the results and goes home. */}
+        {/* Secondary row: Copy + New recording (New recording actually starts
+            a new capture; it's the smaller action now — Done is primary). */}
         <div className="flex gap-2">
           <button
             type="button"
@@ -163,18 +164,18 @@ export function CompletedView({
           </button>
           <button
             type="button"
-            onClick={onDone}
+            onClick={onNewRecording}
             className="flex-1 h-11 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer border bg-[var(--color-surface)] border-[var(--color-border-light)] hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-light)] transition-all duration-200 active:scale-[0.98]"
             style={{ color: COLORS.t2 }}
           >
-            <Icon name="check" size={16} color={COLORS.t2} />
-            Done
+            <Icon name="mic" size={16} color={COLORS.t2} />
+            New recording
           </button>
         </div>
-        {/* Primary: actually starts a new recording. */}
+        {/* Primary: Done — leaves the results and goes back to the home screen. */}
         <button
           type="button"
-          onClick={onNewRecording}
+          onClick={onDone}
           className="h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold cursor-pointer transition-all duration-200 active:scale-[0.98] hover:-translate-y-0.5 hover:brightness-110"
           style={{
             background: COLORS.accent,
@@ -182,8 +183,8 @@ export function CompletedView({
             boxShadow: `0 0 18px ${COLORS.accent}30`,
           }}
         >
-          <Icon name="mic" size={16} color="#0A0F1C" />
-          New recording
+          <Icon name="check" size={16} color="#0A0F1C" />
+          Done
         </button>
       </div>
     </div>
