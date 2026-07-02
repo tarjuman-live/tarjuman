@@ -6,6 +6,12 @@ import { Icon } from "@/components/shared/icon";
 import { UI_LOCALES } from "@/lib/i18n/locales";
 import { useLocale } from "@/lib/i18n/locale-context";
 
+// Alphabetical by English label — a predictable A→Z the user can scan, since
+// the native names span many scripts and wouldn't sort into one sensible order.
+const SORTED_LOCALES = [...UI_LOCALES].sort((a, b) =>
+  a.label.localeCompare(b.label)
+);
+
 /**
  * App-language picker (globe). `compact` shows just the globe (for the record
  * header); otherwise it shows the current language's native name (for Settings).
@@ -25,10 +31,10 @@ export function LocaleSwitcher({
 
   const q = query.trim().toLowerCase();
   const filtered = q
-    ? UI_LOCALES.filter((l) =>
+    ? SORTED_LOCALES.filter((l) =>
         `${l.native} ${l.label} ${l.code}`.toLowerCase().includes(q)
       )
-    : UI_LOCALES;
+    : SORTED_LOCALES;
 
   // Fresh search each time it opens.
   useEffect(() => {
@@ -133,47 +139,58 @@ export function LocaleSwitcher({
               No languages found.
             </div>
           )}
-          {filtered.map((l) => {
-            const selected = l.code === locale;
-            return (
-              <button
-                key={l.code}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                onClick={() => {
-                  setLocale(l.code);
-                  setOpen(false);
-                }}
-                className="w-full px-3 py-2 flex items-center justify-between gap-3 text-left text-[13px] font-semibold cursor-pointer transition-colors hover:bg-[var(--color-surface-light)]"
-                style={{ color: selected ? COLORS.accent : COLORS.t2 }}
-              >
-                <span className="flex items-center gap-2">
-                  <span>{l.native}</span>
-                  <span className="text-[11px]" style={{ color: COLORS.t4 }}>
-                    {l.label}
+          {/* px-1 so each item's green outline/glow insets from the dropdown edge */}
+          <div className="px-1 pb-1 flex flex-col gap-0.5">
+            {filtered.map((l) => {
+              const selected = l.code === locale;
+              return (
+                <button
+                  key={l.code}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() => {
+                    setLocale(l.code);
+                    setOpen(false);
+                  }}
+                  // Green outline + glow on hover; the selected item keeps a
+                  // softer persistent green outline so the current language is
+                  // obvious at a glance. Border lives in classes (not inline) so
+                  // the hover :hover rule can win.
+                  className={`w-full px-3 py-2 flex items-center justify-between gap-3 text-left text-[13px] font-semibold cursor-pointer rounded-lg border transition-all duration-150 hover:border-[var(--color-accent)] hover:bg-[var(--color-accent-soft)] hover:shadow-[0_0_18px_rgba(46,204,113,0.4)] ${
+                    selected
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)] shadow-[0_0_14px_rgba(46,204,113,0.28)]"
+                      : "border-transparent"
+                  }`}
+                  style={{ color: selected ? COLORS.accent : COLORS.t2 }}
+                >
+                  <span className="flex items-center gap-2">
+                    <span>{l.native}</span>
+                    <span className="text-[11px]" style={{ color: COLORS.t4 }}>
+                      {l.label}
+                    </span>
                   </span>
-                </span>
-                {selected && (
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={COLORS.accent}
-                    strokeWidth="3"
-                    aria-hidden
-                  >
-                    <path
-                      d="M5 13l4 4L19 7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                )}
-              </button>
-            );
-          })}
+                  {selected && (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={COLORS.accent}
+                      strokeWidth="3"
+                      aria-hidden
+                    >
+                      <path
+                        d="M5 13l4 4L19 7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
