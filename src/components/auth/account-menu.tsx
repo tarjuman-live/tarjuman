@@ -90,8 +90,13 @@ export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
             onClick={() => setOpen(false)}
           />
           <div
-            className={`absolute z-50 w-56 rounded-xl overflow-hidden ${
-              dropUp ? "left-0 bottom-full mb-2" : "right-0 top-10"
+            // Animate in so it glides out of the avatar, never just appears
+            // (same tw-animate-css convention as the language menu / modals).
+            // origin at the trigger corner so the zoom grows from the avatar.
+            className={`absolute z-50 w-56 rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${
+              dropUp
+                ? "left-0 bottom-full mb-2 origin-bottom-left slide-in-from-bottom-1"
+                : "right-0 top-10 origin-top-right slide-in-from-top-1"
             }`}
             style={{
               background: COLORS.surface,
