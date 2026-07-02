@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SITE_NAME, SOCIAL_LINKS, CONTACT_EMAIL } from "@/lib/site";
 import { Reveal } from "./reveal";
+import { T } from "./t";
 
 // Monochrome brand glyphs (simple-icons paths). currentColor so they inherit
 // the muted text color and turn accent green on hover — restrained, not loud
@@ -42,25 +43,25 @@ export function Footer() {
                 href="/record"
                 className="hover:text-[var(--color-accent)] transition-colors"
               >
-                Record
+                <T k="nav.record" />
               </Link>
               <Link
                 href="/privacy"
                 className="hover:text-[var(--color-accent)] transition-colors"
               >
-                Privacy
+                <T k="lp.privacy" />
               </Link>
               <Link
                 href="/terms"
                 className="hover:text-[var(--color-accent)] transition-colors"
               >
-                Terms
+                <T k="lp.terms" />
               </Link>
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
                 className="px-4 py-1.5 rounded-full border border-[var(--color-border-light)] text-[var(--color-text-2)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent-soft)] transition-colors"
               >
-                Contact
+                <T k="lp.contact" />
               </a>
             </nav>
 

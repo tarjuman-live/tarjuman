@@ -22,21 +22,25 @@ export function EarlyNote() {
 
       <Reveal delay={90}>
         <div className="mt-10 mx-auto max-w-2xl rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-8 sm:p-10 text-center transition duration-200 hover:-translate-y-1 hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-light)] hover:shadow-[0_10px_30px_rgba(46,204,113,0.18)]">
-          <p className="text-lg sm:text-xl font-semibold text-[var(--color-text-1)] leading-relaxed">
-            Tarjuman just launched.
+          <p
+            dir="auto"
+            className="text-lg sm:text-xl font-semibold text-[var(--color-text-1)] leading-relaxed"
+          >
+            <T k="lp.earlyLaunched" />
           </p>
-          <p className="mt-3 text-[var(--color-text-2)] leading-relaxed">
-            No paid reviews, no invented quotes — just the tool. Try it at this
-            week&apos;s khutbah, and tell us what worked and what broke.
+          <p
+            dir="auto"
+            className="mt-3 text-[var(--color-text-2)] leading-relaxed"
+          >
+            <T k="lp.earlyBody" />
           </p>
 
           <div className="mt-7 flex justify-center">
             <TryItFree />
           </div>
 
-          <p className="mt-7 text-xs text-[var(--color-text-4)]">
-            Real stories from real users will live here once people have shared
-            them — with their consent.
+          <p dir="auto" className="mt-7 text-xs text-[var(--color-text-4)]">
+            <T k="lp.earlyFootnote" />
           </p>
         </div>
       </Reveal>
