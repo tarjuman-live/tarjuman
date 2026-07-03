@@ -36,9 +36,33 @@ export const DARK_APPEARANCE: Appearance = {
     colorBackground: COLORS.surface, // #0E1525
     colorText: COLORS.w, // #F0F4F8
     colorTextSecondary: COLORS.t2, // #B0BEC5
+    colorTextPlaceholder: COLORS.t4, // muted placeholder
     colorDanger: COLORS.red, // #EF4444
     fontFamily: '"DM Sans", system-ui, sans-serif',
     borderRadius: "12px",
     spacingUnit: "4px",
+  },
+  // Pin the Stripe inputs/tabs to the app's tile look — dark tile background,
+  // hairline border, and an accent-green focus ring — so the PaymentElement
+  // reads as part of Tarjuman rather than a generic Stripe form.
+  rules: {
+    ".Input": {
+      backgroundColor: COLORS.bg, // #060B18 (one step below the surface)
+      border: `1px solid ${COLORS.borderLight}`,
+    },
+    ".Input:focus": {
+      border: `1px solid ${COLORS.accent}`,
+      boxShadow: `0 0 0 1px ${COLORS.accent}`,
+    },
+    ".Tab, .Block": {
+      backgroundColor: COLORS.bg,
+      border: `1px solid ${COLORS.borderLight}`,
+    },
+    ".Tab:hover": { border: `1px solid ${COLORS.accent}` },
+    ".Tab--selected": {
+      border: `1px solid ${COLORS.accent}`,
+      boxShadow: `0 0 0 1px ${COLORS.accent}`,
+    },
+    ".Label": { color: COLORS.t2 },
   },
 };
