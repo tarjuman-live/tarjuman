@@ -10,7 +10,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { UpgradeWatcher } from "@/components/billing/upgrade-watcher";
 import { NavVisibilityProvider } from "@/components/layout/nav-visibility";
 import { Icon } from "@/components/shared/icon";
-import { COLORS } from "@/lib/constants";
+import { COLORS, SHOW_PRICING } from "@/lib/constants";
 import { LocaleProvider } from "@/lib/i18n/locale-context";
 import { BILLING_ENABLED } from "../../../convex/billingLimits";
 
@@ -49,12 +49,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, me, signOut, router]);
 
-  // Billing is OFF (BILLING_ENABLED=false) → the whole /plans flow (pricing,
-  // checkout, complete) is a dead end with nothing to buy. Send anyone who
-  // lands on it back to the recorder instead of leaving an obsolete,
-  // non-functional page reachable.
+  // The whole /plans flow (pricing, checkout, manage, complete) is only
+  // reachable when there's an actionable billing path: billing live, OR
+  // localhost (SHOW_PRICING) against test-mode Stripe. On the live site while
+  // billing is off it's a dead end with nothing to buy, so bounce back to the
+  // recorder. (Must match the same gate the Settings upgrade card uses, or the
+  // localhost test flow — checkout + manage — would redirect away.)
   useEffect(() => {
-    if (!BILLING_ENABLED && pathname.startsWith("/plans")) {
+    if (!(BILLING_ENABLED || SHOW_PRICING) && pathname.startsWith("/plans")) {
       router.replace("/record");
     }
   }, [pathname, router]);

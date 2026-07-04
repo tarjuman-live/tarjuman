@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
@@ -35,7 +35,6 @@ export default function SettingsPage() {
   const deleteAccount = useMutation(api.users.deleteAccount);
   const subscription = useQuery(api.subscriptions.getMySubscription);
   const plan = usePlan();
-  const createPortalSession = useAction(api.stripe.createPortalSession);
   const { signOut } = useAuthActions();
   const router = useRouter();
 
@@ -82,29 +81,9 @@ export default function SettingsPage() {
     }
   };
 
-  // Stripe billing (test-mode experiment). Both actions return a { url } we
-  // redirect the whole tab to — Checkout for upgrades, the Customer Portal to
-  // manage/cancel. `subscription` is reactive, so the section flips Free ↔ Pro
-  // the moment the webhook lands.
-  const [billingBusy, setBillingBusy] = useState(false);
-  const [billingErrorOpen, setBillingErrorOpen] = useState(false);
-  const [billingErrorMessage, setBillingErrorMessage] = useState("");
-
-  const goToStripe = async (
-    create: (args: { origin: string }) => Promise<{ url: string }>
-  ) => {
-    setBillingBusy(true);
-    try {
-      const { url } = await create({ origin: window.location.origin });
-      window.location.href = url;
-    } catch (e) {
-      setBillingBusy(false);
-      setBillingErrorMessage(
-        e instanceof Error ? e.message : "Something went wrong. Please try again."
-      );
-      setBillingErrorOpen(true);
-    }
-  };
+  // Billing management is now a fully in-app DARK screen (/plans/manage) —
+  // no redirect to the white Stripe-hosted portal. `subscription` is reactive,
+  // so this section flips Free ↔ Pro the moment the webhook lands.
 
   // Optimistic local overrides so toggles/pickers feel instant; they fall
   // back to the stored pref, then the app default.
@@ -359,9 +338,8 @@ export default function SettingsPage() {
         ) : isPro ? (
           <button
             type="button"
-            onClick={() => void goToStripe(createPortalSession)}
-            disabled={billingBusy}
-            className="w-full rounded-2xl px-4 py-3.5 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/10 transition-colors disabled:opacity-50"
+            onClick={() => router.push("/plans/manage")}
+            className="w-full rounded-2xl px-4 py-3.5 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/10 transition-colors"
             style={cardStyle}
           >
             <span>
@@ -377,7 +355,7 @@ export default function SettingsPage() {
                 </span>
               </span>
               <span className="block text-[12px] mt-0.5" style={{ color: COLORS.t3 }}>
-                {billingBusy ? "Opening billing…" : `${proStatusLine} · Manage billing`}
+                {`${proStatusLine} · Manage billing`}
               </span>
             </span>
             <Icon name="chevron" size={16} color={COLORS.t4} />
@@ -522,17 +500,6 @@ export default function SettingsPage() {
         confirmLabel="OK"
         cancelLabel={null}
         onConfirm={() => setDeleteErrorOpen(false)}
-      />
-
-      {/* Billing error (Checkout / Portal failed to open) */}
-      <ConfirmDialog
-        open={billingErrorOpen}
-        onOpenChange={setBillingErrorOpen}
-        title="Billing unavailable"
-        message={billingErrorMessage}
-        confirmLabel="OK"
-        cancelLabel={null}
-        onConfirm={() => setBillingErrorOpen(false)}
       />
     </div>
   );
