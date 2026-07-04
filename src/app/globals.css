@@ -170,6 +170,27 @@ html {
   border-color: var(--color-red-main);
 }
 
+/* Mobile can't hover, so the landing cards play their lift + green outline +
+   glow as they scroll into view (the .touch-hover class is toggled by
+   AutoHoverGrid). Gated to touch devices — desktop keeps real :hover. */
+@media (hover: none) {
+  [data-hovercard] {
+    transition: transform 300ms ease, border-color 300ms ease,
+      box-shadow 300ms ease;
+  }
+  [data-hovercard].touch-hover {
+    transform: translateY(-6px);
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 14px 36px rgba(46, 204, 113, 0.2);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-hovercard].touch-hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
 /* Desktop sidebar nav — a single active pill glides between items (see
    sidebar.tsx). Motion-gated so reduced-motion users get an instant move. */
 .sidebar-nav-pill {
