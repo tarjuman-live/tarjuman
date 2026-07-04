@@ -87,7 +87,8 @@ export default function Home() {
                   ]}
                   className="font-semibold text-[var(--color-accent)]"
                 />{" "}
-                → English &amp; 30+ languages · No card required
+                into 30+ languages · Live transcription, translation &amp;
+                summaries · No card required
               </p>
             </Reveal>
           </div>

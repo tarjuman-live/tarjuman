@@ -77,23 +77,36 @@ export function LocaleSwitcher({
           color: COLORS.w,
         }}
       >
-        <Icon name="globe" size={16} color={open ? COLORS.accent : COLORS.t2} />
-        {!compact && (
-          <span className="text-[13px] font-semibold">{current?.native}</span>
-        )}
-        {!compact && (
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-            aria-hidden
+        {compact ? (
+          // Show the current language itself (its code) instead of a generic
+          // globe — so the control reads as "you're in English / العربية / …".
+          <span
+            className="text-[12px] font-bold uppercase"
+            style={{ color: open ? COLORS.accent : COLORS.t2 }}
           >
-            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+            {locale}
+          </span>
+        ) : (
+          <>
+            <Icon
+              name="globe"
+              size={16}
+              color={open ? COLORS.accent : COLORS.t2}
+            />
+            <span className="text-[13px] font-semibold">{current?.native}</span>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+              aria-hidden
+            >
+              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </>
         )}
       </button>
       {open && (

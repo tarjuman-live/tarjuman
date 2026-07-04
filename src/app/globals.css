@@ -47,6 +47,11 @@ html {
 body {
   min-height: 100vh;
   min-height: 100dvh;
+  /* Never let the whole page scroll sideways — only up/down. `clip` (not
+     `hidden`) doesn't create a scroll container, so position:sticky (the
+     desktop sidebar) still works. Intentional horizontal scrollers (e.g. the
+     /plans carousel) have their own overflow-x on an inner element. */
+  overflow-x: clip;
 }
 
 /* Prevent iOS Safari text-size adjustment */

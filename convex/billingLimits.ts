@@ -107,6 +107,7 @@ export const PLAN_META: Record<Plan, PlanMeta> = {
       "Unlimited sessions",
       "Unlimited AI summaries",
       "Unlimited recording length",
+      "AI voice dubbing",
       "Your full history, always",
     ],
   },
