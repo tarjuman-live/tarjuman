@@ -52,3 +52,6 @@ next-env.d.ts
 
 # Field-sim audio (downloaded khutbah + degraded PCM — not for VCS)
 bench/audio/
+
+# Screen recordings dropped in for review — never commit
+*.mov

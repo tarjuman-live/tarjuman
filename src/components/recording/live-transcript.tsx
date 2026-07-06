@@ -5,6 +5,7 @@ import { COLORS } from "@/lib/constants";
 import { isRtl } from "@/lib/utils";
 import { useStickyBottom } from "@/hooks/use-sticky-bottom";
 import { Icon } from "@/components/shared/icon";
+import { AnimateIn } from "./animate-in";
 import { renderTextWithLinks } from "@/lib/citation-renderer";
 import type { LiveSegment } from "@/types";
 
@@ -179,6 +180,7 @@ export function LiveTranscript({
           const sc = speakerColor(seg.speaker);
           return (
             <div key={seg.id} className="mb-5">
+              <AnimateIn variant="source">
               <div
                 dir={sourceRtl ? "rtl" : "ltr"}
                 className="px-4 py-3 rounded-2xl mb-[6px]"
@@ -210,7 +212,9 @@ export function LiveTranscript({
                   {sourceTextForDisplay}
                 </div>
               </div>
+              </AnimateIn>
               {translated && translated.length > 0 ? (
+                <AnimateIn variant="translation">
                 <div
                   dir={targetRtl ? "rtl" : "ltr"}
                   className="px-4 py-3 rounded-2xl"
@@ -232,6 +236,7 @@ export function LiveTranscript({
                     {renderTextWithLinks(translated)}
                   </div>
                 </div>
+                </AnimateIn>
               ) : pending?.has(seg.id) ? (
                 <div
                   className="px-4 py-3 rounded-2xl"

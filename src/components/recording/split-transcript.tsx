@@ -4,6 +4,7 @@ import { COLORS } from "@/lib/constants";
 import { isRtl, getLangName } from "@/lib/utils";
 import { useStickyBottom } from "@/hooks/use-sticky-bottom";
 import { Icon } from "@/components/shared/icon";
+import { AnimateIn } from "./animate-in";
 import { renderTextWithLinks } from "@/lib/citation-renderer";
 import {
   fontSizeForLang,
@@ -99,8 +100,9 @@ export function SplitTranscript({
             const text = merge?.combinedSourceText ?? seg.text;
             const sc = speakerColor(seg.speaker);
             return (
-              <div
+              <AnimateIn
                 key={seg.id}
+                variant="source"
                 className="mb-3"
                 style={{ textAlign: sourceRtl ? "right" : "left" }}
               >
@@ -122,7 +124,7 @@ export function SplitTranscript({
                 >
                   {text}
                 </div>
-              </div>
+              </AnimateIn>
             );
           })}
           {interimText && (
@@ -172,16 +174,18 @@ export function SplitTranscript({
                 style={{ textAlign: targetRtl ? "right" : "left" }}
               >
                 {translated && translated.length > 0 ? (
-                  <div
-                    style={{
-                      color: COLORS.w,
-                      fontSize: targetFontSize,
-                      lineHeight: 1.7,
-                      fontWeight: targetRtl ? 600 : 500,
-                    }}
-                  >
-                    {renderTextWithLinks(translated)}
-                  </div>
+                  <AnimateIn variant="translation">
+                    <div
+                      style={{
+                        color: COLORS.w,
+                        fontSize: targetFontSize,
+                        lineHeight: 1.7,
+                        fontWeight: targetRtl ? 600 : 500,
+                      }}
+                    >
+                      {renderTextWithLinks(translated)}
+                    </div>
+                  </AnimateIn>
                 ) : pending?.has(seg.id) ? (
                   <div className="text-[14px]" style={{ color: COLORS.t3 }}>
                     …translating
