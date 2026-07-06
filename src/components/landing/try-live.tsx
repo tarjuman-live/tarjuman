@@ -102,6 +102,13 @@ export function TryLive() {
   const segIdRef = useRef(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  // Web Speech is browser/network-dependent and fails in many quiet ways
+  // (no-speech, network, language-not-supported, Safari half-support). Surface
+  // the actual reason instead of an infinite silent "Listening".
+  const [srError, setSrError] = useState<string | null>(null);
+  const heardRef = useRef(false); // any interim/final result seen this session
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Auth popup for the post-trial nudge.
   const [modalMounted, setModalMounted] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -125,6 +132,10 @@ export function TryLive() {
 
   const stop = useCallback((next: Status) => {
     activeRef.current = false;
+    if (watchdogRef.current) {
+      clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
     const rec = recRef.current;
     if (rec) {
       rec.onend = null;
@@ -189,6 +200,8 @@ export function TryLive() {
     setInterim("");
     setElapsed(0);
     setHint(null);
+    setSrError(null);
+    heardRef.current = false;
     segIdRef.current = 0;
 
     const rec = new SR();
@@ -197,6 +210,8 @@ export function TryLive() {
     rec.interimResults = true;
 
     rec.onresult = (e: SREvent) => {
+      heardRef.current = true;
+      setSrError(null);
       let live = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const res = e.results[i];
@@ -227,21 +242,34 @@ export function TryLive() {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
         stop("denied");
       } else if (e.error === "no-speech" || e.error === "aborted") {
-        /* transient — onend will restart if still active */
+        /* transient — onend restarts if still active */
+      } else if (e.error === "network") {
+        setSrError(
+          "Can't reach the speech service. Your browser sends audio to the cloud to transcribe — check your internet connection."
+        );
+      } else if (e.error === "language-not-supported") {
+        setSrError(
+          `Your browser can't do live recognition for ${speak.label}. Try Chrome or Edge, or pick a different language.`
+        );
+      } else if (e.error === "audio-capture") {
+        setSrError("No microphone was detected.");
       } else {
-        setHint("Mic hiccup — try again.");
+        setSrError(`Speech recognition error: ${e.error}`);
       }
     };
 
     rec.onend = () => {
-      // Chrome ends recognition periodically; restart while still active.
-      if (activeRef.current) {
+      // Chrome ends recognition periodically; restart (after a beat, to dodge
+      // the "recognition has already started" race) while still active.
+      if (!activeRef.current) return;
+      setTimeout(() => {
+        if (!activeRef.current) return;
         try {
           rec.start();
         } catch {
-          /* will settle on next tick */
+          /* transient InvalidStateError — the next onend/tick recovers */
         }
-      }
+      }, 150);
     };
 
     recRef.current = rec;
@@ -249,10 +277,20 @@ export function TryLive() {
     try {
       rec.start();
       setStatus("listening");
+      // Watchdog: if we've heard nothing after 8s, it's not going to work
+      // silently — tell the user what to check.
+      if (watchdogRef.current) clearTimeout(watchdogRef.current);
+      watchdogRef.current = setTimeout(() => {
+        if (activeRef.current && !heardRef.current) {
+          setSrError(
+            "Not picking up any speech yet. Check that your mic works and you're speaking — this works best in Chrome or Edge (Safari's live transcription is limited)."
+          );
+        }
+      }, 8000);
     } catch {
       setStatus("idle");
     }
-  }, [speak.bcp, sourceCode, targetCode, translate, stop]);
+  }, [speak.bcp, speak.label, sourceCode, targetCode, translate, stop]);
 
   // Elapsed timer + hard cap.
   useEffect(() => {
@@ -383,7 +421,20 @@ export function TryLive() {
           </div>
         )}
 
-        {segs.length === 0 && status === "listening" && (
+        {srError && status === "listening" && (
+          <div
+            className="rounded-xl px-3.5 py-3 text-[13px] leading-relaxed"
+            style={{
+              background: COLORS.amberSoft,
+              border: `1px solid ${COLORS.amber}55`,
+              color: COLORS.w,
+            }}
+          >
+            {srError}
+          </div>
+        )}
+
+        {segs.length === 0 && status === "listening" && !srError && (
           <div className="flex-1 grid place-items-center text-center">
             <div className="text-sm" style={{ color: COLORS.t3 }}>
               Listening… say something.
