@@ -12,6 +12,8 @@ import { renderTextWithLinks } from "@/lib/citation-renderer";
 import { usePlan } from "@/hooks/use-plan";
 import { UpgradeCard } from "@/components/billing/upgrade-card";
 import { SummaryLoading } from "@/components/session/summary-loading";
+import { ProAiTools } from "@/components/session/pro-ai-tools";
+import { LangDropdown } from "@/components/session/lang-dropdown";
 
 interface NormalizedSegment {
   id: string;
@@ -69,6 +71,10 @@ export function SessionBody({
   const [summary, setSummary] = useState<SummaryState>(() =>
     existingSummary ? { phase: "ready", text: existingSummary } : { phase: "idle" }
   );
+  // The language to summarize in (defaults to the translation target; a Pro
+  // user can pick any of the 30+ languages — the "any-language summary").
+  const [summaryLang, setSummaryLang] = useState(targetLang);
+  const summaryRtl = isRtl(summaryLang);
   // Static view (completed session after Stop + the saved-session detail page):
   // open at the TOP so the summary + Generate-Summary CTA are visible, instead
   // of auto-gliding to the bottom of the transcript on mount.
@@ -98,7 +104,7 @@ export function SessionBody({
         headers,
         body: JSON.stringify({
           transcript: transcriptForLLM,
-          targetLanguage: targetLang,
+          targetLanguage: summaryLang,
         }),
       });
 
@@ -208,6 +214,21 @@ export function SessionBody({
     }
   };
 
+  // De-merged transcript for the AI tools: drop verse/hadith children absorbed
+  // into a parent, and use the combined text on parents.
+  const aiSegments = (() => {
+    const suppressed = new Set<string>();
+    for (const s of segments) {
+      for (const c of s.mergedFromIds ?? []) suppressed.add(c);
+    }
+    return segments
+      .filter((s) => !suppressed.has(s.id))
+      .map((s) => ({
+        sourceText: s.combinedSourceText ?? s.sourceText,
+        translatedText: s.combinedTranslatedText ?? s.translatedText,
+      }));
+  })();
+
   return (
     <div
       ref={scrollRef}
@@ -223,20 +244,24 @@ export function SessionBody({
             />
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={segments.length === 0}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold text-sm cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed mb-5"
-            style={{
-              background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDk})`,
-              color: "#0A0F1C",
-              boxShadow: `0 0 24px ${COLORS.accent}35`,
-            }}
-          >
-            <Icon name="sparkle" size={16} color="#0A0F1C" />
-            Generate AI Summary
-          </button>
+          <div className="flex items-center gap-2 mb-5">
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={segments.length === 0}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold text-sm cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDk})`,
+                color: "#0A0F1C",
+                boxShadow: `0 0 24px ${COLORS.accent}35`,
+              }}
+            >
+              <Icon name="sparkle" size={16} color="#0A0F1C" />
+              Generate AI Summary
+            </button>
+            {/* Summary language — any of the 30+, not just the target. */}
+            <LangDropdown value={summaryLang} onChange={setSummaryLang} />
+          </div>
         ))}
 
       {summary.phase === "loading" && <SummaryLoading />}
@@ -259,15 +284,15 @@ export function SessionBody({
             </span>
           </div>
           <div
-            dir={targetRtl ? "rtl" : "ltr"}
+            dir={summaryRtl ? "rtl" : "ltr"}
             className="summary-markdown"
             style={{
               color: COLORS.w,
-              direction: targetRtl ? "rtl" : "ltr",
-              textAlign: targetRtl ? "right" : "left",
+              direction: summaryRtl ? "rtl" : "ltr",
+              textAlign: summaryRtl ? "right" : "left",
               fontSize: targetFontSize - 2,
               lineHeight: 1.7,
-              fontWeight: targetRtl ? 500 : 400,
+              fontWeight: summaryRtl ? 500 : 400,
             }}
           >
             <ReactMarkdown
@@ -382,6 +407,13 @@ export function SessionBody({
           </button>
         </div>
       )}
+
+      {/* Pro AI tools — study notes, Ask-the-lecture, any-language translation. */}
+      <ProAiTools
+        segments={aiSegments}
+        sourceLang={sourceLang}
+        targetLang={targetLang}
+      />
 
       <div
         className="text-[11px] font-bold uppercase tracking-wider mb-3"

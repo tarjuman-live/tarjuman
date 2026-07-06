@@ -125,6 +125,11 @@ const LIMITS: Record<string, LimitConfig> = {
   // Deepgram token mint fires once per session (+ on reconnect). Same
   // generous bucket as translate.
   transcribe: { capacity: 60, refillPerSec: 1 },
+  // Pro AI tools — one-shot per session, like summarize.
+  studynotes: { capacity: 10, refillPerSec: 10 / 3600 },
+  translatetranscript: { capacity: 10, refillPerSec: 10 / 3600 },
+  // Ask-the-lecture is interactive; allow a real back-and-forth (~40/hour).
+  ask: { capacity: 40, refillPerSec: 40 / 3600 },
 };
 
 export function checkRateLimit(
