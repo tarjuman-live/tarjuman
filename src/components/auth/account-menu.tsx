@@ -46,6 +46,10 @@ export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
   // its default broken-image landscape icon, which looks awful in a 32px
   // circular avatar. On error we fall back to the initial.
   const [imageBroken, setImageBroken] = useState(false);
+  const [hover, setHover] = useState(false);
+  // Accent-green outline + glow while hovered or open (border is inline, so a
+  // Tailwind hover: can't override it).
+  const lit = hover || open;
 
   const loading = me === undefined;
   const showImage = Boolean(me?.image) && !imageBroken;
@@ -69,15 +73,22 @@ export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        onPointerEnter={() => setHover(true)}
+        onPointerLeave={() => setHover(false)}
         aria-label="Account menu"
         aria-busy={loading}
-        className={`w-8 h-8 rounded-xl grid place-items-center text-[12px] font-bold cursor-pointer transition-transform active:scale-95 overflow-hidden${
+        className={`w-8 h-8 rounded-xl grid place-items-center text-[12px] font-bold cursor-pointer active:scale-95 overflow-hidden${
           loading ? " animate-pulse" : ""
         }`}
         style={{
           background: showImage ? "transparent" : COLORS.accentSoft,
-          border: `1px solid ${COLORS.accent}40`,
+          border: `1px solid ${lit ? COLORS.accent : `${COLORS.accent}40`}`,
           color: COLORS.accent,
+          boxShadow: lit
+            ? `0 0 0 1px ${COLORS.accent}, 0 0 16px rgba(46,204,113,0.45)`
+            : "0 0 0 rgba(0,0,0,0)",
+          transition:
+            "border-color 200ms ease, box-shadow 200ms ease, transform 150ms ease",
         }}
       >
         {showImage ? (

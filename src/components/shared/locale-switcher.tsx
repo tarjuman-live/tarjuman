@@ -28,7 +28,11 @@ export function LocaleSwitcher({
   // Kept mounted while the exit animation plays, so closing FADES/SLIDES out
   // instead of snapping away the instant `open` flips false.
   const [visible, setVisible] = useState(false);
+  const [hover, setHover] = useState(false);
   const [query, setQuery] = useState("");
+  // Accent-green outline + glow while hovered or open — matches the app's
+  // green-hover language (the border is inline, so a Tailwind hover: can't win).
+  const lit = hover || open;
   const ref = useRef<HTMLDivElement | null>(null);
   const current = UI_LOCALES.find((l) => l.code === locale);
 
@@ -81,15 +85,22 @@ export function LocaleSwitcher({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors ${
+        onPointerEnter={() => setHover(true)}
+        onPointerLeave={() => setHover(false)}
+        className={`rounded-xl flex items-center gap-1.5 cursor-pointer ${
           compact ? "w-9 h-9 justify-center" : "h-9 px-3"
         }`}
         style={{
           // Reads as a tile (rounded-xl on a raised surface) rather than a
           // hairline button — matches the app's tile language.
           background: compact ? COLORS.surfaceLight : COLORS.surface,
-          border: `1px solid ${open ? COLORS.accent : COLORS.borderLight}`,
+          border: `1px solid ${lit ? COLORS.accent : COLORS.borderLight}`,
           color: COLORS.w,
+          boxShadow: lit
+            ? `0 0 0 1px ${COLORS.accent}, 0 0 16px rgba(46,204,113,0.4)`
+            : "0 0 0 rgba(0,0,0,0)",
+          transition:
+            "border-color 200ms ease, box-shadow 200ms ease, background 200ms ease",
         }}
       >
         {compact ? (
@@ -97,7 +108,7 @@ export function LocaleSwitcher({
           // globe — so the control reads as "you're in English / العربية / …".
           <span
             className="text-[12px] font-bold uppercase"
-            style={{ color: open ? COLORS.accent : COLORS.t2 }}
+            style={{ color: lit ? COLORS.accent : COLORS.t2 }}
           >
             {locale}
           </span>
@@ -106,7 +117,7 @@ export function LocaleSwitcher({
             <Icon
               name="globe"
               size={16}
-              color={open ? COLORS.accent : COLORS.t2}
+              color={lit ? COLORS.accent : COLORS.t2}
             />
             <span className="text-[13px] font-semibold">{current?.native}</span>
             <svg
