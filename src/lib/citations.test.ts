@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { parseCitations, verifyAndEnrich } from "./sunnah";
-import { parseQuranCitations } from "./quran";
+import { parseQuranCitations, bodyOverlapFraction } from "./quran";
 
 // These tests cover citation recognition + the fail-safe that marks an
 // unverifiable citation "— unverified" instead of letting it read as authentic.
@@ -115,6 +115,31 @@ describe("verifyAndEnrich found-path — never deletes the summary lead-in", () 
       "[(Sahih al-Bukhari 7777)](https://sunnah.com/bukhari:7777)"
     );
     expect(citations[0].verified).toBe(true);
+  });
+});
+
+describe("bodyOverlapFraction — collapse duplicate verse, never drop prose", () => {
+  // Drives the C9 fix: when the model's lead-in IS this verse/hadith, we
+  // replace it with the canonical body instead of printing both. The guard is
+  // that real preceding prose stays BELOW the 0.6 threshold and is preserved.
+  it("scores a near-identical verse rendering high (→ collapse)", () => {
+    const lead = "Truly to Allah we belong and to Him we shall return";
+    const body = "Truly! To Allah we belong and to Him we shall return.";
+    expect(bodyOverlapFraction(lead, body)).toBeGreaterThanOrEqual(0.6);
+  });
+  it("scores unrelated commentary low (→ preserve)", () => {
+    const lead = "The khateeb urged sincerity and warned against showing off.";
+    const body = "Actions are but by intentions.";
+    expect(bodyOverlapFraction(lead, body)).toBeLessThan(0.6);
+  });
+  it("dilutes below threshold when prose is mixed with the verse", () => {
+    const lead =
+      "He reminded everyone gathered about patience during hardship and difficulty then recited to Allah we belong";
+    const body = "To Allah we belong and to Him we shall return.";
+    expect(bodyOverlapFraction(lead, body)).toBeLessThan(0.6);
+  });
+  it("returns 0 for an empty lead-in", () => {
+    expect(bodyOverlapFraction("", "anything at all")).toBe(0);
   });
 });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { COLORS } from "@/lib/constants";
 import { isRtl, getLangName } from "@/lib/utils";
 import { useStickyBottom } from "@/hooks/use-sticky-bottom";
@@ -12,6 +13,108 @@ import {
   dominantSpeaker,
   type LiveTranscriptProps,
 } from "./live-transcript";
+import type { LiveSegment } from "@/types";
+
+/**
+ * One row in the SOURCE pane, memoized so a parent re-render (interim text /
+ * pulse / timer, several times a second) doesn't reconcile every row of a long
+ * lecture. Props are primitives + the stable seg object.
+ */
+const SplitSourceRow = memo(function SplitSourceRow({
+  seg,
+  text,
+  sourceRtl,
+  sourceFontSize,
+  showSpeakerBadges,
+}: {
+  seg: LiveSegment;
+  text: string;
+  sourceRtl: boolean;
+  sourceFontSize: number;
+  showSpeakerBadges: boolean;
+}) {
+  const sc = speakerColor(seg.speaker);
+  return (
+    <AnimateIn
+      variant="source"
+      className="mb-3"
+      style={{ textAlign: sourceRtl ? "right" : "left" }}
+    >
+      {showSpeakerBadges && typeof seg.speaker === "number" && (
+        <div
+          className="text-[10px] font-bold uppercase tracking-wider mb-[2px]"
+          style={{ color: sc }}
+        >
+          Speaker {seg.speaker + 1}
+        </div>
+      )}
+      <div
+        style={{
+          color: COLORS.t2,
+          fontSize: sourceFontSize,
+          lineHeight: 1.7,
+          fontWeight: sourceRtl ? 500 : 400,
+        }}
+      >
+        {text}
+      </div>
+    </AnimateIn>
+  );
+});
+
+/** One row in the TARGET pane, memoized (see SplitSourceRow). */
+const SplitTargetRow = memo(function SplitTargetRow({
+  seg,
+  translated,
+  pending,
+  error,
+  targetRtl,
+  targetFontSize,
+  onRetry,
+}: {
+  seg: LiveSegment;
+  translated: string | undefined;
+  pending: boolean;
+  error: string | undefined;
+  targetRtl: boolean;
+  targetFontSize: number;
+  onRetry?: (id: string) => void;
+}) {
+  return (
+    <div
+      className="mb-3"
+      style={{ textAlign: targetRtl ? "right" : "left" }}
+    >
+      {translated && translated.length > 0 ? (
+        <AnimateIn variant="translation">
+          <div
+            style={{
+              color: COLORS.w,
+              fontSize: targetFontSize,
+              lineHeight: 1.7,
+              fontWeight: targetRtl ? 600 : 500,
+            }}
+          >
+            {renderTextWithLinks(translated)}
+          </div>
+        </AnimateIn>
+      ) : pending ? (
+        <div className="text-[14px]" style={{ color: COLORS.t3 }}>
+          …translating
+        </div>
+      ) : error ? (
+        <button
+          type="button"
+          onClick={() => onRetry?.(seg.id)}
+          className="text-left cursor-pointer text-[13px] font-semibold"
+          style={{ color: COLORS.amber }}
+        >
+          Translation failed — tap to retry
+        </button>
+      ) : null /* fail-open: source-only, no translation for this segment */}
+    </div>
+  );
+});
 
 /**
  * Split ("half and half") transcript view — the same live data as
@@ -97,34 +200,15 @@ export function SplitTranscript({
           )}
           {visibleSegments.map((seg) => {
             const merge = merges?.[seg.id];
-            const text = merge?.combinedSourceText ?? seg.text;
-            const sc = speakerColor(seg.speaker);
             return (
-              <AnimateIn
+              <SplitSourceRow
                 key={seg.id}
-                variant="source"
-                className="mb-3"
-                style={{ textAlign: sourceRtl ? "right" : "left" }}
-              >
-                {showSpeakerBadges && typeof seg.speaker === "number" && (
-                  <div
-                    className="text-[10px] font-bold uppercase tracking-wider mb-[2px]"
-                    style={{ color: sc }}
-                  >
-                    Speaker {seg.speaker + 1}
-                  </div>
-                )}
-                <div
-                  style={{
-                    color: COLORS.t2,
-                    fontSize: sourceFontSize,
-                    lineHeight: 1.7,
-                    fontWeight: sourceRtl ? 500 : 400,
-                  }}
-                >
-                  {text}
-                </div>
-              </AnimateIn>
+                seg={seg}
+                text={merge?.combinedSourceText ?? seg.text}
+                sourceRtl={sourceRtl}
+                sourceFontSize={sourceFontSize}
+                showSpeakerBadges={showSpeakerBadges}
+              />
             );
           })}
           {interimText && (
@@ -165,42 +249,19 @@ export function SplitTranscript({
           )}
           {visibleSegments.map((seg) => {
             const merge = merges?.[seg.id];
-            const translated =
-              merge?.combinedTranslatedText ?? translations?.[seg.id];
             return (
-              <div
+              <SplitTargetRow
                 key={seg.id}
-                className="mb-3"
-                style={{ textAlign: targetRtl ? "right" : "left" }}
-              >
-                {translated && translated.length > 0 ? (
-                  <AnimateIn variant="translation">
-                    <div
-                      style={{
-                        color: COLORS.w,
-                        fontSize: targetFontSize,
-                        lineHeight: 1.7,
-                        fontWeight: targetRtl ? 600 : 500,
-                      }}
-                    >
-                      {renderTextWithLinks(translated)}
-                    </div>
-                  </AnimateIn>
-                ) : pending?.has(seg.id) ? (
-                  <div className="text-[14px]" style={{ color: COLORS.t3 }}>
-                    …translating
-                  </div>
-                ) : errors?.[seg.id] ? (
-                  <button
-                    type="button"
-                    onClick={() => onRetry?.(seg.id)}
-                    className="text-left cursor-pointer text-[13px] font-semibold"
-                    style={{ color: COLORS.amber }}
-                  >
-                    Translation failed — tap to retry
-                  </button>
-                ) : null /* fail-open: source-only, no translation for this segment */}
-              </div>
+                seg={seg}
+                translated={
+                  merge?.combinedTranslatedText ?? translations?.[seg.id]
+                }
+                pending={pending?.has(seg.id) ?? false}
+                error={errors?.[seg.id]}
+                targetRtl={targetRtl}
+                targetFontSize={targetFontSize}
+                onRetry={onRetry}
+              />
             );
           })}
         </div>

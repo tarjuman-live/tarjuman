@@ -298,6 +298,30 @@ export function parseQuranCitations(text: string): Array<{
  *
  * Quran.com is a free public API; no env-var-missing path needed.
  */
+/**
+ * Fraction of the lead-in's words that also appear in the canonical body.
+ * Used to detect that the lead-in IS essentially this verse (the model already
+ * rendered it in its own words, and we're about to append the canonical body)
+ * so we can replace it instead of printing the verse twice. Conservative by
+ * construction: real preceding prose adds words absent from the body, dragging
+ * the fraction down, so a lead-in carrying the speaker's own commentary stays
+ * BELOW the threshold and is preserved untouched — we never drop real content.
+ */
+export function bodyOverlapFraction(lead: string, body: string): number {
+  const words = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+  const leadWords = words(lead);
+  if (leadWords.length === 0) return 0;
+  const bodySet = new Set(words(body));
+  let hit = 0;
+  for (const w of leadWords) if (bodySet.has(w)) hit++;
+  return hit / leadWords.length;
+}
+
 export async function verifyAndEnrichQuran(
   text: string,
   targetLang: string
@@ -330,12 +354,18 @@ export async function verifyAndEnrichQuran(
     if (result.kind === "found") {
       const body = result.englishBody.trim();
       if (targetIsEnglish && body) {
-        // KEEP the lead-in (summary prose since the previous citation) and
-        // append the canonical Muhsin Khan body + link. (Previously the lead-in
-        // was dropped, silently deleting summary content before any verified
-        // verse and persisting the corrupted summary.)
+        // Append the canonical Muhsin Khan body + link, but COLLAPSE the
+        // duplicate when the lead-in is essentially the model's own rendering
+        // of this same verse (else the verse prints twice). A lead-in carrying
+        // real summary prose scores below the overlap threshold and is KEPT in
+        // full — never dropped (that was the earlier data-loss bug).
         const lead = leadIn.replace(/\s+$/, "");
-        out.push(lead ? `${lead} ${body} ${linkMarkdown}` : `${body} ${linkMarkdown}`);
+        const collapse = lead.length > 0 && bodyOverlapFraction(lead, body) >= 0.6;
+        out.push(
+          !lead || collapse
+            ? `${body} ${linkMarkdown}`
+            : `${lead} ${body} ${linkMarkdown}`
+        );
       } else {
         // Non-English target, OR no canonical English body available — keep
         // the LLM's own rendering and just upgrade the citation to a verified

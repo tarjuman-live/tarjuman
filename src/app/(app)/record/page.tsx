@@ -82,7 +82,11 @@ export default function RecordPage() {
 
   // Main-speaker filter — same Convex-backed pattern as TTS, lifted here from
   // the recording shell so its state survives across recordings and devices.
-  const [mainSpeakerOnly, setMainSpeakerOnly] = useState(false);
+  // Defaults ON so the speaker-lock "ignore side conversations and sounds"
+  // behavior is the default (a locked product requirement); the toggle lets a
+  // user turn it OFF to capture every speaker in a genuine multi-speaker
+  // session. A saved pref / legacy value (hydrated below) wins over this.
+  const [mainSpeakerOnly, setMainSpeakerOnly] = useState(true);
   const hydratedMain = useRef(false);
   useEffect(() => {
     if (hydratedMain.current || prefs === undefined) return;

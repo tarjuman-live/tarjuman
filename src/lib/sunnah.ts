@@ -234,6 +234,29 @@ function unverifiedCitation(collectionDisplay: string, number: string): string {
 }
 
 /**
+ * Fraction of the lead-in's words that also appear in the canonical body.
+ * Detects that the lead-in IS essentially this hadith's rendering (so we
+ * replace it instead of printing the text twice). Conservative: real preceding
+ * prose adds words absent from the body, dragging the fraction below the
+ * threshold, so the speaker's/summary's own words are never dropped. (Kept
+ * local so this module stays self-contained; mirrors quran.ts.)
+ */
+function bodyOverlapFraction(lead: string, body: string): number {
+  const words = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+  const leadWords = words(lead);
+  if (leadWords.length === 0) return 0;
+  const bodySet = new Set(words(body));
+  let hit = 0;
+  for (const w of leadWords) if (bodySet.has(w)) hit++;
+  return hit / leadWords.length;
+}
+
+/**
  * Pipeline:
  *   - parse citations
  *   - lookup each (cached) against the open hadith dataset
@@ -293,7 +316,15 @@ export async function verifyAndEnrich(text: string): Promise<{
       // happy path. Never delete the speaker's/summary's own words.)
       const body = result.englishBody.trim();
       const lead = leadIn.replace(/\s+$/, "");
-      out.push(lead ? `${lead} ${body} ${linkMarkdown}` : `${body} ${linkMarkdown}`);
+      // Collapse the duplicate when the lead-in is essentially the model's own
+      // rendering of this same hadith; a lead-in with real preceding prose
+      // scores below the overlap threshold and is preserved in full.
+      const collapse = lead.length > 0 && bodyOverlapFraction(lead, body) >= 0.6;
+      out.push(
+        !lead || collapse
+          ? `${body} ${linkMarkdown}`
+          : `${lead} ${body} ${linkMarkdown}`
+      );
       citations.push({
         raw: m.raw,
         collectionDisplay: m.collectionDisplay,

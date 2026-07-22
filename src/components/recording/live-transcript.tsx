@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { COLORS } from "@/lib/constants";
 import { isRtl } from "@/lib/utils";
 import { useStickyBottom } from "@/hooks/use-sticky-bottom";
@@ -84,6 +84,144 @@ export function fontSizeForLang(lang: string): number {
   if (lang === "zh" || lang === "ja" || lang === "ko") return 20;
   return 19;
 }
+
+/**
+ * One paired source+translation card, memoized so it only re-renders when ITS
+ * own data changes (translation lands, error/pending flips). The parent
+ * re-renders several times a second (interim text, pulse, timer); without memo,
+ * every one of a long lecture's 200+ rows would re-run renderTextWithLinks and
+ * reconcile on each of those ticks — the source of the reported jank. All props
+ * are primitives or stable references (the seg object, onRetry callback), so
+ * React.memo's shallow compare skips untouched rows.
+ */
+interface PairedRowProps {
+  seg: LiveSegment;
+  sourceText: string;
+  translated: string | undefined;
+  pending: boolean;
+  error: string | undefined;
+  sourceRtl: boolean;
+  targetRtl: boolean;
+  sourceFontSize: number;
+  targetFontSize: number;
+  showSpeakerBadges: boolean;
+  onRetry?: (id: string) => void;
+}
+
+const PairedSegmentRow = memo(function PairedSegmentRow({
+  seg,
+  sourceText,
+  translated,
+  pending,
+  error,
+  sourceRtl,
+  targetRtl,
+  sourceFontSize,
+  targetFontSize,
+  showSpeakerBadges,
+  onRetry,
+}: PairedRowProps) {
+  const sc = speakerColor(seg.speaker);
+  return (
+    <div className="mb-5">
+      <AnimateIn variant="source">
+        <div
+          dir={sourceRtl ? "rtl" : "ltr"}
+          className="px-4 py-3 rounded-2xl mb-[6px]"
+          style={{
+            background: `${sc}14`,
+            // Logical property so the accent bar hugs the START (right for
+            // Arabic/Urdu RTL source), not always the physical left.
+            borderInlineStart: `3px solid ${sc}66`,
+            direction: sourceRtl ? "rtl" : "ltr",
+            textAlign: sourceRtl ? "right" : "left",
+          }}
+        >
+          {showSpeakerBadges && typeof seg.speaker === "number" && (
+            <div
+              className="text-[10px] font-bold uppercase tracking-wider mb-1"
+              style={{ color: sc }}
+            >
+              Speaker {seg.speaker + 1}
+            </div>
+          )}
+          <div
+            style={{
+              color: COLORS.t2,
+              fontSize: sourceFontSize,
+              lineHeight: 1.7,
+              fontWeight: sourceRtl ? 500 : 400,
+            }}
+          >
+            {sourceText}
+          </div>
+        </div>
+      </AnimateIn>
+      {translated && translated.length > 0 ? (
+        <AnimateIn variant="translation">
+          <div
+            dir={targetRtl ? "rtl" : "ltr"}
+            className="px-4 py-3 rounded-2xl"
+            style={{
+              background: `${COLORS.accent}10`,
+              borderInlineStart: `3px solid ${COLORS.accent}66`,
+              direction: targetRtl ? "rtl" : "ltr",
+              textAlign: targetRtl ? "right" : "left",
+            }}
+          >
+            <div
+              style={{
+                color: COLORS.w,
+                fontSize: targetFontSize,
+                lineHeight: 1.7,
+                fontWeight: targetRtl ? 600 : 500,
+              }}
+            >
+              {renderTextWithLinks(translated)}
+            </div>
+          </div>
+        </AnimateIn>
+      ) : pending ? (
+        <div
+          className="px-4 py-3 rounded-2xl"
+          style={{
+            background: `${COLORS.accent}10`,
+            borderInlineStart: `3px solid ${COLORS.accent}66`,
+          }}
+        >
+          <div className="text-[14px]" style={{ color: COLORS.t3 }}>
+            …translating
+          </div>
+        </div>
+      ) : error ? (
+        // Translation failed (after retries) — show it instead of a silent
+        // gap, and let the user tap to re-attempt.
+        <button
+          type="button"
+          onClick={() => onRetry?.(seg.id)}
+          className="w-full text-left px-4 py-3 rounded-2xl cursor-pointer transition active:scale-[0.99]"
+          style={{
+            background: `${COLORS.amber}14`,
+            borderLeft: `3px solid ${COLORS.amber}66`,
+          }}
+        >
+          <div
+            className="text-[13px] font-semibold"
+            style={{ color: COLORS.amber }}
+          >
+            Translation failed — tap to retry
+          </div>
+          <div
+            className="text-[11px] mt-1 break-words"
+            style={{ color: COLORS.t3 }}
+          >
+            {error}
+          </div>
+        </button>
+      ) : null /* fail-open: source-only (no translation), render nothing */}
+    </div>
+  );
+});
 
 /**
  * Scrollable transcript column shown during recording.
@@ -175,107 +313,21 @@ export function LiveTranscript({
           // Verse/hadith merge: if this is a parent, display the combined
           // source + combined translation (children are already filtered).
           const merge = merges?.[seg.id];
-          const sourceTextForDisplay = merge?.combinedSourceText ?? seg.text;
-          const translated = merge?.combinedTranslatedText ?? translations?.[seg.id];
-          const sc = speakerColor(seg.speaker);
           return (
-            <div key={seg.id} className="mb-5">
-              <AnimateIn variant="source">
-              <div
-                dir={sourceRtl ? "rtl" : "ltr"}
-                className="px-4 py-3 rounded-2xl mb-[6px]"
-                style={{
-                  background: `${sc}14`,
-                  // Logical property so the accent bar hugs the START (right for
-                  // Arabic/Urdu RTL source), not always the physical left.
-                  borderInlineStart: `3px solid ${sc}66`,
-                  direction: sourceRtl ? "rtl" : "ltr",
-                  textAlign: sourceRtl ? "right" : "left",
-                }}
-              >
-                {showSpeakerBadges && typeof seg.speaker === "number" && (
-                  <div
-                    className="text-[10px] font-bold uppercase tracking-wider mb-1"
-                    style={{ color: sc }}
-                  >
-                    Speaker {seg.speaker + 1}
-                  </div>
-                )}
-                <div
-                  style={{
-                    color: COLORS.t2,
-                    fontSize: sourceFontSize,
-                    lineHeight: 1.7,
-                    fontWeight: sourceRtl ? 500 : 400,
-                  }}
-                >
-                  {sourceTextForDisplay}
-                </div>
-              </div>
-              </AnimateIn>
-              {translated && translated.length > 0 ? (
-                <AnimateIn variant="translation">
-                <div
-                  dir={targetRtl ? "rtl" : "ltr"}
-                  className="px-4 py-3 rounded-2xl"
-                  style={{
-                    background: `${COLORS.accent}10`,
-                    borderInlineStart: `3px solid ${COLORS.accent}66`,
-                    direction: targetRtl ? "rtl" : "ltr",
-                    textAlign: targetRtl ? "right" : "left",
-                  }}
-                >
-                  <div
-                    style={{
-                      color: COLORS.w,
-                      fontSize: targetFontSize,
-                      lineHeight: 1.7,
-                      fontWeight: targetRtl ? 600 : 500,
-                    }}
-                  >
-                    {renderTextWithLinks(translated)}
-                  </div>
-                </div>
-                </AnimateIn>
-              ) : pending?.has(seg.id) ? (
-                <div
-                  className="px-4 py-3 rounded-2xl"
-                  style={{
-                    background: `${COLORS.accent}10`,
-                    borderInlineStart: `3px solid ${COLORS.accent}66`,
-                  }}
-                >
-                  <div className="text-[14px]" style={{ color: COLORS.t3 }}>
-                    …translating
-                  </div>
-                </div>
-              ) : errors?.[seg.id] ? (
-                // Translation failed (after retries) — show it instead of a
-                // silent gap, and let the user tap to re-attempt.
-                <button
-                  type="button"
-                  onClick={() => onRetry?.(seg.id)}
-                  className="w-full text-left px-4 py-3 rounded-2xl cursor-pointer transition active:scale-[0.99]"
-                  style={{
-                    background: `${COLORS.amber}14`,
-                    borderLeft: `3px solid ${COLORS.amber}66`,
-                  }}
-                >
-                  <div
-                    className="text-[13px] font-semibold"
-                    style={{ color: COLORS.amber }}
-                  >
-                    Translation failed — tap to retry
-                  </div>
-                  <div
-                    className="text-[11px] mt-1 break-words"
-                    style={{ color: COLORS.t3 }}
-                  >
-                    {errors[seg.id]}
-                  </div>
-                </button>
-              ) : null /* fail-open: source-only (no translation), render nothing */}
-            </div>
+            <PairedSegmentRow
+              key={seg.id}
+              seg={seg}
+              sourceText={merge?.combinedSourceText ?? seg.text}
+              translated={merge?.combinedTranslatedText ?? translations?.[seg.id]}
+              pending={pending?.has(seg.id) ?? false}
+              error={errors?.[seg.id]}
+              sourceRtl={sourceRtl}
+              targetRtl={targetRtl}
+              sourceFontSize={sourceFontSize}
+              targetFontSize={targetFontSize}
+              showSpeakerBadges={showSpeakerBadges}
+              onRetry={onRetry}
+            />
           );
         })}
 
