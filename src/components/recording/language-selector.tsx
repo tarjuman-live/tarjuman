@@ -12,6 +12,48 @@ interface LanguageSelectorProps {
   onChange: (next: { sourceLang: string; targetLang: string }) => void;
 }
 
+/**
+ * One language tile ("Listening to" / "Translate to"). The border is set inline
+ * (so a Tailwind `hover:` class can't win over it), so the hover state is driven
+ * in JS: on hover the outline turns accent-green and gains a soft green glow —
+ * matching the app's "green glow + outline" hover language. pointerenter/leave
+ * fire on touch too, so mobile gets the same tap feedback.
+ */
+function LangButton({
+  label,
+  value,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => setHover(false)}
+      className="flex-1 px-4 py-4 rounded-2xl text-left cursor-pointer"
+      style={{
+        background: COLORS.surfaceLight,
+        border: `1px solid ${hover ? COLORS.accent : COLORS.borderLight}`,
+        boxShadow: hover
+          ? `0 0 0 1px ${COLORS.accent}, 0 8px 28px rgba(46,204,113,0.22)`
+          : "0 0 0 rgba(0,0,0,0)",
+        transition:
+          "border-color 220ms ease, box-shadow 220ms ease, background 220ms ease",
+      }}
+    >
+      <div className="section-label mb-1">{label}</div>
+      <div className="text-[15px] font-bold" style={{ color: COLORS.w }}>
+        {value}
+      </div>
+    </button>
+  );
+}
+
 export function LanguageSelector({
   sourceLang,
   targetLang,
@@ -50,20 +92,11 @@ export function LanguageSelector({
       }}
     >
       {/* Source */}
-      <button
-        type="button"
+      <LangButton
+        label="Listening to"
+        value={getLangName(sourceLang)}
         onClick={() => setPickerOpen("source")}
-        className="flex-1 px-4 py-4 rounded-2xl text-left cursor-pointer transition-colors"
-        style={{
-          background: COLORS.surfaceLight,
-          border: `1px solid ${COLORS.borderLight}`,
-        }}
-      >
-        <div className="section-label mb-1">Listening to</div>
-        <div className="text-[15px] font-bold" style={{ color: COLORS.w }}>
-          {getLangName(sourceLang)}
-        </div>
-      </button>
+      />
 
       {/* Swap — warms cool green → amber and spins the ↔ a full turn on hover,
           then unwinds it back on leave; each swap adds another turn. On touch,
@@ -114,20 +147,11 @@ export function LanguageSelector({
       </button>
 
       {/* Target */}
-      <button
-        type="button"
+      <LangButton
+        label="Translate to"
+        value={getLangName(targetLang)}
         onClick={() => setPickerOpen("target")}
-        className="flex-1 px-4 py-4 rounded-2xl text-left cursor-pointer transition-colors"
-        style={{
-          background: COLORS.surfaceLight,
-          border: `1px solid ${COLORS.borderLight}`,
-        }}
-      >
-        <div className="section-label mb-1">Translate to</div>
-        <div className="text-[15px] font-bold" style={{ color: COLORS.w }}>
-          {getLangName(targetLang)}
-        </div>
-      </button>
+      />
 
       <LanguagePickerSheet
         open={pickerOpen !== null}
