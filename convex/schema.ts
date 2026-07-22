@@ -26,6 +26,13 @@ export default defineSchema({
       v.literal("paused"),
       v.literal("completed")
     ),
+    // LEGACY inline transcript. Kept for sessions recorded before segments
+    // moved to the dedicated `transcriptSegments` table (below). New sessions
+    // leave this as [] and store segments as table rows — an inline array grows
+    // unbounded and a 2-3h dars would cross Convex's 1 MiB per-document cap,
+    // after which every 5s save throws and the transcript silently stops
+    // persisting mid-lecture. Reads fall back to this array when the table has
+    // no rows for a session, so old sessions render unchanged with no backfill.
     segments: v.array(
       v.object({
         id: v.string(),
@@ -45,6 +52,14 @@ export default defineSchema({
         combinedTranslatedText: v.optional(v.string()),
       })
     ),
+    // Number of transcript segments stored (in the table, or legacy inline).
+    // Lets list/sweep/title logic tell a real session from an empty phantom
+    // WITHOUT loading the (potentially huge) segment set. Optional: undefined
+    // on legacy rows, where readers fall back to segments.length.
+    segmentCount: v.optional(v.number()),
+    // First segment's text (translation or source), captured on first insert,
+    // so completeSession/sweep can derive a title without loading segments.
+    firstSegmentText: v.optional(v.string()),
     duration: v.number(),
     summary: v.optional(v.string()),
     summaryLanguage: v.optional(v.string()),
@@ -60,6 +75,27 @@ export default defineSchema({
     // Drives the stale-session cron sweep (status="recording" + updatedAt<cutoff)
     // without a full-table scan. Replaced the unused by_date index.
     .index("by_status_updated", ["status", "updatedAt"]),
+
+  // Transcript segments, one row per segment. Segments used to live inline on
+  // the session document, but an inline array grows without bound: a 2-3h dars
+  // reaches thousands of segments and crosses Convex's 1 MiB per-document write
+  // cap, after which the 5s batch save throws and — because each later batch
+  // re-sends an even larger array — ALL further saves fail silently while the
+  // tab keeps rendering. Storing each segment as its own row makes every write
+  // O(1) with no document-size ceiling. Ordered by insertion (_creationTime)
+  // via by_session; by_session_seg gives O(1) dedupe by client segment id.
+  transcriptSegments: defineTable({
+    sessionId: v.id("sessions"),
+    segId: v.string(), // client-generated segment id (stable, used for dedupe)
+    sourceText: v.string(),
+    translatedText: v.string(),
+    timestamp: v.number(),
+    mergedFromIds: v.optional(v.array(v.string())),
+    combinedSourceText: v.optional(v.string()),
+    combinedTranslatedText: v.optional(v.string()),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_session_seg", ["sessionId", "segId"]),
 
   // Per-user app preferences. One row per user (upserted). All fields optional
   // so the row can be created lazily and new prefs can be added without a

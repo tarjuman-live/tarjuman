@@ -48,9 +48,63 @@ const sessionListItemValidator = v.object({
   summary: v.optional(v.string()),
   summaryLanguage: v.optional(v.string()),
   summaryGeneratedAt: v.optional(v.number()),
+  segmentCount: v.optional(v.number()),
+  firstSegmentText: v.optional(v.string()),
   createdAt: v.number(),
   updatedAt: v.number(),
 });
+
+/** A stored segment's shape as the client consumes it (segId → id). */
+type StoredSegment = {
+  id: string;
+  sourceText: string;
+  translatedText: string;
+  timestamp: number;
+  mergedFromIds?: string[];
+  combinedSourceText?: string;
+  combinedTranslatedText?: string;
+};
+
+/** Convert a transcriptSegments row into the client segment shape. */
+function rowToSegment(r: Doc<"transcriptSegments">): StoredSegment {
+  return {
+    id: r.segId,
+    sourceText: r.sourceText,
+    translatedText: r.translatedText,
+    timestamp: r.timestamp,
+    ...(r.mergedFromIds ? { mergedFromIds: r.mergedFromIds } : {}),
+    ...(r.combinedSourceText ? { combinedSourceText: r.combinedSourceText } : {}),
+    ...(r.combinedTranslatedText
+      ? { combinedTranslatedText: r.combinedTranslatedText }
+      : {}),
+  };
+}
+
+/** How many segments a session has, without loading them (legacy fallback). */
+function segmentCountOf(s: Doc<"sessions">): number {
+  return s.segmentCount ?? s.segments.length;
+}
+
+/** All segments for a session: from the table, or legacy inline as fallback. */
+async function loadSegments(
+  ctx: QueryCtx,
+  session: Doc<"sessions">
+): Promise<StoredSegment[]> {
+  const rows = await ctx.db
+    .query("transcriptSegments")
+    .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+    .collect();
+  if (rows.length === 0) return session.segments; // legacy inline-only
+  if (session.segments.length === 0) return rows.map(rowToSegment); // table-only
+  // Split-brain: a session that straddled the deploy has BOTH inline (earlier)
+  // and table (later) segments. Inline came first chronologically; append any
+  // table rows not already represented inline, deduped by id.
+  const inlineIds = new Set(session.segments.map((s) => s.id));
+  const tableExtra = rows
+    .map(rowToSegment)
+    .filter((s) => !inlineIds.has(s.id));
+  return [...session.segments, ...tableExtra];
+}
 
 async function requireUserId(ctx: QueryCtx): Promise<Id<"users">> {
   const userId = await auth.getUserId(ctx);
@@ -100,12 +154,46 @@ export const addSegments = mutation({
     if (!session) throw new Error("Session not found");
     if (session.userId !== userId) throw new Error("Not your session");
 
-    const existing = new Set(session.segments.map((s) => s.id));
-    const newOnes = args.segments.filter((s) => !existing.has(s.id));
-    if (newOnes.length === 0) return;
+    // Insert each NEW segment as its own row — no growing array, no 1 MiB
+    // document ceiling. Dedupe by (sessionId, segId) so a retried/replayed
+    // batch (crash recovery, forced final flush) can't create duplicates.
+    let inserted = 0;
+    let firstText = session.firstSegmentText;
+    for (const seg of args.segments) {
+      const dup = await ctx.db
+        .query("transcriptSegments")
+        .withIndex("by_session_seg", (q) =>
+          q.eq("sessionId", args.sessionId).eq("segId", seg.id)
+        )
+        .first();
+      if (dup) continue;
+      await ctx.db.insert("transcriptSegments", {
+        sessionId: args.sessionId,
+        segId: seg.id,
+        sourceText: seg.sourceText,
+        translatedText: seg.translatedText,
+        timestamp: seg.timestamp,
+        ...(seg.mergedFromIds ? { mergedFromIds: seg.mergedFromIds } : {}),
+        ...(seg.combinedSourceText
+          ? { combinedSourceText: seg.combinedSourceText }
+          : {}),
+        ...(seg.combinedTranslatedText
+          ? { combinedTranslatedText: seg.combinedTranslatedText }
+          : {}),
+      });
+      inserted++;
+      if (!firstText) firstText = seg.translatedText || seg.sourceText;
+    }
+    if (inserted === 0) return;
 
     await ctx.db.patch(args.sessionId, {
-      segments: [...session.segments, ...newOnes],
+      // Base off segmentCount for table-backed sessions; fall back to the
+      // legacy inline length so a session that predates this field counts up
+      // correctly from its existing inline segments.
+      segmentCount: segmentCountOf(session) + inserted,
+      ...(firstText && !session.firstSegmentText
+        ? { firstSegmentText: firstText }
+        : {}),
       updatedAt: Date.now(),
     });
   },
@@ -136,6 +224,24 @@ export const updateSegmentMerge = mutation({
     if (!session) throw new Error("Session not found");
     if (session.userId !== userId) throw new Error("Not your session");
 
+    // Table-backed session: patch the single parent row.
+    const row = await ctx.db
+      .query("transcriptSegments")
+      .withIndex("by_session_seg", (q) =>
+        q.eq("sessionId", args.sessionId).eq("segId", args.parentSegmentId)
+      )
+      .first();
+    if (row) {
+      await ctx.db.patch(row._id, {
+        mergedFromIds: args.mergedFromIds,
+        combinedSourceText: args.combinedSourceText,
+        combinedTranslatedText: args.combinedTranslatedText,
+      });
+      await ctx.db.patch(args.sessionId, { updatedAt: Date.now() });
+      return;
+    }
+
+    // Legacy inline session — patch the array in place.
     const next = session.segments.map((s) =>
       s.id === args.parentSegmentId
         ? {
@@ -206,9 +312,12 @@ export const completeSession = mutation({
     await ctx.db.patch(args.sessionId, {
       status: "completed",
       duration: args.duration,
+      // Title from the stored first-segment text (table-backed sessions have an
+      // empty inline array), falling back to the legacy inline derivation.
       title:
         args.title ??
         session.title ??
+        truncateTitle(session.firstSegmentText) ??
         deriveTitle(session.segments) ??
         undefined,
       ...(args.sourceLanguage ? { sourceLanguage: args.sourceLanguage } : {}),
@@ -264,6 +373,12 @@ export const deleteSession = mutation({
     const session = await ctx.db.get(args.sessionId);
     if (!session) return;
     if (session.userId !== userId) throw new Error("Not your session");
+    // Cascade-delete the session's transcript rows so they don't orphan.
+    const rows = await ctx.db
+      .query("transcriptSegments")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .collect();
+    for (const r of rows) await ctx.db.delete(r._id);
     await ctx.db.delete(args.sessionId);
   },
 });
@@ -300,7 +415,7 @@ export const sweepStaleSessions = internalMutation({
     let completed = 0;
     let deleted = 0;
     for (const s of stale) {
-      if (s.segments.length === 0) {
+      if (segmentCountOf(s) === 0) {
         await ctx.db.delete(s._id); // empty phantom — nothing to keep
         deleted++;
       } else {
@@ -308,11 +423,23 @@ export const sweepStaleSessions = internalMutation({
         // from session start) — the client never called completeSession, so
         // duration is still 0 and the history card would show 00:00 for a
         // session with a full transcript. Preserve any pre-set duration.
-        const last = s.segments[s.segments.length - 1];
+        let lastTimestamp = s.segments[s.segments.length - 1]?.timestamp ?? 0;
+        if (s.duration <= 0) {
+          const lastRow = await ctx.db
+            .query("transcriptSegments")
+            .withIndex("by_session", (q) => q.eq("sessionId", s._id))
+            .order("desc")
+            .first();
+          if (lastRow) lastTimestamp = lastRow.timestamp;
+        }
         await ctx.db.patch(s._id, {
           status: "completed",
-          duration: s.duration > 0 ? s.duration : Math.round(last?.timestamp ?? 0),
-          title: s.title ?? deriveTitle(s.segments) ?? undefined,
+          duration: s.duration > 0 ? s.duration : Math.round(lastTimestamp),
+          title:
+            s.title ??
+            truncateTitle(s.firstSegmentText) ??
+            deriveTitle(s.segments) ??
+            undefined,
           updatedAt: Date.now(),
         });
         completed++;
@@ -339,7 +466,10 @@ export const getSession = query({
     const session = await ctx.db.get(id);
     if (!session) return null;
     if (session.userId !== userId) return null;
-    return session;
+    // Attach segments from the table (or legacy inline) so the client shape is
+    // unchanged — it still reads `session.segments`.
+    const segments = await loadSegments(ctx, session);
+    return { ...session, segments };
   },
 });
 
@@ -354,10 +484,10 @@ export const getUserSessions = query({
       .order("desc")
       .collect();
     // Hide empty rows (e.g. the createSession-on-prewarm phantom from an idle
-    // /record visit), and DROP the (potentially huge) segments array — the
-    // history list renders metadata only, so shipping every transcript segment
-    // to the client is pure read amplification.
-    return all.filter((s) => s.segments.length > 0).map(toListItem);
+    // /record visit). segmentCount tells a real session from a phantom without
+    // loading the segments (which now live in a separate table); legacy rows
+    // fall back to the inline length. toListItem drops the inline array.
+    return all.filter((s) => segmentCountOf(s) > 0).map(toListItem);
   },
 });
 
@@ -394,7 +524,7 @@ async function collectRecentListItems(
       .paginate({ numItems: pageSize, cursor });
 
     for (const session of page.page) {
-      if (session.segments.length === 0) continue;
+      if (segmentCountOf(session) === 0) continue;
       results.push(toListItem(session));
       if (results.length >= limit) return results;
     }
@@ -413,15 +543,19 @@ function toListItem(s: Doc<"sessions">): Omit<Doc<"sessions">, "segments"> {
   return copy as Omit<Doc<"sessions">, "segments">;
 }
 
-function deriveTitle(
-  segments: { sourceText: string; translatedText: string }[]
-): string | null {
-  const first = segments[0];
-  if (!first) return null;
-  const text = first.translatedText || first.sourceText;
+/** First sentence of `text`, truncated to a 60-char title. Null if empty. */
+function truncateTitle(text: string | undefined | null): string | null {
   if (!text) return null;
   const firstSentence = text.split(/(?<=[.!?؟])\s/)[0] ?? text;
   return firstSentence.length > 60
     ? firstSentence.slice(0, 57).trim() + "…"
     : firstSentence.trim();
+}
+
+function deriveTitle(
+  segments: { sourceText: string; translatedText: string }[]
+): string | null {
+  const first = segments[0];
+  if (!first) return null;
+  return truncateTitle(first.translatedText || first.sourceText);
 }
