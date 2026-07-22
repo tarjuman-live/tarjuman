@@ -98,6 +98,10 @@ type Status =
 
 export function TryLive() {
   const [status, setStatus] = useState<Status>("idle");
+  // Keeps the "ended" nudge overlay mounted through its fade-OUT when the user
+  // taps "Try again" (status leaves "ended"), so it cross-fades into the fresh
+  // listening view instead of snapping away.
+  const [endedVisible, setEndedVisible] = useState(false);
   const [segs, setSegs] = useState<Seg[]>([]);
   const [interim, setInterim] = useState("");
   const [elapsed, setElapsed] = useState(0);
@@ -320,6 +324,18 @@ export function TryLive() {
     }, 1000);
     return () => clearInterval(id);
   }, [status, stop]);
+
+  // Mount the ended-overlay immediately when the trial ends; on leaving "ended"
+  // keep it for the 300ms fade-out below, then unmount.
+  useEffect(() => {
+    if (status === "ended") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEndedVisible(true);
+      return;
+    }
+    const t = window.setTimeout(() => setEndedVisible(false), 300);
+    return () => window.clearTimeout(t);
+  }, [status]);
 
   // Cleanup on unmount.
   useEffect(() => {
@@ -570,9 +586,13 @@ export function TryLive() {
       </div>
 
       {/* Ended overlay nudge */}
-      {status === "ended" && (
+      {endedVisible && (
         <div
-          className="absolute inset-0 z-10 grid place-items-center px-6 text-center animate-in fade-in duration-300"
+          className={`absolute inset-0 z-10 grid place-items-center px-6 text-center duration-300 ${
+            status === "ended"
+              ? "animate-in fade-in"
+              : "animate-out fade-out pointer-events-none"
+          }`}
           style={{ background: "rgba(6,11,24,0.82)", backdropFilter: "blur(6px)" }}
         >
           <div className="max-w-sm">

@@ -18,7 +18,19 @@ export function LangDropdown({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  // Kept mounted through the exit animation so closing isn't a snap.
+  const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVisible(true);
+      return;
+    }
+    const t = window.setTimeout(() => setVisible(false), 200);
+    return () => window.clearTimeout(t);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -63,10 +75,14 @@ export function LangDropdown({
           <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-      {open && (
+      {visible && (
         <div
           role="listbox"
-          className="absolute end-0 mt-1.5 z-50 max-h-[50vh] overflow-auto min-w-[200px] rounded-xl py-1 animate-in fade-in slide-in-from-top-1 duration-150"
+          className={`absolute end-0 mt-1.5 z-50 max-h-[50vh] overflow-auto min-w-[200px] rounded-xl py-1 duration-200 ${
+            open
+              ? "animate-in fade-in slide-in-from-top-1"
+              : "animate-out fade-out slide-out-to-top-1"
+          }`}
           style={{
             background: COLORS.surface,
             border: `1px solid ${COLORS.borderLight}`,

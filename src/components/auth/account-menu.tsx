@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
@@ -29,6 +29,18 @@ export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
   const { signOut } = useAuthActions();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // Kept mounted while the exit animation plays so the menu glides out instead
+  // of snapping away the instant `open` flips false.
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVisible(true);
+      return;
+    }
+    const t = window.setTimeout(() => setVisible(false), 200);
+    return () => window.clearTimeout(t);
+  }, [open]);
   // OAuth profile images (Google, etc.) sometimes fail to load — expired
   // tokens, hotlink blocks, or offline. Without this, the browser renders
   // its default broken-image landscape icon, which looks awful in a 32px
@@ -82,7 +94,7 @@ export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
         )}
       </button>
 
-      {open && (
+      {visible && (
         <>
           {/* Click-outside backdrop */}
           <div
@@ -90,13 +102,22 @@ export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
             onClick={() => setOpen(false)}
           />
           <div
-            // Animate in so it glides out of the avatar, never just appears
-            // (same tw-animate-css convention as the language menu / modals).
-            // origin at the trigger corner so the zoom grows from the avatar.
-            className={`absolute z-50 w-56 rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${
+            // Glides out of / back into the avatar corner — animates in on open
+            // and OUT on close (same tw-animate-css convention as the language
+            // menu / modals), origin at the trigger corner so the zoom grows
+            // from the avatar.
+            className={`absolute z-50 w-56 rounded-xl overflow-hidden duration-200 ${
               dropUp
-                ? "left-0 bottom-full mb-2 origin-bottom-left slide-in-from-bottom-1"
-                : "right-0 top-10 origin-top-right slide-in-from-top-1"
+                ? "left-0 bottom-full mb-2 origin-bottom-left"
+                : "right-0 top-10 origin-top-right"
+            } ${
+              open
+                ? `animate-in fade-in zoom-in-95 ${
+                    dropUp ? "slide-in-from-bottom-1" : "slide-in-from-top-1"
+                  }`
+                : `animate-out fade-out zoom-out-95 ${
+                    dropUp ? "slide-out-to-bottom-1" : "slide-out-to-top-1"
+                  }`
             }`}
             style={{
               background: COLORS.surface,
