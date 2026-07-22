@@ -25,6 +25,9 @@ export function LocaleSwitcher({
 }) {
   const { locale, setLocale } = useLocale();
   const [open, setOpen] = useState(false);
+  // Kept mounted while the exit animation plays, so closing FADES/SLIDES out
+  // instead of snapping away the instant `open` flips false.
+  const [visible, setVisible] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement | null>(null);
   const current = UI_LOCALES.find((l) => l.code === locale);
@@ -40,6 +43,18 @@ export function LocaleSwitcher({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!open) setQuery("");
+  }, [open]);
+
+  // Mount immediately on open; on close keep it mounted for the exit animation,
+  // then unmount. Duration matches the 200ms animate-out below.
+  useEffect(() => {
+    if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVisible(true);
+      return;
+    }
+    const t = window.setTimeout(() => setVisible(false), 200);
+    return () => window.clearTimeout(t);
   }, [open]);
 
   useEffect(() => {
@@ -109,13 +124,19 @@ export function LocaleSwitcher({
           </>
         )}
       </button>
-      {open && (
+      {visible && (
         <div
           role="listbox"
-          className={`absolute z-50 max-h-[60vh] overflow-auto min-w-[240px] rounded-xl py-1 animate-in fade-in duration-150 ${
-            dropUp
-              ? "start-0 bottom-full mb-1.5 slide-in-from-bottom-1"
-              : "end-0 mt-1.5 slide-in-from-top-1"
+          className={`absolute z-50 max-h-[60vh] overflow-auto min-w-[240px] rounded-xl py-1 duration-200 ${
+            dropUp ? "start-0 bottom-full mb-1.5" : "end-0 mt-1.5"
+          } ${
+            open
+              ? dropUp
+                ? "animate-in fade-in slide-in-from-bottom-1"
+                : "animate-in fade-in slide-in-from-top-1"
+              : dropUp
+                ? "animate-out fade-out slide-out-to-bottom-1"
+                : "animate-out fade-out slide-out-to-top-1"
           }`}
           style={{
             background: COLORS.surface,
