@@ -220,6 +220,7 @@ ${transcript}`;
       const decoder = new TextDecoder();
       const encoder = new TextEncoder();
       let buffer = "";
+      let stopReason: string | null = null;
       try {
         while (true) {
           const { done, value } = await reader.read();
@@ -233,6 +234,18 @@ ${transcript}`;
             if (!json || json === "[DONE]") continue;
             try {
               const evt = JSON.parse(json);
+              if (evt.type === "error") {
+                controller.error(
+                  new Error(evt.error?.message ?? "AI stream error")
+                );
+                return;
+              }
+              if (
+                evt.type === "message_delta" &&
+                typeof evt.delta?.stop_reason === "string"
+              ) {
+                stopReason = evt.delta.stop_reason;
+              }
               if (
                 evt.type === "content_block_delta" &&
                 evt.delta?.type === "text_delta" &&
@@ -248,6 +261,15 @@ ${transcript}`;
       } catch (e) {
         controller.error(e);
         return;
+      }
+      // Truncated by the token cap — mark it so a long-lecture summary that
+      // hit the ceiling isn't mistaken for the complete summary.
+      if (stopReason === "max_tokens") {
+        controller.enqueue(
+          encoder.encode(
+            "\n\n---\n⚠️ This summary was cut off at the maximum length."
+          )
+        );
       }
       controller.close();
     },

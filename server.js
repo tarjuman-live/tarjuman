@@ -34,6 +34,12 @@ if (!globalThis.__deepgramSessionTokens) {
 }
 const sessionTokens = globalThis.__deepgramSessionTokens;
 
+// Tell the /api/deepgram route handler (same process) that the loopback proxy
+// is live, so it issues proxy tokens instead of direct-Deepgram temp keys. On
+// Vercel this file never runs, so the flag stays unset and the route mints temp
+// keys — the correct behavior there.
+globalThis.__deepgramProxyReady = true;
+
 // One WebSocketServer instance handles all upgrades. `noServer: true` means
 // we drive the upgrade manually inside the upgrade event.
 const proxyWss = new WebSocketServer({ noServer: true });
@@ -76,6 +82,12 @@ app.prepare().then(() => {
       });
       let bytesUp = 0;
       let messagesDown = 0;
+      // Track the Deepgram leg's real disposition so we can forward a close code
+      // the browser CLIENT already classifies (see use-deepgram.ts onclose),
+      // instead of masking every failure as a generic 1011 that triggers 6
+      // futile reconnect attempts. dgRejectStatus is set on an upgrade rejection.
+      let dgEverOpened = false;
+      let dgRejectStatus = 0;
 
       // Buffer browser → Deepgram messages until Deepgram is open. Live
       // recording starts firing audio chunks within ~250ms; the upstream
@@ -100,6 +112,7 @@ app.prepare().then(() => {
 
       dgWs.on("open", () => {
         dgOpen = true;
+        dgEverOpened = true;
         console.log(
           "[deepgram-proxy] deepgram ws OPEN — flushing",
           queue.length,
@@ -152,10 +165,28 @@ app.prepare().then(() => {
         );
         closeBoth(code, reason?.toString());
       });
+      // Deepgram rejects the WS upgrade (bad key, unsupported param combo, bad
+      // model/language) with an HTTP status BEFORE the socket ever opens. Map it
+      // to a client-classified close code so the browser stops after one attempt
+      // with a real message instead of thrashing 6 reconnects on a 1011:
+      //   401/403 -> 1008 (auth failure)   400 -> 1002 (bad request/param)
+      dgWs.on("unexpected-response", (_req, res) => {
+        dgRejectStatus = (res && res.statusCode) || 0;
+        console.error(
+          "[deepgram-proxy] deepgram rejected upgrade, status=" + dgRejectStatus
+        );
+        let code = 1011;
+        if (dgRejectStatus === 401 || dgRejectStatus === 403) code = 1008;
+        else if (dgRejectStatus === 400) code = 1002;
+        closeBoth(code, "deepgram " + dgRejectStatus);
+      });
       dgWs.on("close", (code, reason) => {
         console.log(
           "[deepgram-proxy] deepgram closed, code=" + code + " reason=" + (reason?.toString() || "(empty)")
         );
+        // Forward Deepgram's real close code when it had opened; otherwise
+        // unexpected-response already sent the classified code (closeBoth is
+        // idempotent, so this is a no-op in that case).
         closeBoth(code, reason?.toString());
       });
       browserWs.on("error", (e) => {
@@ -163,8 +194,15 @@ app.prepare().then(() => {
         closeBoth(1011, "browser error");
       });
       dgWs.on("error", (e) => {
+        // Do NOT closeBoth(1011) here — that would pre-empt the real
+        // disposition. On a handshake rejection, 'unexpected-response' already
+        // sent the right code; on an open socket, the following 'close' carries
+        // Deepgram's real code. Only close here for a pure network failure that
+        // produced neither (e.g. ECONNREFUSED/DNS before any response).
         console.error("[deepgram-proxy] deepgram ws error:", e?.message);
-        closeBoth(1011, "deepgram error");
+        if (!dgEverOpened && dgRejectStatus === 0) {
+          closeBoth(1011, "deepgram error");
+        }
       });
     });
   });

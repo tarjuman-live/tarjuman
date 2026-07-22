@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useAuthToken } from "@convex-dev/auth/react";
 import { COLORS } from "@/lib/constants";
 import { isRtl, getLangName } from "@/lib/utils";
@@ -147,18 +147,29 @@ function StudyNotes({
 }) {
   const [lang, setLang] = useState(targetLang);
   const [gen, setGen] = useState<Gen>({ phase: "idle" });
+  // Abort the in-flight stream when the user switches tabs (this component
+  // unmounts) or starts a new run — otherwise the server keeps generating up to
+  // the full token budget for output nobody will see, burning Anthropic cost.
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const run = async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setGen({ phase: "loading", text: "" });
     try {
       const text = await streamText(
         "/api/study-notes",
         { transcript, targetLanguage: lang },
         authToken,
-        (t) => setGen({ phase: "loading", text: t })
+        (t) => setGen({ phase: "loading", text: t }),
+        controller.signal
       );
       setGen({ phase: "ready", text });
     } catch (e) {
+      // Aborted (superseded run / unmount) — not a real error; leave state be.
+      if (e instanceof DOMException && e.name === "AbortError") return;
       setGen({ phase: "error", message: e instanceof Error ? e.message : String(e) });
     }
   };
@@ -192,6 +203,9 @@ function AskLecture({
   const [messages, setMessages] = useState<{ q: string; a: string; error?: boolean }[]>([]);
   const [input, setInput] = useState("");
   const [asking, setAsking] = useState(false);
+  // Cancel the in-flight answer stream if the user leaves the tab (unmount).
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -199,6 +213,9 @@ function AskLecture({
     if (!question || asking) return;
     setInput("");
     setAsking(true);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     const idx = messages.length;
     setMessages((m) => [...m, { q: question, a: "" }]);
     try {
@@ -211,9 +228,12 @@ function AskLecture({
             const next = [...m];
             if (next[idx]) next[idx] = { ...next[idx], a: t };
             return next;
-          })
+          }),
+        controller.signal
       );
     } catch (err) {
+      // Aborted (unmount) — leave the partial answer, don't flag an error.
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setMessages((m) => {
         const next = [...m];
         if (next[idx])
@@ -292,18 +312,27 @@ function TranslateTranscript({
 }) {
   const [lang, setLang] = useState(targetLang === "en" ? "ur" : "en");
   const [gen, setGen] = useState<Gen>({ phase: "idle" });
+  // Abort the (potentially long, up-to-8000-token) translation when the user
+  // switches tabs or restarts it, so it doesn't run to completion unseen.
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const run = async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setGen({ phase: "loading", text: "" });
     try {
       const text = await streamText(
         "/api/translate-transcript",
         { transcript, targetLanguage: lang },
         authToken,
-        (t) => setGen({ phase: "loading", text: t })
+        (t) => setGen({ phase: "loading", text: t }),
+        controller.signal
       );
       setGen({ phase: "ready", text });
     } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
       setGen({ phase: "error", message: e instanceof Error ? e.message : String(e) });
     }
   };

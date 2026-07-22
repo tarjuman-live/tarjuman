@@ -140,6 +140,12 @@ export async function POST(req: NextRequest) {
         system,
         messages: [{ role: "user", content: text }],
       }),
+      cache: "no-store",
+      // Without a timeout a stalled Anthropic connection hangs for the whole
+      // serverless function budget while the 60s trial clock runs out and the
+      // segment sits on "…translating". Abort at 15s → the catch below returns
+      // the generic 502 the client already handles.
+      signal: AbortSignal.timeout(15_000),
     });
     if (!resp.ok) {
       console.error("trial translate upstream error", resp.status);

@@ -256,8 +256,14 @@ export function useTranslator({
             }
 
             if (!r.ok) {
+              // Retry transient handshake failures (429/500/502/503), but NOT
+              // 504: the server already fails fast on a 15s upstream timeout, so
+              // retrying it 3× would stall this segment at "translating…" for up
+              // to ~45s and triple load on an already-slow backend. Let 504 fall
+              // through to the error branch → a tap-to-retry card after ~15s.
               if (
-                (r.status >= 500 || r.status === 429) &&
+                (r.status === 429 ||
+                  (r.status >= 500 && r.status !== 504)) &&
                 attempt < TRANSLATE_ATTEMPTS
               ) {
                 await new Promise((rs) => setTimeout(rs, 400 * attempt));

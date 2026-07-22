@@ -72,12 +72,15 @@ export function AudioVisualizer({
       }
       setBars(next);
 
-      // Track how long we've been quiet, so the "move closer" hint only
-      // appears after ~1.5s of silence (avoids flashing on natural pauses).
+      // Track how long we've been quiet, so the "move closer" hint only appears
+      // after ~4s of sustained silence. A khateeb pauses 2-5s between ayat/
+      // sentences; a 1.5s threshold flashed the amber warning on every natural
+      // pause even with the phone well-positioned, eroding trust in the signal.
+      // A genuinely too-far/covered mic stays quiet well past any normal pause.
       if (avg < 10) {
         if (quietSinceRef.current == null) {
           quietSinceRef.current = performance.now();
-        } else if (performance.now() - quietSinceRef.current > 1500) {
+        } else if (performance.now() - quietSinceRef.current > 4000) {
           setPersistentlyQuiet(true);
         }
       } else {

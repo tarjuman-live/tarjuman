@@ -151,6 +151,12 @@ export async function lookupHadith(
   if (!SUPPORTED_EDITIONS.has(slug)) return { kind: "unknown" };
 
   try {
+    // Start the (optional, best-effort) Arabic fetch CONCURRENTLY with the
+    // English one instead of serially after it — the Arabic edition being slow
+    // otherwise doubled worst-case latency on the translate hot path (~3s → ~6s
+    // per hadith). English stays the sole rejection path; Arabic errors are
+    // swallowed and never block the verified English.
+    const arP = fetchBody(`ara-${slug}`, number).catch(() => "");
     const en = await fetchBody(`eng-${slug}`, number);
     if (en === null) {
       // 404 — the cited number doesn't exist (hallucinated). Strip it.
@@ -164,12 +170,7 @@ export async function lookupHadith(
     if (!en) return { kind: "unknown" };
 
     // Arabic is best-effort — its absence shouldn't block the verified English.
-    let ar = "";
-    try {
-      ar = (await fetchBody(`ara-${slug}`, number)) ?? "";
-    } catch {
-      /* arabic optional */
-    }
+    const ar = (await arP) ?? "";
 
     const entry: CacheEntry = { kind: "found", englishBody: en, arabicBody: ar };
     lookupCache.set(key, entry);

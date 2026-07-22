@@ -31,6 +31,27 @@ const segmentValidator = v.object({
   combinedTranslatedText: v.optional(v.string()),
 });
 
+/** Metadata-only session shape returned by list queries (no segments array). */
+const sessionListItemValidator = v.object({
+  _id: v.id("sessions"),
+  _creationTime: v.number(),
+  userId: v.optional(v.id("users")),
+  title: v.optional(v.string()),
+  sourceLanguage: v.string(),
+  targetLanguage: v.string(),
+  status: v.union(
+    v.literal("recording"),
+    v.literal("paused"),
+    v.literal("completed")
+  ),
+  duration: v.number(),
+  summary: v.optional(v.string()),
+  summaryLanguage: v.optional(v.string()),
+  summaryGeneratedAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
 async function requireUserId(ctx: QueryCtx): Promise<Id<"users">> {
   const userId = await auth.getUserId(ctx);
   if (!userId) throw new Error("Not authenticated");
@@ -170,6 +191,12 @@ export const completeSession = mutation({
     sessionId: v.id("sessions"),
     duration: v.number(),
     title: v.optional(v.string()),
+    // The languages actually recorded. The session row may have been created
+    // during prewarm with mount-time defaults, then the user switched the pair
+    // before recording — persist the real values so history/detail label it
+    // correctly (and derive the right RTL direction).
+    sourceLanguage: v.optional(v.string()),
+    targetLanguage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -184,6 +211,8 @@ export const completeSession = mutation({
         session.title ??
         deriveTitle(session.segments) ??
         undefined,
+      ...(args.sourceLanguage ? { sourceLanguage: args.sourceLanguage } : {}),
+      ...(args.targetLanguage ? { targetLanguage: args.targetLanguage } : {}),
       updatedAt: Date.now(),
     });
   },
@@ -258,12 +287,16 @@ export const sweepStaleSessions = internalMutation({
   args: {},
   handler: async (ctx) => {
     const cutoff = Date.now() - STALE_SESSION_MS;
+    // Bound each run: .collect() would load every stale row WITH its full
+    // segments array, and several large abandoned recordings could blow the
+    // per-transaction read budget so the sweep fails forever. .take(25) keeps
+    // one run well under budget; the hourly cron drains any backlog over time.
     const stale = await ctx.db
       .query("sessions")
       .withIndex("by_status_updated", (q) =>
         q.eq("status", "recording").lt("updatedAt", cutoff)
       )
-      .collect();
+      .take(25);
     let completed = 0;
     let deleted = 0;
     for (const s of stale) {
@@ -330,24 +363,48 @@ export const getUserSessions = query({
 
 export const getRecentSessions = query({
   args: { limit: v.optional(v.number()) },
+  returns: v.array(sessionListItemValidator),
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) return [];
     const limit = args.limit ?? 3;
-    const recent = await ctx.db
-      .query("sessions")
-      .withIndex("by_user_date", (q) => q.eq("userId", userId))
-      .order("desc")
-      .collect();
-    // Skip empty phantom rows, take the limit, drop segments (metadata only).
-    return recent
-      .filter((s) => s.segments.length > 0)
-      .slice(0, limit)
-      .map(toListItem);
+    // Paginate instead of .collect(): a power user with 200 saved khutbahs
+    // would otherwise load every full transcript just to show 3 history cards
+    // on /record. Stop as soon as we have enough non-empty rows.
+    return await collectRecentListItems(ctx, userId, limit);
   },
 });
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
+
+async function collectRecentListItems(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  limit: number
+): Promise<Omit<Doc<"sessions">, "segments">[]> {
+  const results: Omit<Doc<"sessions">, "segments">[] = [];
+  let cursor: string | null = null;
+  const pageSize = Math.max(limit * 3, 10);
+
+  while (results.length < limit) {
+    const page = await ctx.db
+      .query("sessions")
+      .withIndex("by_user_date", (q) => q.eq("userId", userId))
+      .order("desc")
+      .paginate({ numItems: pageSize, cursor });
+
+    for (const session of page.page) {
+      if (session.segments.length === 0) continue;
+      results.push(toListItem(session));
+      if (results.length >= limit) return results;
+    }
+
+    if (page.isDone) break;
+    cursor = page.continueCursor;
+  }
+
+  return results;
+}
 
 /** Metadata-only session for list/card views — drops the heavy segments array. */
 function toListItem(s: Doc<"sessions">): Omit<Doc<"sessions">, "segments"> {

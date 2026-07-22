@@ -68,6 +68,11 @@ export async function streamAnthropicText(opts: {
       const decoder = new TextDecoder();
       const encoder = new TextEncoder();
       let buffer = "";
+      // Capture WHY the model stopped. "max_tokens" means the output was
+      // truncated mid-answer — without surfacing it, a 2h-transcript
+      // translation that stops at the ⅓ mark renders as if it were the
+      // complete result, silently losing the majority of the lecture.
+      let stopReason: string | null = null;
       try {
         while (true) {
           const { done, value } = await reader.read();
@@ -81,6 +86,20 @@ export async function streamAnthropicText(opts: {
             if (!json || json === "[DONE]") continue;
             try {
               const evt = JSON.parse(json);
+              // Anthropic can emit an `error` event mid-stream on upstream
+              // trouble — propagate it instead of silently ending the output.
+              if (evt.type === "error") {
+                controller.error(
+                  new Error(evt.error?.message ?? "AI stream error")
+                );
+                return;
+              }
+              if (
+                evt.type === "message_delta" &&
+                typeof evt.delta?.stop_reason === "string"
+              ) {
+                stopReason = evt.delta.stop_reason;
+              }
               if (
                 evt.type === "content_block_delta" &&
                 evt.delta?.type === "text_delta" &&
@@ -96,6 +115,15 @@ export async function streamAnthropicText(opts: {
       } catch (e) {
         controller.error(e);
         return;
+      }
+      // Truncated by the token cap — append a visible marker so the user knows
+      // it's incomplete and can regenerate in smaller parts.
+      if (stopReason === "max_tokens") {
+        controller.enqueue(
+          encoder.encode(
+            "\n\n---\n⚠️ This response was cut off because it reached the maximum length. For a very long transcript, translate or summarize it in shorter sections."
+          )
+        );
       }
       controller.close();
     },

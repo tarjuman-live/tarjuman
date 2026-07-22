@@ -67,6 +67,12 @@ export async function POST(req: NextRequest) {
   if (transcript.length > 400_000) {
     return NextResponse.json({ error: "Transcript too long." }, { status: 413 });
   }
+  // Cap the question too — mirrors the transcript guard so a valid token can't
+  // be used to POST a multi-MB question and burn input tokens. 2000 chars is
+  // far above any real question.
+  if (question.length > 2000) {
+    return NextResponse.json({ error: "Question too long." }, { status: 413 });
+  }
   const lang = LANGUAGE_NAMES[targetLanguage] ?? "English";
 
   const userMessage = `TRANSCRIPT OF THE LECTURE:

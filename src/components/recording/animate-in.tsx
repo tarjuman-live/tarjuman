@@ -45,6 +45,16 @@ export function AnimateIn({
       return;
     }
 
+    // Promote to its own layer ONLY for the duration of the entrance, then
+    // release it. Leaving `will-change` on permanently (it used to live in the
+    // static style) accumulates hundreds of GPU-backed layers over a 30-40min
+    // lecture, which degrades scroll/compositing and climbs GPU memory —
+    // especially on mobile Safari. Cleared via onComplete + a timeout backstop.
+    el.style.willChange = "opacity, transform";
+    const clearHint = window.setTimeout(() => {
+      if (ref.current) ref.current.style.willChange = "auto";
+    }, 800);
+
     try {
       // opacity is what guarantees visibility — kept dead-simple. translateY +
       // a whisper of scale give the premium "rise into place" feel.
@@ -54,20 +64,22 @@ export function AnimateIn({
         scale: variant === "source" ? [0.985, 1] : [1, 1],
         duration: variant === "source" ? 620 : 520,
         ease: "out(3)",
+        onComplete: () => {
+          el.style.willChange = "auto";
+        },
       });
     } catch {
       // Animation failed — never leave the message hidden.
       el.style.opacity = "1";
       el.style.transform = "none";
+      el.style.willChange = "auto";
     }
+
+    return () => window.clearTimeout(clearHint);
   }, [variant]);
 
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{ opacity: 0, willChange: "opacity, transform", ...style }}
-    >
+    <div ref={ref} className={className} style={{ opacity: 0, ...style }}>
       {children}
     </div>
   );

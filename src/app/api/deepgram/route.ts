@@ -30,6 +30,10 @@ interface SessionEntry {
 
 declare global {
   var __deepgramSessionTokens: Map<string, SessionEntry> | undefined;
+  // Set to true by server.js when the /api/deepgram-ws loopback proxy is live
+  // in this process. Absent on Vercel (server.js never runs there) and under a
+  // bare `next dev`/`next start` with no custom server.
+  var __deepgramProxyReady: boolean | undefined;
 }
 
 function getSessions(): Map<string, SessionEntry> {
@@ -168,6 +172,19 @@ export async function GET(req: Request) {
   const model =
     modelParam && ALLOWED_MODELS.has(modelParam) ? modelParam : "nova-3";
 
+  // Sample rate: the client sends the AudioContext's REAL rate (16000 when the
+  // browser honored our request, else the native 44100/48000). Deepgram must be
+  // told the true rate the raw Linear16 frames were captured at, or it decodes
+  // them at the wrong speed and returns empty/garbled transcripts (the classic
+  // "Recording but nothing appears" on iPhones that ignore the 16kHz hint).
+  // Validate to a sane band and fall back to 16000 for legacy/malformed callers.
+  const rateParam = reqUrl.searchParams.get("sample_rate");
+  const parsedRate = rateParam ? parseInt(rateParam, 10) : NaN;
+  const sampleRate =
+    Number.isFinite(parsedRate) && parsedRate >= 8000 && parsedRate <= 96000
+      ? String(parsedRate)
+      : "16000";
+
   // Transcribe with the DEDICATED monolingual model for the requested language.
   //
   // CRITICAL: Deepgram's `language=multi` (nova-3 multilingual) covers ONLY
@@ -195,7 +212,7 @@ export async function GET(req: Request) {
     language: dgLanguage,
     model,
     encoding: "linear16",
-    sample_rate: "16000",
+    sample_rate: sampleRate,
     channels: "1",
     punctuate: "true",
     smart_format: "true",
@@ -224,12 +241,16 @@ export async function GET(req: Request) {
   });
   const deepgramUrl = `wss://api.deepgram.com/v1/listen?${dgParams.toString()}`;
 
-  // Prod: the loopback proxy doesn't exist on Vercel. Mint a temp Deepgram
-  // key and let the browser open the WS to Deepgram directly.
-  const isProduction =
-    process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+  // Route through the loopback proxy ONLY when server.js is actually running in
+  // this process (it sets __deepgramProxyReady). Otherwise — Vercel, or any
+  // host started without the custom server (`next start`, `next dev`) — mint a
+  // short-lived Deepgram temp key and let the browser open the WS directly.
+  // Keying on the real proxy presence (not NODE_ENV) means a self-hosted
+  // `node server.js` in production correctly uses its own proxy instead of
+  // silently bypassing it.
+  const proxyAvailable = globalThis.__deepgramProxyReady === true;
 
-  if (isProduction) {
+  if (!proxyAvailable) {
     try {
       const tempKey = await mintDeepgramTempKey(process.env.DEEPGRAM_API_KEY);
       return NextResponse.json({ key: tempKey, url: deepgramUrl });

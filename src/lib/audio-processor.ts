@@ -9,6 +9,16 @@ export interface AudioPipeline {
   audioContext: AudioContext;
   analyser: AnalyserNode;
   gainNode: GainNode;
+  /**
+   * The context's ACTUAL sample rate. We request 16000 below, but the
+   * constructor `sampleRate` is only a hint — several Safari/iOS versions and
+   * some hardware-locked devices ignore it and run at the native 44100/48000.
+   * The worklet frame size and the `sample_rate=` we send Deepgram MUST be
+   * derived from this real value, never the requested 16000, or Deepgram
+   * decodes the stream at the wrong rate (pitch/speed shifted) and the
+   * transcript comes back empty or garbled. See createAudioPipeline.
+   */
+  sampleRate: number;
   teardown: () => Promise<void>;
 }
 
@@ -141,6 +151,15 @@ export async function createAudioPipeline(): Promise<AudioPipeline> {
 
   const audioContext = new AudioCtx({ sampleRate: 16000 });
 
+  // Read back the rate the browser ACTUALLY gave us. On Chrome + modern Safari
+  // this is 16000 (the request was honored). On browsers/devices that ignore
+  // the constructor hint it's the native 44100/48000 — in which case the
+  // worklet frame math and Deepgram's sample_rate MUST both use this real
+  // value, not the requested 16000, or every PCM frame decodes at the wrong
+  // rate and the transcript is empty/garbled. The WebAudio graph resamples the
+  // mic source to this rate automatically, so the worklet always sees it.
+  const actualSampleRate = audioContext.sampleRate;
+
   // Some browsers create the AudioContext in a suspended state until a user
   // gesture; our caller (a click handler) satisfies that requirement, but we
   // still resume explicitly in case a browser chooses to keep it suspended.
@@ -217,12 +236,18 @@ export async function createAudioPipeline(): Promise<AudioPipeline> {
   // at /pcm-worklet.js. addModule rejects on 404 / parse error, which we
   // surface to the caller — there is no useful fallback path.
   await audioContext.audioWorklet.addModule("/pcm-worklet.js");
+  // Frame size = 40ms of audio at the REAL context rate (640 @16kHz,
+  // 1920 @48kHz). Passed to the worklet so its buffering matches the rate we
+  // declare to Deepgram; a hardcoded 640 at 48kHz would mislabel 13.3ms as
+  // 40ms and break decoding.
+  const frameSize = Math.max(160, Math.round(actualSampleRate * 0.04));
   const pcmNode = new AudioWorkletNode(audioContext, "pcm-worklet", {
     numberOfInputs: 1,
     numberOfOutputs: 1,
     channelCount: 1,
     channelCountMode: "explicit",
     channelInterpretation: "speakers",
+    processorOptions: { frameSize },
   });
   gain.connect(pcmNode);
 
@@ -269,6 +294,7 @@ export async function createAudioPipeline(): Promise<AudioPipeline> {
     audioContext,
     analyser,
     gainNode: gain,
+    sampleRate: actualSampleRate,
     teardown,
   };
   } catch (e) {

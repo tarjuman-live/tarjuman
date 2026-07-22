@@ -32,6 +32,15 @@ export interface UseDeepgramOptions {
    * the send side rather than gating the worklet itself).
    */
   paused: boolean;
+  /**
+   * When true, apply the session-wide speaker lock: after warmup, lock onto the
+   * dominant speaker and DROP segments dominated by anyone else ("ignore side
+   * conversations"). When false (default), every source-language segment is
+   * kept — the lock never drops anyone, so a multi-speaker Q&A/dialogue is
+   * captured in full. The transient-noise defenses (confidence floor,
+   * off-language gate, single-word filter) stay active regardless.
+   */
+  mainSpeakerOnly?: boolean;
 }
 
 export interface UseDeepgramReturn {
@@ -80,13 +89,17 @@ type DeepgramMessage =
 
 /**
  * Drop a final segment if Deepgram's confidence falls below this threshold.
- * Native-language khutbah audio through PA + room reverb typically scores
- * 0.7–0.95 on real speech. Off-language audio (e.g., English side-conversation
- * in an Arabic session) typically lands in 0.2–0.5. 0.55 is the floor that
- * keeps the speaker's quieter moments while rejecting off-language bleed and
- * misheard ambient noise.
+ * Clean native-language speech scores 0.7–0.95, but FAR-FIELD PA capture in a
+ * reverberant masjid (the primary use case) regularly drags real, correctly-
+ * transcribed sentences down into the 0.45–0.6 band. A 0.55 floor was silently
+ * discarding that legitimate speech — the "I'm talking but nothing appears"
+ * report. Lowered to 0.45 so genuine quiet/distant speech survives; the
+ * remaining off-language transliteration noise that lands in this band is
+ * still caught downstream (the off-language script gate below + the LLM
+ * transliteration/noise verdict in /api/translate, which fails OPEN — it keeps
+ * the source card, never the reverse). Tunable; raise if noise creeps in.
  */
-const FINAL_CONFIDENCE_THRESHOLD = 0.55;
+const FINAL_CONFIDENCE_THRESHOLD = 0.45;
 
 /**
  * Don't paint interim text below this confidence. Interims are partial
@@ -144,6 +157,7 @@ export function useDeepgram({
   sourceLanguage,
   enabled,
   paused,
+  mainSpeakerOnly = false,
 }: UseDeepgramOptions): UseDeepgramReturn {
   const [segments, setSegments] = useState<LiveSegment[]>([]);
   const [interimText, setInterimText] = useState("");
@@ -174,6 +188,13 @@ export function useDeepgram({
   // A ref (not state) so the handler always sees the latest paused value
   // without re-establishing the WS each time it flips.
   const pausedRef = useRef(false);
+
+  // Latest mainSpeakerOnly, read inside the message handler so toggling it
+  // mid-session takes effect immediately without tearing down the WS.
+  const mainSpeakerOnlyRef = useRef(mainSpeakerOnly);
+  useEffect(() => {
+    mainSpeakerOnlyRef.current = mainSpeakerOnly;
+  }, [mainSpeakerOnly]);
 
   // Session-wide speaker lock. Once locked, segments where the dominant
   // speaker isn't the locked speaker are dropped (per user policy: "ignore
@@ -298,8 +319,15 @@ export function useDeepgram({
       let creds: { key: string; url: string };
       try {
         const token = authTokenRef.current;
+        // Tell the token route the AudioContext's REAL sample rate so Deepgram
+        // decodes the raw Linear16 frames at the rate they were captured at.
+        // On browsers that ignored our 16kHz request (some Safari/iOS) this is
+        // 44100/48000; sending it prevents empty/garbled transcripts.
+        const rate = Math.round(pcmNode?.context?.sampleRate ?? 16000);
         const res = await fetch(
-          `/api/deepgram?language=${encodeURIComponent(sourceLanguage)}`,
+          `/api/deepgram?language=${encodeURIComponent(
+            sourceLanguage
+          )}&sample_rate=${rate}`,
           {
             cache: "no-store",
             headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -565,11 +593,15 @@ export function useDeepgram({
                 }
               }
             } else if (
+              mainSpeakerOnlyRef.current &&
               rawSpeaker !== undefined &&
               rawSpeaker !== lockedSpeakerRef.current
             ) {
-              // Locked, and this segment's dominant speaker isn't the locked
-              // one. Drop it — it's a side conversation.
+              // Locked, "main speaker only" is ON, and this segment's dominant
+              // speaker isn't the locked one. Drop it — it's a side
+              // conversation. When the toggle is OFF we keep every speaker's
+              // segments (the lock still tracks durations above, so flipping
+              // the toggle ON later takes effect immediately).
               dbg(
                 `[deepgram] dropped side-speaker segment (speaker=${rawSpeaker}, locked=${lockedSpeakerRef.current}): "${transcript.slice(
                   0,

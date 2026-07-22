@@ -85,7 +85,16 @@ interface Seg {
   error: boolean;
 }
 
-type Status = "idle" | "listening" | "ended" | "denied" | "unsupported";
+type Status =
+  | "idle"
+  | "listening"
+  | "ended"
+  | "denied"
+  | "unsupported"
+  // Terminal recognizer failure (no mic, language the engine can't do live) —
+  // the recognizer is stopped and the reason banner stays visible, instead of
+  // spinning in a restart loop under a false "Listening".
+  | "error";
 
 export function TryLive() {
   const [status, setStatus] = useState<Status>("idle");
@@ -248,11 +257,16 @@ export function TryLive() {
           "Can't reach the speech service. Your browser sends audio to the cloud to transcribe — check your internet connection."
         );
       } else if (e.error === "language-not-supported") {
+        // Terminal: this engine will never produce results for this language,
+        // so stop rather than restart-loop under a false "Listening".
         setSrError(
           `Your browser can't do live recognition for ${speak.label}. Try Chrome or Edge, or pick a different language.`
         );
+        stop("error");
       } else if (e.error === "audio-capture") {
+        // Terminal: no usable mic — stop the loop, keep the reason visible.
         setSrError("No microphone was detected.");
+        stop("error");
       } else {
         setSrError(`Speech recognition error: ${e.error}`);
       }
@@ -421,7 +435,7 @@ export function TryLive() {
           </div>
         )}
 
-        {srError && status === "listening" && (
+        {srError && (status === "listening" || status === "error") && (
           <div
             className="rounded-xl px-3.5 py-3 text-[13px] leading-relaxed"
             style={{

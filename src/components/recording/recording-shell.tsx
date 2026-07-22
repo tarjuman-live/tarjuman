@@ -49,6 +49,10 @@ interface RecordingShellProps {
   /** Whether to keep only the dominant speaker. Controlled by the parent. */
   mainSpeakerOnly: boolean;
   onMainSpeakerToggle: () => void;
+  /** OS suspended the mic mid-recording (call/Siri/other app) — show a prompt. */
+  interrupted?: boolean;
+  /** Resume after an OS interruption (runs inside the tap so iOS restarts audio). */
+  onRecover?: () => void;
   onPause: () => void;
   onResume: () => void;
   onStop: () => void;
@@ -76,6 +80,8 @@ export function RecordingShell({
   onSetLayout,
   mainSpeakerOnly,
   onMainSpeakerToggle,
+  interrupted,
+  onRecover,
   onPause,
   onResume,
   onStop,
@@ -276,6 +282,32 @@ export function RecordingShell({
           })}
         </div>
       </div>
+
+      {/* OS interruption banner — the context was suspended mid-recording
+          (incoming call, Siri, another app took audio) and the worklet stopped
+          emitting audio. Without this the UI would keep saying "Recording"
+          while capturing silence. Tapping resumes inside the gesture. */}
+      {interrupted && !paused && (
+        <button
+          type="button"
+          onClick={onRecover}
+          className="mx-5 mt-3 px-4 py-3 rounded-2xl text-[12px] w-[calc(100%-2.5rem)] text-left cursor-pointer"
+          style={{
+            background: COLORS.amberSoft,
+            border: `1px solid ${COLORS.amber}55`,
+            color: COLORS.w,
+          }}
+          role="alert"
+        >
+          <div className="section-label mb-1" style={{ color: COLORS.amber }}>
+            Recording paused by your device
+          </div>
+          <div style={{ color: COLORS.t2 }}>
+            Your phone interrupted the mic (a call, Siri, or another app). Tap
+            here to resume capturing.
+          </div>
+        </button>
+      )}
 
       {/* Inline error banner with the actual root cause so users can act on it. */}
       {isTranscriptionError && transcriptionError && (

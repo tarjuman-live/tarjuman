@@ -4,9 +4,10 @@
 // avoid the container framing latency MediaRecorder/WebM-Opus imposes on
 // small chunks.
 //
-// Frame size: 640 samples = 40ms at 16kHz. Small enough to keep
+// Frame size: 40ms of audio at the context's ACTUAL rate, passed in via
+// processorOptions.frameSize (640 @16kHz, 1920 @48kHz). Small enough to keep
 // audio-to-transcript latency low; large enough to avoid one-message-per-
-// quantum WebSocket spam.
+// quantum WebSocket spam. Falls back to 640 if not supplied.
 //
 // Noise gate: frames whose RMS falls below NOISE_GATE_LINEAR (-55 dBFS)
 // are zero-filled before posting. Sending zeros instead of dropping keeps
@@ -20,9 +21,11 @@
 const NOISE_GATE_LINEAR = 0.001778;
 
 class PcmWorkletProcessor extends AudioWorkletProcessor {
-  constructor() {
+  constructor(options) {
     super();
-    this.frameSize = 640;
+    const fs =
+      options && options.processorOptions && options.processorOptions.frameSize;
+    this.frameSize = typeof fs === "number" && fs > 0 ? Math.round(fs) : 640;
     this.buffer = new Float32Array(this.frameSize);
     this.bufferIndex = 0;
   }

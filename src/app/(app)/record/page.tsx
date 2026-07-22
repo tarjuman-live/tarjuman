@@ -200,6 +200,10 @@ export default function RecordPage() {
     // over their session cap never opens the WS (no Deepgram token minted).
     enabled: (isActive || isPrewarmed) && !overSessionLimit,
     paused: recorder.phase === "paused" || isPrewarmed,
+    // Only drop side-speaker segments when the user has turned the toggle ON.
+    // Default (off) captures every speaker so multi-speaker Q&A isn't silently
+    // truncated. Transient-noise defenses stay on regardless.
+    mainSpeakerOnly,
   });
 
   const translator = useTranslator({
@@ -553,7 +557,12 @@ export default function RecordPage() {
       writePendingMirror(); // make the <=5s tail recoverable on next visit
       const id = sessionIdRef.current;
       if (id) {
-        void completeSessionM({ sessionId: id, duration: elapsedRef.current });
+        void completeSessionM({
+          sessionId: id,
+          duration: elapsedRef.current,
+          sourceLanguage: langsRef.current.source,
+          targetLanguage: langsRef.current.target,
+        });
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -643,7 +652,16 @@ export default function RecordPage() {
             segments: [{ ...tailSeg, translatedText: "" }],
           });
         }
-        void completeSessionM({ sessionId, duration: finalDuration });
+        // Persist the languages ACTUALLY recorded — the session may have been
+        // created during prewarm with the mount-time defaults, then the user
+        // switched the pair before recording. Without this the saved card +
+        // detail view show the wrong languages and wrong RTL direction.
+        void completeSessionM({
+          sessionId,
+          duration: finalDuration,
+          sourceLanguage: captured.sourceLang,
+          targetLanguage: captured.targetLang,
+        });
       }
       // Reflect the tail in the completed view too (source-only).
       const snapSegments = tailSeg
@@ -737,6 +755,8 @@ export default function RecordPage() {
         onSetLayout={setLayout}
         mainSpeakerOnly={mainSpeakerOnly}
         onMainSpeakerToggle={toggleMainSpeaker}
+        interrupted={recorder.interrupted}
+        onRecover={recorder.recover}
         onPause={handlePause}
         onResume={handleResume}
         onStop={handleStop}
