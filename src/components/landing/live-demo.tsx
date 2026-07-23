@@ -301,12 +301,6 @@ export function LiveDemo() {
                       {wi < srcWords.length - 1 ? " " : ""}
                     </span>
                   ))}
-                  {words < srcWords.length && (
-                    <span
-                      className="inline-block align-middle ms-0.5 w-[2px] h-[1em] animate-pulse"
-                      style={{ background: COLORS.accent }}
-                    />
-                  )}
                 </div>
 
                 {/* translation — fades in once the source is read */}
