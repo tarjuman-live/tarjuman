@@ -232,7 +232,16 @@ export function useDeepgram({
 
     const myGeneration = ++generationRef.current;
     const isLive = () => generationRef.current === myGeneration;
-    sessionStartRef.current = Date.now();
+    // Do NOT anchor the speaker-lock/diarizer warmup clock here. This effect runs
+    // when the WS OPENS, which is during PREWARM (page mount on a return visit) —
+    // commonly 20–60s before the user taps Record. Anchoring at open burns both
+    // warmup windows (15s lock + 25s diarize) on idle time, so Deepgram's
+    // genuinely-unreliable first ~25s of REAL audio would run with the warmup
+    // already expired — the lock can then snap onto a transient speaker-0
+    // mis-cluster and silently drop the lone main speaker. Leave it null (→
+    // sessionAgeMs 0 → warmup ACTIVE, the safe state) and anchor it when real
+    // recording begins, in the pause/resume effect below.
+    sessionStartRef.current = null;
 
     // Closure-local state. NOT refs. This entire block is torn down on
     // the next mount, and nothing leaks into the re-mount.
@@ -739,6 +748,15 @@ export function useDeepgram({
   // that keeps Deepgram from dropping the idle WS during silence.
   useEffect(() => {
     pausedRef.current = paused;
+    // Anchor the speaker-lock/diarizer warmup clock to the moment REAL recording
+    // begins — the prewarm→active transition (paused flips false while enabled) —
+    // NOT to WS open (see the connection effect above). Only fires on the first
+    // activation of a session: a null clock means "not recording yet", and
+    // end-of-session teardown resets it to null. A mid-lecture resume finds it
+    // already set and does NOT restart the warmup.
+    if (enabled && !paused && sessionStartRef.current === null) {
+      sessionStartRef.current = Date.now();
+    }
     if (!enabled || !paused) return;
     const interval = window.setInterval(() => {
       const { ws } = liveControlsRef.current;

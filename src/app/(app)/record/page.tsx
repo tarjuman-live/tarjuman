@@ -204,9 +204,11 @@ export default function RecordPage() {
     // over their session cap never opens the WS (no Deepgram token minted).
     enabled: (isActive || isPrewarmed) && !overSessionLimit,
     paused: recorder.phase === "paused" || isPrewarmed,
-    // Only drop side-speaker segments when the user has turned the toggle ON.
-    // Default (off) captures every speaker so multi-speaker Q&A isn't silently
-    // truncated. Transient-noise defenses stay on regardless.
+    // Drop side-speaker segments per the main-speaker toggle. It defaults ON (a
+    // locked product requirement — see the mainSpeakerOnly init above), so the
+    // speaker-lock is active by default; the user can turn it OFF to capture
+    // every speaker in a genuine multi-speaker session. Transient-noise defenses
+    // stay on regardless.
     mainSpeakerOnly,
   });
 
