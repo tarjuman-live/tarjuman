@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ISLAMIC_TERMINOLOGY_RULES } from "@/lib/islamic-terminology";
 import { LANGUAGES } from "@/lib/constants";
+import { looksLikeMetaCommentary } from "@/lib/translation-guard";
 
 /**
  * Anonymous translation for the landing-page "Try it live" trial — the only
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
   const targetName = LANG_NAME.get(target)!;
   const sourceName = source ? LANG_NAME.get(source) ?? "the source language" : "the source language";
 
-  const system = `You translate short spoken-transcript segments from ${sourceName} into ${targetName}. Output ONLY the translation — no preamble, no quotation marks, no notes. If the input is filler or untranslatable noise, output an empty string.\n\n${ISLAMIC_TERMINOLOGY_RULES}`;
+  const system = `You translate short spoken-transcript segments from ${sourceName} into ${targetName}. Output ONLY the translation — no preamble, no quotation marks, no notes, and NEVER address the user or describe the input. If the input is filler, gibberish, or untranslatable noise, output an empty string (do not explain why). OFF-LANGUAGE: the transcriber is set to ${sourceName}, so speech in another language arrives as a phonetic transliteration into ${sourceName} that reads as incoherent nonsense — if the text is clearly such a transliteration rather than real ${sourceName} content, output an empty string. Do not attempt a best-effort translation of transliterated noise.\n\n${ISLAMIC_TERMINOLOGY_RULES}`;
 
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -152,8 +153,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Translation hiccup — try again." }, { status: 502 });
     }
     const data = await resp.json();
-    const translatedText =
+    const raw =
       typeof data?.content?.[0]?.text === "string" ? data.content[0].text.trim() : "";
+    // Same hard guard as the authenticated /api/translate path: the model must
+    // NEVER surface first-person meta-commentary about the input ("I'm not
+    // recognizing this as coherent Arabic…"). It usually obeys the prompt, but
+    // on off-language/transliterated STT it occasionally leaks an explanation —
+    // and this is the public landing "Try it live" demo, a visitor's first
+    // impression. If it looks like commentary, blank it (the trial has no source
+    // card to fall back to, so a blank translation is the correct outcome).
+    const translatedText = looksLikeMetaCommentary(raw) ? "" : raw;
     return NextResponse.json({ translatedText });
   } catch (e) {
     console.error("trial translate error", e);

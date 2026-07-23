@@ -235,7 +235,7 @@ export async function GET(req: Request) {
     // nova-3 multilingual covers en/es/fr/de/hi/it/ja/nl/ru/pt only —
     // Arabic is monolingual-only (verified against Deepgram docs, 2026-06).
     // Off-language filtering is therefore layered downstream:
-    //   1. FINAL_CONFIDENCE_THRESHOLD (0.55) + speaker-lock + interim
+    //   1. FINAL_CONFIDENCE_THRESHOLD (0.45) + speaker-lock + interim
     //      confidence floor in use-deepgram.ts
     //   2. script-ratio + LLM transliteration/noise verdict in /api/translate
   });

@@ -181,11 +181,34 @@ function shouldFilterAsNoise(
     return { filter: true, reason: `too-short (${wordCount} word(s))` };
   }
 
+  if (isRepeatedTokenNoise(trimmed)) {
+    return { filter: true, reason: "repeated-token" };
+  }
+
   if (isOffLanguageScript(trimmed, sourceLang)) {
     return { filter: true, reason: "off-language-script" };
   }
 
   return { filter: false };
+}
+
+// Repeated-token hallucination. On sustained NON-speech (AC hum, distant
+// nasheed/music, crowd murmur, coughs) Deepgram's well-known failure mode is to
+// emit a single token repeated — "الله الله الله", "نعم نعم نعم", "la la la".
+// That passes the word-count and off-language-script gates and would render as
+// plausible dhikr the speaker never said (a phantom segment — the reported
+// "picks up words that weren't spoken"). Drop it ONLY when EVERY word is the
+// same token repeated ≥3×. High-precision: genuine repeated dhikr always has ≥2
+// distinct tokens ("الله أكبر الله أكبر", "سبحان الله سبحان الله"), so it's never
+// touched. Punctuation (smart_format) and case are normalized out before the
+// uniqueness test.
+function isRepeatedTokenNoise(text: string): boolean {
+  const words = text
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, "").toLowerCase())
+    .filter(Boolean);
+  if (words.length < 3) return false;
+  return new Set(words).size === 1;
 }
 
 function buildUserMessage(opts: {

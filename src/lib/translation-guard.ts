@@ -47,8 +47,36 @@ const COMMENTARY_MARKERS: RegExp[] = [
   /\bnon-?words?\b/i,
   /\bmeaningful source text\b/i,
   /\bappears to be (?:spoken |mangled |garbled |a )?(?:transliteration|gibberish|noise|non-)/i,
-  // The literal tell from the observed leak: the model narrating "(empty string)"
-  /\(empty string\)/i,
+  // The model narrating its "empty" verdict as text — the canonical failure this
+  // guard exists for. It wraps the verdict in a parenthetical opener — observed
+  // as "(Empty string — …)" and "(empty response)" — so match the paren-anchored
+  // "(empty <string|response|output|translation>" family (anchored so a real
+  // "the empty string of prayer beads" can't false-positive). Also catch the
+  // unambiguous "empty response/output/translation" phrases without the paren —
+  // real khutbah/lecture prose never contains them.
+  /\(\s*empty[-\s]?(?:string|response|output|translation|result)\b/i,
+  /\bempty (?:response|output|translation)\b/i,
+  // "empty string" is the model echoing its own instruction ("output an empty
+  // string") back as prose — present in nearly every observed leak ("outputting
+  // an empty string", "(Empty string —…"). A translation of religious speech
+  // essentially never contains the phrase; blanking fails OPEN (source card is
+  // kept), so the asymmetry favors catching it.
+  /\bempty string\b/i,
+  // "transliterated phonetically into…", "transliteration of English", etc. —
+  // the model describing the input's form instead of translating it.
+  /\btransliterat(?:ed|ion|ing) (?:phonetically|into|of|from|as)\b/i,
+  // The model instructing the user to supply different input, or narrating that
+  // it *will* translate — a real translation never addresses the user this way.
+  // (Observed: "…Please provide actual Arabic or English speech content, and
+  //  I'll translate it according to the rules.")
+  /\bplease provide (?:actual|valid|real|proper|coherent|the actual)\b/i,
+  /\bI'?ll translate it\b/i,
+  // Diagnosing the input as not-real-language: "I'm not recognizing this as
+  // coherent Arabic…", "…phonetic English/transliteration…", "…written in /
+  // rendered as Arabic letters/characters".
+  /\brecognizing this as (?:coherent|meaningful|valid|real)\b/i,
+  /\bphonetic (?:transliteration|english|arabic|spanish|french|turkish|urdu|latin)\b/i,
+  /\b(?:written in|rendered as) (?:arabic|latin|hebrew|cyrillic|roman) (?:letters|characters|script)\b/i,
 ];
 
 export function looksLikeMetaCommentary(text: string): boolean {
