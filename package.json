@@ -2,10 +2,15 @@
   "name": "livetranscribe",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "bun@1.3.14",
+  "engines": {
+    "node": ">=22.0.0",
+    "bun": ">=1.2.0"
+  },
   "scripts": {
     "dev": "node server.js",
     "dev:next": "next dev",
-    "build": "convex deploy --cmd 'npx convex codegen && next build'",
+    "build": "convex deploy --cmd 'bunx convex codegen && next build'",
     "start": "NODE_ENV=production node server.js",
     "lint": "eslint",
     "test": "vitest run",

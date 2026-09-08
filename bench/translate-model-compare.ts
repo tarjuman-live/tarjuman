@@ -31,7 +31,7 @@
  * src/lib/translate-prompt.ts — the SAME module the route uses — so the
  * comparison cannot drift from production.
  *
- * Run:  npx tsx bench/translate-model-compare.ts [--runs N] [--no-verify]
+ * Run:  bunx tsx bench/translate-model-compare.ts [--runs N] [--no-verify]
  *
  * NOTE: this calls the real Anthropic API and costs money (a few cents per run).
  * It deliberately does NOT hit /api/translate, so it needs no auth and measures

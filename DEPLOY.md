@@ -34,13 +34,13 @@ fallback.
 Vercel runs `bun run build`, which is:
 
 ```bash
-convex deploy --cmd 'npx convex codegen && next build'
+convex deploy --cmd 'bunx convex codegen && next build'
 ```
 
-`npx` — not `bunx` — is deliberate. `convex deploy --cmd` spawns that string
-in a subshell, and `npx` ships with the Node runtime Vercel always provides,
-so it resolves whether or not the bun binary is on the build PATH. Changing
-it buys nothing (one codegen call) and risks the production deploy.
+`bunx`, not `npx`. **npm is not installed on the dev machine** — bun is the only
+package manager here — and Vercel installs from `bun.lock`, so the bun binary is
+guaranteed on the build PATH. `npx` would depend on a package manager this project
+no longer uses.
 
 One command does both deploys: it pushes `convex/` functions to the
 **prod** Convex deployment, then runs the Next build with
@@ -125,12 +125,12 @@ These live in Convex itself (`convex/` code runs in Convex's runtime,
 not Vercel's). Set via dashboard or:
 
 ```bash
-npx convex env set --prod KEY value
+bunx convex env set --prod KEY value
 ```
 
 | Var | Purpose |
 |---|---|
-| `JWT_PRIVATE_KEY`, `JWKS` | Convex Auth session signing — set automatically by `npx @convex-dev/auth` |
+| `JWT_PRIVATE_KEY`, `JWKS` | Convex Auth session signing — set automatically by `bunx @convex-dev/auth` |
 | `SITE_URL` | The canonical app URL (`https://tarjuman.live`) — Convex Auth redirects |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth — required for Google sign-in |
 | `RESEND_API_KEY` | Password-reset email sender (`convex/passwordReset.ts`) |

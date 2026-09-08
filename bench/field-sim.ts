@@ -20,7 +20,7 @@
  * quran.com citation enrichment. A green run here means the plumbing works
  * and Arabic isn't catastrophically broken — it does NOT replace the masjid.
  *
- * Run: npx tsx bench/field-sim.ts
+ * Run: bunx tsx bench/field-sim.ts
  */
 import WebSocket from "ws";
 import { readFileSync, existsSync } from "node:fs";

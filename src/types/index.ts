@@ -1,4 +1,4 @@
-// Note: until `npx convex dev` runs and generates convex/_generated,
+// Note: until `bunx convex dev` runs and generates convex/_generated,
 // we use string placeholders for Id types. F6 will replace these with
 // `import type { Id } from "@/../convex/_generated/dataModel"`.
 type SessionId = string & { __brand: "sessions" };

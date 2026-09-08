@@ -64,7 +64,7 @@
 }
 
 /* shadcn's semantic tokens, mapped onto the house liquid-glass palette so
-   `npx shadcn add <x>` produces components that look native to the app.
+   `bunx shadcn add <x>` produces components that look native to the app.
    The app is dark-only (`dark` is hard-coded on <html> in layout.tsx), so
    shadcn's default light `:root` block is deliberately NOT emitted — only
    this `.dark` block exists. Note shadcn's `--accent` is its neutral HOVER

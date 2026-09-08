@@ -23,7 +23,7 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
     if (!url) {
       if (typeof window !== "undefined") {
         console.warn(
-          "NEXT_PUBLIC_CONVEX_URL is not set. Run `npx convex dev` to populate it."
+          "NEXT_PUBLIC_CONVEX_URL is not set. Run `bunx convex dev` to populate it."
         );
       }
       return null;
