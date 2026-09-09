@@ -51,10 +51,8 @@ several Conductor workspaces — the squatter is usually a sibling workspace's
 forgotten dev server, and it gets taken down. `PORT=3005 bun run dev` still
 works; the helper follows `PORT`.
 
-On boot the server opens **Dia** at the URL (macOS + dev only). `OPEN_BROWSER=0`
-suppresses it for background/headless runs.
-
-`bun run start` (production) does none of this — no port killing, no browser.
+The server does **not** open a browser on boot — it just serves 3000 and prints
+the URL. `bun run start` (production) skips the port reclaim entirely.
 
 ## ENVIRONMENT VARIABLES
 

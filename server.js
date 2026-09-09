@@ -20,7 +20,6 @@
 const { createServer } = require("node:http");
 const { parse } = require("node:url");
 const os = require("node:os");
-const { execFile } = require("node:child_process");
 const next = require("next");
 const { WebSocket, WebSocketServer } = require("ws");
 
@@ -232,18 +231,5 @@ app.prepare().then(() => {
     if (lan) console.log(`   - Network:      http://${lan.address}:${port}`);
     console.log(`   - Proxy:        /api/deepgram-ws → Deepgram (loopback)`);
     console.log(`\n   ✓ Ready in ${Date.now() - bootStartedAt}ms\n`);
-
-    // Pop the app open on boot. Dia explicitly — a bare `open <url>` routes to
-    // the macOS default browser, which is not the one this project is worked in.
-    // Guarded to dev + macOS, and OPEN_BROWSER=0 opts out (headless runs, CI, or
-    // an agent booting the server in the background without stealing focus).
-    if (dev && process.platform === "darwin" && process.env.OPEN_BROWSER !== "0") {
-      const url = `http://localhost:${port}`;
-      execFile("open", ["-a", "Dia", url], (err) => {
-        // Dia not installed → fall back to the default browser. If that also
-        // fails, stay quiet: a missing browser must never look like a server error.
-        if (err) execFile("open", [url], () => {});
-      });
-    }
   });
 });
