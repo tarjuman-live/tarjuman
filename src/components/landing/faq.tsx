@@ -1,6 +1,7 @@
 import { Reveal } from "./reveal";
 import { HeadingReveal } from "./heading-reveal";
 import { FaqItem } from "./faq-item";
+import { BackToTop } from "./back-to-top";
 import { T } from "./t";
 import type { MessageKey } from "@/lib/i18n/messages";
 
@@ -33,6 +34,11 @@ export function Faq() {
           </Reveal>
         ))}
       </div>
+      {/* Last section before the footer — offer the way back up rather than
+          making people scroll the whole page by hand. */}
+      <Reveal delay={60 + FAQ_KEYS.length * 70}>
+        <BackToTop />
+      </Reveal>
     </section>
   );
 }

@@ -120,6 +120,7 @@ export const MESSAGES = {
   "lp.faqA5": { en: "When you stop recording, Tarjuman can generate an AI summary of the whole session — main topic, key points and takeaways — so you leave with clear notes without writing anything down." },
   "lp.faqQ6": { en: "Is Tarjuman free?" },
   "lp.faqA6": { en: "Tarjuman is free to start. Open the recorder, pick your languages, and tap record — you can transcribe, translate and generate a summary of a khutbah or lecture right away." },
+  "lp.backToTop": { en: "Back to top", ar: "العودة إلى الأعلى", ur: "اوپر واپس جائیں", fr: "Retour en haut", es: "Volver arriba", id: "Kembali ke atas", tr: "Başa dön", bn: "উপরে ফিরে যান", ms: "Kembali ke atas", de: "Nach oben" },
   "lp.privacy": { en: "Privacy" },
   "lp.terms": { en: "Terms" },
   "lp.contact": { en: "Contact" },
