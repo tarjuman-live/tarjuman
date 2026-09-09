@@ -8,8 +8,8 @@
     "bun": ">=1.2.0"
   },
   "scripts": {
-    "dev": "node server.js",
-    "dev:next": "next dev",
+    "dev": "node scripts/free-port.mjs && node server.js",
+    "dev:next": "node scripts/free-port.mjs && next dev -p ${PORT:-3000}",
     "build": "convex deploy --cmd 'bunx convex codegen && next build'",
     "start": "NODE_ENV=production node server.js",
     "lint": "eslint",

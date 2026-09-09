@@ -36,6 +36,26 @@ This app will primarily capture audio from **PA speakers in masjids, lecture hal
 | Hosting | Vercel | Zero-config Next.js deployment |
 | Error Tracking | Sentry | Error monitoring from day one |
 
+## LOCAL DEV — ALWAYS PORT 3000
+
+`bun run dev` serves on **http://localhost:3000**, always. Not a preference — the
+port is baked into `NEXT_PUBLIC_APP_URL`, Convex's `SITE_URL`, and the
+Stripe/auth callback URLs, so a server that quietly drifts to 3001 boots fine and
+then fails sign-in in a way that looks like an auth bug.
+
+`server.listen(port)` in `server.js` has no auto-increment, so an occupied 3000
+used to be a bare `EADDRINUSE`. It no longer is: `dev` runs
+`scripts/free-port.mjs` first, which SIGTERMs (then SIGKILLs) whatever is
+LISTENing on the port and boots there anyway. This repo is checked out into
+several Conductor workspaces — the squatter is usually a sibling workspace's
+forgotten dev server, and it gets taken down. `PORT=3005 bun run dev` still
+works; the helper follows `PORT`.
+
+On boot the server opens **Dia** at the URL (macOS + dev only). `OPEN_BROWSER=0`
+suppresses it for background/headless runs.
+
+`bun run start` (production) does none of this — no port killing, no browser.
+
 ## ENVIRONMENT VARIABLES
 
 ```
