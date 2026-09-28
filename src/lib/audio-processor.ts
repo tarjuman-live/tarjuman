@@ -1,3 +1,5 @@
+import { AUDIO_DSP, frameSizeFor } from "@/lib/audio/dsp";
+
 export interface AudioPipeline {
   sourceStream: MediaStream;
   /**
@@ -187,17 +189,20 @@ export async function createAudioPipeline(): Promise<AudioPipeline> {
   // the small "warmth" loss is a fair trade for clean outdoor capture.
   const highPass = audioContext.createBiquadFilter();
   highPass.type = "highpass";
-  highPass.frequency.value = 120;
-  highPass.Q.value = 0.7;
+  highPass.frequency.value = AUDIO_DSP.highpassHz;
+  highPass.Q.value = AUDIO_DSP.filterQ;
 
   // 7kHz lowpass cuts high-frequency outdoor hiss + crowd sibilance. Speech
   // content sits below 4kHz; the 4-7kHz range carries some consonant detail
   // worth keeping, but everything above is noise for our use case.
   const lowPass = audioContext.createBiquadFilter();
   lowPass.type = "lowpass";
-  lowPass.frequency.value = 7000;
-  lowPass.Q.value = 0.7;
+  lowPass.frequency.value = AUDIO_DSP.lowpassHz;
+  lowPass.Q.value = AUDIO_DSP.filterQ;
 
+  // Tuning values live in lib/audio/dsp.ts (AUDIO_DSP), shared with the
+  // native app's pure-JS copy of this chain so both platforms stay identical.
+  //
   // Compressor tuned for OUTDOOR PA distance — Madinah Haram courtyards,
   // open-air gatherings, conferences. The aggressive 4:1 / -26dB stack
   // brings up distant quiet speech that would otherwise sit too low for
@@ -205,17 +210,17 @@ export async function createAudioPipeline(): Promise<AudioPipeline> {
   // (no pumping artifacts on direct speech) but left distant audio
   // under-amplified.
   const compressor = audioContext.createDynamicsCompressor();
-  compressor.threshold.value = -26;
-  compressor.knee.value = 6;
-  compressor.ratio.value = 4;
-  compressor.attack.value = 0.003;
-  compressor.release.value = 0.25;
+  compressor.threshold.value = AUDIO_DSP.compressor.thresholdDb;
+  compressor.knee.value = AUDIO_DSP.compressor.kneeDb;
+  compressor.ratio.value = AUDIO_DSP.compressor.ratio;
+  compressor.attack.value = AUDIO_DSP.compressor.attackS;
+  compressor.release.value = AUDIO_DSP.compressor.releaseS;
 
   // 1.6x makeup gain after compression. Distant outdoor PA captured by
   // a phone mic typically arrives 10-15dB lower than indoor close-mic;
   // makeup gain compensates so the engine sees usable signal levels.
   const gain = audioContext.createGain();
-  gain.gain.value = 1.6;
+  gain.gain.value = AUDIO_DSP.gain;
 
   source.connect(highPass);
   highPass.connect(lowPass);
@@ -240,7 +245,7 @@ export async function createAudioPipeline(): Promise<AudioPipeline> {
   // 1920 @48kHz). Passed to the worklet so its buffering matches the rate we
   // declare to the engine; a hardcoded 640 at 48kHz would mislabel 13.3ms as
   // 40ms and break decoding.
-  const frameSize = Math.max(160, Math.round(actualSampleRate * 0.04));
+  const frameSize = frameSizeFor(actualSampleRate);
   const pcmNode = new AudioWorkletNode(audioContext, "pcm-worklet", {
     numberOfInputs: 1,
     numberOfOutputs: 1,

@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Convex codegen — not hand-written
     "convex/_generated/**",
+    // Expo app — has its own tsconfig + expo lint
+    "mobile/**",
     // Design prototype at the repo root — the visual source of truth per
     // CLAUDE.md, never compiled or shipped. Not held to app lint standards.
     "prototype.tsx",

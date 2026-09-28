@@ -17,7 +17,8 @@
 // through unchanged — only true near-silence (gaps between phrases, ambient
 // hum after the audio-graph filters) is suppressed.
 
-// 10 ^ (-55 / 20) — RMS threshold in linear amplitude.
+// 10 ^ (-55 / 20) — RMS threshold in linear amplitude. Keep in sync with
+// AUDIO_DSP.noiseGateLinear in src/lib/audio/dsp.ts (the native app's copy).
 const NOISE_GATE_LINEAR = 0.001778;
 
 class PcmWorkletProcessor extends AudioWorkletProcessor {
