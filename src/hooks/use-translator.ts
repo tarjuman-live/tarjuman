@@ -3,25 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthToken } from "@convex-dev/auth/react";
 import type { LiveSegment } from "@/types";
-import { looksLikeMetaCommentary } from "@/lib/translation-guard";
+import { translateSegment, type MergeRecord } from "@/lib/translate-client";
 
-// Matches the sentinel in src/app/api/translate/route.ts — separates the
-// streamed plain-translation deltas from the final metadata JSON trailer.
-const META_SENTINEL = "\n␞__TARJUMAN_META__␞\n";
+export type { MergeRecord };
 
 export interface UseTranslatorOptions {
   segments: LiveSegment[];
   sourceLanguage: string;
   targetLanguage: string;
-}
-
-export interface MergeRecord {
-  /** IDs of prior segments absorbed into this one (children — hide them). */
-  fromIds: string[];
-  /** Combined source-language text covering children + parent. */
-  combinedSourceText: string;
-  /** Combined translation with citation. */
-  combinedTranslatedText: string;
 }
 
 export interface UseTranslatorReturn {
@@ -73,7 +62,10 @@ export function useTranslator({
   const [filteredIds, setFilteredIds] = useState<Set<string>>(new Set());
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const inFlightRef = useRef<Set<string>>(new Set());
-  const [, forcePendingRender] = useState(0);
+  // Render-safe snapshot of inFlightRef (the ref is the synchronous dedupe
+  // guard; reading it during render is not allowed).
+  const [pending, setPending] = useState<Set<string>>(new Set());
+  const syncPending = () => setPending(new Set(inFlightRef.current));
   // Convex Auth token — attached as Bearer to /api/translate so the route
   // can authorize the call and rate-limit the user. Auth is validated
   // server-side; we never trust the client to declare its own user.
@@ -86,7 +78,7 @@ export function useTranslator({
     setFilteredIds(new Set());
     setCompletedIds(new Set());
     inFlightRef.current = new Set();
-    forcePendingRender((n) => n + 1);
+    syncPending();
   };
 
   // Clear a segment's recorded error so the translate effect picks it up again
@@ -142,7 +134,7 @@ export function useTranslator({
 
     for (const seg of toTranslate) {
       inFlightRef.current.add(seg.id);
-      forcePendingRender((n) => n + 1);
+      syncPending();
 
       // Build disambiguation context: up to 6 most-recent FINAL segments
       // strictly preceding this one (wider than the old 3 so a hadith or verse
@@ -178,225 +170,64 @@ export function useTranslator({
             next.add(seg.id);
             return next;
           });
-        // Finalize from the metadata trailer (streamed) or the small JSON body
-        // (source===target passthrough) — identical handling for both shapes.
-        const applyResult = (data: {
-          translatedText?: string;
-          merge?: MergeRecord;
-          filtered?: boolean;
-          error?: string;
-        }) => {
-          if (data.error) {
-            clearPartial();
-            setErrors((prev) => ({ ...prev, [seg.id]: data.error! }));
-            return;
-          }
-          if (data.filtered) {
-            setFilteredIds((prev) => {
-              if (prev.has(seg.id)) return prev;
-              const next = new Set(prev);
-              next.add(seg.id);
-              return next;
-            });
-            markCompleted();
-            return;
-          }
-          if (
-            !data.translatedText ||
-            looksLikeMetaCommentary(data.translatedText)
-          ) {
-            // FAIL-OPEN: the server returned an empty translation (the model
-            // judged this segment untranslatable / off-language) — or leaked
-            // meta-commentary that the server guard should have blanked but,
-            // as a last line of defense (stale build / cache), we blank here
-            // too so it can never render. The transcribed source is ground truth
-            // and must NEVER be deleted by a translation verdict — keep the
-            // segment with a blank translation so its source card persists to
-            // the live view and the saved session. (Genuine noise is dropped
-            // earlier via data.filtered, handled above.)
-            setTranslations((prev) =>
-              prev[seg.id] === "" ? prev : { ...prev, [seg.id]: "" }
-            );
-            markCompleted();
-            return;
-          }
-          setTranslations((prev) => ({ ...prev, [seg.id]: data.translatedText! }));
-          if (data.merge && data.merge.fromIds.length > 0) {
-            setMerges((prev) => ({ ...prev, [seg.id]: data.merge! }));
-          }
-          markCompleted();
-        };
+        const setError = (message: string) =>
+          setErrors((prev) => ({ ...prev, [seg.id]: message }));
 
         try {
-          const headers: Record<string, string> = {
-            "Content-Type": "application/json",
-          };
-          if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
-
-          const TRANSLATE_ATTEMPTS = 3;
-          const body = JSON.stringify({
-            text: seg.text,
-            source: sourceLanguage,
-            target: targetLanguage,
-            context: requestContext.length > 0 ? requestContext : undefined,
-          });
-
-          // The retry loop wraps only the HANDSHAKE — a transient 5xx/429/
-          // network failure before the stream opens retries with backoff. Once
-          // a 200 stream is open, a failure is terminal-for-segment (tap to
-          // retry). A 4xx (e.g. 401 auth) fails fast.
-          for (let attempt = 1; attempt <= TRANSLATE_ATTEMPTS; attempt++) {
-            let r: Response;
-            try {
-              r = await fetch("/api/translate", { method: "POST", headers, body });
-            } catch (netErr) {
-              if (attempt === TRANSLATE_ATTEMPTS) throw netErr;
-              await new Promise((rs) => setTimeout(rs, 400 * attempt));
-              continue;
+          // Retry policy, stream/trailer parsing and the meta-commentary guard
+          // live in the shared client so the native app can't drift from them.
+          const outcome = await translateSegment(
+            {
+              text: seg.text,
+              source: sourceLanguage,
+              target: targetLanguage,
+              context: requestContext,
+            },
+            {
+              url: "/api/translate",
+              authToken,
+              onPartial: (shown) =>
+                setTranslations((prev) =>
+                  prev[seg.id] === shown ? prev : { ...prev, [seg.id]: shown }
+                ),
             }
-
-            if (!r.ok) {
-              // Retry transient handshake failures (429/500/502/503), but NOT
-              // 504: the server already fails fast on a 15s upstream timeout, so
-              // retrying it 3× would stall this segment at "translating…" for up
-              // to ~45s and triple load on an already-slow backend. Let 504 fall
-              // through to the error branch → a tap-to-retry card after ~15s.
-              if (
-                (r.status === 429 ||
-                  (r.status >= 500 && r.status !== 504)) &&
-                attempt < TRANSLATE_ATTEMPTS
-              ) {
-                await new Promise((rs) => setTimeout(rs, 400 * attempt));
-                continue;
-              }
-              const d = (await r.json().catch(() => ({}))) as { error?: string };
-              setErrors((prev) => ({
-                ...prev,
-                [seg.id]: d.error ?? `Translation failed (${r.status})`,
-              }));
-              break;
-            }
-
-            // Read the body and decide the shape by CONTENT, NOT the
-            // Content-Type header. Next 16 behind the custom server can drop or
-            // rewrite Content-Type on a streamed Response, which previously sent
-            // a streamed (text/plain) body down the JSON branch → JSON.parse of
-            // prose threw → silent `{}` → "Translator returned no text" on every
-            // segment. The durable contract is the in-band META_SENTINEL:
-            //   - body contains META_SENTINEL → streamed translation + trailer
-            //   - no sentinel → a small JSON body (source===target passthrough,
-            //     or a noise-filter result)
-            if (!r.body) {
-              const d = (await r.json().catch(() => null)) as
-                | Parameters<typeof applyResult>[0]
-                | null;
-              if (!d) {
-                clearPartial();
-                setErrors((prev) => ({
-                  ...prev,
-                  [seg.id]: "Malformed translation response",
-                }));
-                break;
-              }
-              applyResult(d);
-              break;
-            }
-
-            const reader = r.body.getReader();
-            const decoder = new TextDecoder();
-            let acc = "";
-            let sentinelAt = -1;
-            let looksLikeJson = false;
-            try {
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                acc += decoder.decode(value, { stream: true });
-                if (sentinelAt === -1) sentinelAt = acc.indexOf(META_SENTINEL);
-                // Progressive display only for the streamed prose shape — never
-                // render a JSON body (passthrough/filtered) as the translation.
-                if (sentinelAt !== -1) {
-                  const visible = acc.slice(0, sentinelAt);
-                  // Never let leaked model meta-commentary preview on screen —
-                  // blank it the instant a marker appears (the server's trailer
-                  // will confirm empty). See @/lib/translation-guard.
-                  const shown = looksLikeMetaCommentary(visible) ? "" : visible;
-                  setTranslations((prev) =>
-                    prev[seg.id] === shown ? prev : { ...prev, [seg.id]: shown }
-                  );
-                } else if (!looksLikeJson && acc.trimStart().startsWith("{")) {
-                  looksLikeJson = true; // JSON body — wait for it whole, don't show
-                } else if (!looksLikeJson) {
-                  // Hold back the last META_SENTINEL.length chars: if the
-                  // sentinel straddles a chunk boundary, indexOf can't match it
-                  // until the next read, and showing `acc` raw would flash the
-                  // sentinel's prefix on screen for a frame. The final value is
-                  // set by applyResult after the loop regardless.
-                  const safeEnd = acc.length - META_SENTINEL.length;
-                  if (safeEnd > 0) {
-                    const visible = acc.slice(0, safeEnd);
-                    const shown = looksLikeMetaCommentary(visible)
-                      ? ""
-                      : visible;
-                    setTranslations((prev) =>
-                      prev[seg.id] === shown
-                        ? prev
-                        : { ...prev, [seg.id]: shown }
-                    );
-                  }
-                }
-              }
-            } catch {
+          );
+          switch (outcome.kind) {
+            case "error":
               clearPartial();
-              setErrors((prev) => ({
-                ...prev,
-                [seg.id]: "Translation stream interrupted",
-              }));
+              setError(outcome.message);
+              break;
+            case "filtered":
+              setFilteredIds((prev) => {
+                if (prev.has(seg.id)) return prev;
+                const next = new Set(prev);
+                next.add(seg.id);
+                return next;
+              });
+              markCompleted();
+              break;
+            case "blank":
+              // FAIL-OPEN: keep the segment with a blank translation so its
+              // source card persists to the live view and the saved session.
+              setTranslations((prev) =>
+                prev[seg.id] === "" ? prev : { ...prev, [seg.id]: "" }
+              );
+              markCompleted();
+              break;
+            case "ok": {
+              const { translatedText, merge } = outcome;
+              setTranslations((prev) => ({ ...prev, [seg.id]: translatedText }));
+              if (merge) setMerges((prev) => ({ ...prev, [seg.id]: merge }));
+              markCompleted();
               break;
             }
-
-            const idx = acc.indexOf(META_SENTINEL);
-            if (idx !== -1) {
-              // Streamed shape: parse the metadata trailer.
-              let meta: Parameters<typeof applyResult>[0];
-              try {
-                meta = JSON.parse(acc.slice(idx + META_SENTINEL.length));
-              } catch {
-                clearPartial();
-                setErrors((prev) => ({
-                  ...prev,
-                  [seg.id]: "Malformed translation trailer",
-                }));
-                break;
-              }
-              applyResult(meta);
-            } else {
-              // No sentinel → a plain JSON body. Parse it; an empty/garbled body
-              // is an explicit error, never a silent {} that reads as "no text".
-              let d: Parameters<typeof applyResult>[0];
-              try {
-                d = JSON.parse(acc);
-              } catch {
-                clearPartial();
-                setErrors((prev) => ({
-                  ...prev,
-                  [seg.id]: "Malformed translation response",
-                }));
-                break;
-              }
-              applyResult(d);
-            }
-            break;
           }
         } catch (e) {
           clearPartial();
-          setErrors((prev) => ({
-            ...prev,
-            [seg.id]: e instanceof Error ? e.message : String(e),
-          }));
+          setError(e instanceof Error ? e.message : String(e));
         } finally {
           inFlightRef.current.delete(seg.id);
-          forcePendingRender((n) => n + 1);
+          syncPending();
         }
       })();
     }
@@ -422,7 +253,7 @@ export function useTranslator({
 
   return {
     translations,
-    pending: inFlightRef.current,
+    pending,
     errors,
     merges,
     suppressedIds,
