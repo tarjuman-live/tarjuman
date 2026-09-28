@@ -29,7 +29,10 @@ import { useTranslator } from "@/hooks/use-translator";
 import { useSessionTimer } from "@/hooks/use-session-timer";
 import { usePlan } from "@/hooks/use-plan";
 import { UpgradeCard } from "@/components/billing/upgrade-card";
-import { isOffLanguageScript } from "@/lib/script";
+import {
+  stopTailSegment,
+  takeFlushableSegments,
+} from "@/lib/recording-persistence";
 
 // localStorage key holding an in-progress recording's transcript, so an
 // abnormal exit (tab close, mobile tab-discard, pause-then-kill) doesn't lose
@@ -339,61 +342,24 @@ export default function RecordPage() {
   const flushSegments = (force = false) => {
     const sessionId = sessionIdRef.current;
     if (!sessionId) return;
-    const flushed = flushedIdsRef.current;
-    const sourceTargetSame =
-      langsRef.current.source === langsRef.current.target;
-
-    const ready = stt.segments.filter((seg) => {
-      if (!seg.isFinal || flushed.has(seg.id)) return false;
-      // Don't persist noise — single-word / off-language segments the
-      // translator dropped server-side. They'd just clutter the saved
-      // session.
-      if (translator.filteredIds.has(seg.id)) {
-        // Mark as flushed so we don't reconsider it on every tick.
-        flushed.add(seg.id);
-        return false;
-      }
-      if (sourceTargetSame) return true;
-      // Persist only once the FINAL enriched translation has landed — NOT on a
-      // partial streamed delta (which now sets translations[id] mid-stream).
-      // completedIds marks "done" (translated, filtered, or finalized).
-      if (translator.completedIds.has(seg.id)) return true;
-      // On a forced flush (Stop), persist untranslated finals too — better a
-      // segment with its Arabic source and a blank translation than the whole
-      // segment (often the closing du'a/summary) silently lost because its
-      // translation was still in flight when the user tapped Stop. Regular
-      // ticks still wait for the translation to land.
-      return force;
+    // Selection rules are shared with the native app — see
+    // lib/recording-persistence.ts.
+    const stored = takeFlushableSegments({
+      segments: stt.segments,
+      flushed: flushedIdsRef.current,
+      filteredIds: translator.filteredIds,
+      completedIds: translator.completedIds,
+      translations: translator.translations,
+      merges: translator.merges,
+      sameLanguage: langsRef.current.source === langsRef.current.target,
+      force,
     });
-
-    if (ready.length === 0) return;
-
-    const stored = ready.map((seg) => {
-      const merge = translator.merges[seg.id];
-      return {
-        id: seg.id,
-        sourceText: seg.text,
-        translatedText: sourceTargetSame
-          ? seg.text
-          : translator.translations[seg.id] ?? "",
-        timestamp: seg.timestamp,
-        // Include verse/hadith merge metadata on first flush when the
-        // translator returned a merge before the flush tick fires.
-        ...(merge
-          ? {
-              mergedFromIds: merge.fromIds,
-              combinedSourceText: merge.combinedSourceText,
-              combinedTranslatedText: merge.combinedTranslatedText,
-            }
-          : {}),
-      };
-    });
+    if (stored.length === 0) return;
 
     // Fire-and-forget. Convex queues mutations and applies them in order;
     // on transient WS disconnect they retry automatically, so we don't need
     // our own retry layer.
     void addSegments({ sessionId, segments: stored });
-    for (const seg of ready) flushed.add(seg.id);
   };
 
   // Point the 5s tick at the LATEST flushSegments closure. flushSegments reads
@@ -604,20 +570,15 @@ export default function RecordPage() {
     // Keep it only if it's real source speech (>=2 words, passes the
     // off-language script gate); persist source-only (blank translation),
     // consistent with the translation fail-open path.
-    const tailRaw = stt.interimText.trim();
-    const tailSeg =
-      tailRaw &&
-      tailRaw.split(/\s+/).filter(Boolean).length >= 2 &&
-      !isOffLanguageScript(tailRaw, sourceLang)
-        ? {
-            id:
-              typeof crypto !== "undefined" && "randomUUID" in crypto
-                ? crypto.randomUUID()
-                : `${Date.now()}-tail`,
-            sourceText: tailRaw,
-            timestamp: finalDuration,
-          }
-        : null;
+    const tailSeg = stopTailSegment(
+      stt.interimText,
+      sourceLang,
+      finalDuration,
+      () =>
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-tail`,
+    );
     const captured = {
       segments: stt.segments,
       translations: translator.translations,
@@ -651,10 +612,7 @@ export default function RecordPage() {
         // Persist the captured interim tail (source-only) so the closing words
         // the user saw on screen aren't lost. addSegments dedupes by id.
         if (tailSeg) {
-          void addSegments({
-            sessionId,
-            segments: [{ ...tailSeg, translatedText: "" }],
-          });
+          void addSegments({ sessionId, segments: [tailSeg] });
         }
         // Persist the languages ACTUALLY recorded — the session may have been
         // created during prewarm with the mount-time defaults, then the user
