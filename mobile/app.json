@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Tarjuman",
+    "slug": "tarjuman",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "tarjuman",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#060B18",
+    "ios": {
+      "bundleIdentifier": "live.tarjuman.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Tarjuman listens to the speaker so it can transcribe and translate the lecture live.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "react-native-audio-api",
+        {
+          "iosBackgroundMode": true,
+          "iosMicrophonePermission": "Tarjuman listens to the speaker so it can transcribe and translate the lecture live."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#060B18",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120
+        }
+      ],
+      "./plugins/with-scene-lifecycle"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
