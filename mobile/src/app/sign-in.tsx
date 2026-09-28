@@ -10,13 +10,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthActions } from "@convex-dev/auth/react";
+import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
 import { C, RADIUS } from "~/lib/theme";
 
 /**
- * Email + password against the same Convex Auth Password provider the web
- * uses — one account works on both. Google sign-in on native needs a
- * tarjuman:// redirect allowed by the Convex auth config; it lands in a
- * follow-up.
+ * Same Convex Auth providers as the web — one account works on both.
+ *
+ * Google on native: Convex returns the Google URL, iOS shows it in an
+ * ASWebAuthenticationSession sheet, Google → Convex → `tarjuman://?code=…`
+ * closes the sheet, and the code is exchanged for a session. The redirect is
+ * allowed by the `redirect` callback in convex/auth.ts; the PKCE verifier stays
+ * in this app's Keychain storage.
  */
 export default function SignIn() {
   const { signIn } = useAuthActions();
@@ -25,6 +30,25 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const google = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      const redirectTo = Linking.createURL("/");
+      const { redirect } = await signIn("google", { redirectTo });
+      if (!redirect) throw new Error("No Google redirect");
+      const result = await WebBrowser.openAuthSessionAsync(redirect.toString(), redirectTo);
+      if (result.type !== "success") return; // user closed the sheet
+      const code = Linking.parse(result.url).queryParams?.code;
+      if (typeof code !== "string") throw new Error("Google did not return a code");
+      await signIn("google", { code });
+    } catch {
+      setError("Google sign-in didn't complete. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submit = async () => {
     setError(null);
@@ -63,6 +87,20 @@ export default function SignIn() {
         </View>
 
         <View style={styles.form}>
+          <Pressable
+            style={({ pressed }) => [styles.google, pressed && { opacity: 0.85 }]}
+            onPress={google}
+            disabled={busy}
+            accessibilityRole="button"
+          >
+            <Text style={styles.googleG}>G</Text>
+            <Text style={styles.googleText}>Continue with Google</Text>
+          </Pressable>
+          <View style={styles.dividerRow}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.divider} />
+          </View>
           <TextInput
             style={styles.input}
             placeholder="Email"
@@ -146,6 +184,20 @@ const styles = StyleSheet.create({
     height: 54,
   },
   error: { color: C.red, fontSize: 14 },
+  google: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: RADIUS.md,
+    height: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  googleG: { color: "#4285F4", fontSize: 22, fontWeight: "800" },
+  googleText: { color: "#1F1F1F", fontSize: 17, fontWeight: "600" },
+  dividerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 4 },
+  divider: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: C.borderLight },
+  dividerText: { color: C.t3, fontSize: 13 },
   primary: {
     backgroundColor: C.accent,
     borderRadius: RADIUS.md,
