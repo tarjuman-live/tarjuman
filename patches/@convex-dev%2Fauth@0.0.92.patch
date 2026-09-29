@@ -1,0 +1,16 @@
+diff --git a/dist/server/cookies.js b/dist/server/cookies.js
+index b76dd055651c33595166c0e87afa104c0445b65b..05a6542c582f3f49ef8a5c2ff0c8cdac1d5365ed 100644
+--- a/dist/server/cookies.js
++++ b/dist/server/cookies.js
+@@ -4,7 +4,10 @@ export const SHARED_COOKIE_OPTIONS = {
+     sameSite: "none",
+     secure: true,
+     path: "/",
+-    partitioned: true,
++    // Tarjuman patch: no `Partitioned`. iOS WebKit drops partitioned cookies on
++    // the cross-site redirect back from Google, so the PKCE verifier and
++    // redirectTo never reach the OAuth callback (sign-in falls back to
++    // SITE_URL). Top-level OAuth cookies gain nothing from CHIPS.
+ };
+ const REDIRECT_MAX_AGE = 60 * 15; // 15 minutes in seconds
+ export function redirectToParamCookie(providerId, redirectTo) {
