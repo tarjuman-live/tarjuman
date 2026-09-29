@@ -38,7 +38,15 @@ export default function SignIn() {
       const redirectTo = Linking.createURL("/");
       const { redirect } = await signIn("google", { redirectTo });
       if (!redirect) throw new Error("No Google redirect");
-      const result = await WebBrowser.openAuthSessionAsync(redirect.toString(), redirectTo);
+      // Ephemeral = a private cookie jar for just this sign-in. Convex Auth
+      // keeps its PKCE verifier + return link in cookies between the /signin
+      // hop and Google's callback; the shared-with-Safari jar dropped them on
+      // iOS 27 (callback arrived cookieless → Google rejected the exchange →
+      // fell back to SITE_URL). Also removes the "wants to use … to sign in"
+      // prompt.
+      const result = await WebBrowser.openAuthSessionAsync(redirect.toString(), redirectTo, {
+        preferEphemeralSession: true,
+      });
       if (result.type !== "success") return; // user closed the sheet
       const code = Linking.parse(result.url).queryParams?.code;
       if (typeof code !== "string") throw new Error("Google did not return a code");
