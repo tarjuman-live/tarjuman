@@ -54,7 +54,25 @@ export interface NativeRecorder {
   stop: () => Promise<void>;
   /** Frames flow only while recording (not paused). Returns unsubscribe. */
   subscribe: (onFrame: (frame: ArrayBuffer) => void) => () => void;
+  /**
+   * Processed samples BEFORE the -55 dBFS noise gate — the web AnalyserNode's
+   * tap point (lib/audio-processor.ts connects it to the gain node, ahead of
+   * the worklet's gate). For the level meter only: room tone / a soft PA
+   * between phrases must still read as signal there. Delivered for every
+   * native buffer while capturing (paused or not); the Float32Array is only
+   * valid during the callback. Returns unsubscribe.
+   */
+  subscribeMeter: (onSamples: MeterListener) => () => void;
+  /**
+   * Web recorder.recover(): after an OS interruption (call, Siri, another app)
+   * the audio engine sits in its Interrupted state and nothing restarts it on
+   * its own — reclaim the session and restart the engine via the recorder's
+   * resume path. Safe to call when nothing is interrupted.
+   */
+  recover: () => void;
 }
+
+export type MeterListener = (samples: Float32Array, sampleRate: number) => void;
 
 export function useNativeRecorder(): NativeRecorder {
   const [phase, setPhase] = useState<RecorderPhase>("idle");
@@ -64,6 +82,7 @@ export function useNativeRecorder(): NativeRecorder {
 
   const recorderRef = useRef<AudioRecorder | null>(null);
   const listenersRef = useRef(new Set<(frame: ArrayBuffer) => void>());
+  const meterListenersRef = useRef(new Set<MeterListener>());
   const pausedRef = useRef(false);
   const pipelineRef = useRef<{
     rate: number;
@@ -148,7 +167,10 @@ export function useNativeRecorder(): NativeRecorder {
           const p = pipelineRef.current!;
           // Copy: the native buffer may be reused after this callback.
           const samples = new Float32Array(buffer.getChannelData(0));
-          p.framer.push(p.chain.process(samples));
+          const processed = p.chain.process(samples);
+          p.framer.push(processed);
+          // The framer copied what it needs; `processed` is still pre-gate.
+          for (const fn of meterListenersRef.current) fn(processed, rate);
         },
       );
       if (ready.status === "error") throw new Error(ready.message);
@@ -200,6 +222,21 @@ export function useNativeRecorder(): NativeRecorder {
     };
   }, []);
 
+  const subscribeMeter = useCallback((onSamples: MeterListener) => {
+    const set = meterListenersRef.current;
+    set.add(onSamples);
+    return () => {
+      set.delete(onSamples);
+    };
+  }, []);
+
+  const recover = useCallback(() => {
+    if (!recorderRef.current) return;
+    void AudioManager.setAudioSessionActivity(true)
+      .then(() => recorderRef.current?.resume())
+      .catch(() => {});
+  }, []);
+
   // A phone call or Siri takes the audio session. When iOS says it may
   // resume, re-activate it; otherwise surface it so the user isn't left
   // "recording" silence.
@@ -221,5 +258,17 @@ export function useNativeRecorder(): NativeRecorder {
     };
   }, [teardown]);
 
-  return { phase, error, level, sampleRate, start, pause, resume, stop, subscribe };
+  return {
+    phase,
+    error,
+    level,
+    sampleRate,
+    start,
+    pause,
+    resume,
+    stop,
+    subscribe,
+    subscribeMeter,
+    recover,
+  };
 }

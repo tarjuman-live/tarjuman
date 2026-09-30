@@ -34,7 +34,16 @@
           "imageWidth": 120
         }
       ],
-      "./plugins/with-scene-lifecycle"
+      "./plugins/with-scene-lifecycle",
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Tarjuman uses your photo library so you can choose a profile picture.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
