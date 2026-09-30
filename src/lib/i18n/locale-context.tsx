@@ -16,9 +16,8 @@ import {
   localeFromNavigator,
   type LocaleCode,
 } from "./locales";
-import { MESSAGES, type MessageKey } from "./messages";
-import { EXTRA_LOCALES } from "./messages-extra";
-import { LANDING_LOCALES } from "./messages-landing";
+import type { MessageKey } from "./messages";
+import { translate, translateEnglishFallback } from "./translate";
 
 const STORAGE_KEY = "tarjuman:locale";
 
@@ -96,24 +95,12 @@ export function LocaleProvider({
   }, [dir, locale, applyDir]);
 
   const t = useCallback(
-    (key: MessageKey, vars?: Record<string, string | number>) => {
-      const entry = MESSAGES[key] as Record<string, string> | undefined;
-      // Resolution order: curated locale (messages.ts) → machine-translated
-      // dashboard locale (messages-extra.ts) → machine-translated landing-body
-      // locale (messages-landing.ts) → English → the raw key.
-      let str =
-        entry?.[locale] ??
-        EXTRA_LOCALES[locale]?.[key] ??
-        LANDING_LOCALES[locale]?.[key] ??
-        entry?.en ??
-        key;
-      if (vars) {
-        for (const [k, v] of Object.entries(vars)) {
-          str = str.replace(`{${k}}`, String(v));
-        }
-      }
-      return str;
-    },
+    // Resolution order lives in ./translate (shared with the native app):
+    // curated locale (messages.ts) → machine-translated dashboard locale
+    // (messages-extra.ts) → machine-translated landing-body locale
+    // (messages-landing.ts) → English → the raw key.
+    (key: MessageKey, vars?: Record<string, string | number>) =>
+      translate(locale, key, vars),
     [locale]
   );
 
@@ -134,10 +121,7 @@ export function useLocale(): LocaleContextValue {
       locale: DEFAULT_LOCALE,
       setLocale: () => {},
       dir: "ltr",
-      t: (key) => {
-        const entry = MESSAGES[key] as Record<string, string> | undefined;
-        return entry?.en ?? key;
-      },
+      t: (key) => translateEnglishFallback(key),
     };
   }
   return ctx;
