@@ -35,6 +35,12 @@ export interface GlassDialogProps {
   maxWidth?: number;
   /** Enter/exit duration (default 150). */
   duration?: number;
+  /**
+   * Optional "pop" tuning for dialogs that should grow out of the centre
+   * (e.g. the positioning tips). Defaults keep the Radix tw-animate parity:
+   * both directions `duration` ms CSS ease, scale .95 ↔ 1.
+   */
+  pop?: { enterMs: number; exitMs: number; fromScale: number };
   /** Overlay colour (default rgba(6,11,24,.4); auth modal uses .55). */
   overlayColor?: string;
   cardStyle?: StyleProp<ViewStyle>;
@@ -49,6 +55,7 @@ export function GlassDialog({
   onExited,
   maxWidth = 420,
   duration = 150,
+  pop,
   overlayColor = "rgba(6, 11, 24, 0.4)",
   cardStyle,
   accessibilityLabel,
@@ -56,13 +63,20 @@ export function GlassDialog({
 }: GlassDialogProps) {
   const t = useT();
   const cfg = { duration, easing: EASE.css };
-  const { mounted, progress } = usePresenceProgress(open, { enter: cfg, exit: cfg, onExited });
+  const { mounted, progress } = usePresenceProgress(open, {
+    // Pop: a soft ease-out that decelerates into place (no overshoot — the
+    // restrained end of "pop"), and a quicker plain ease on the way out.
+    enter: pop ? { duration: pop.enterMs, easing: EASE.smooth } : cfg,
+    exit: pop ? { duration: pop.exitMs, easing: EASE.css } : cfg,
+    onExited,
+  });
+  const fromScale = pop?.fromScale ?? 0.95;
 
   const overlay = useAnimatedStyle(() => ({ opacity: progress.value }));
   const card = useAnimatedStyle(() => ({
     opacity: progress.value,
     // tw-animate zoom-in/out-95 is not motion-gated on the web → keep it.
-    transform: [{ scale: 0.95 + 0.05 * progress.value }],
+    transform: [{ scale: fromScale + (1 - fromScale) * progress.value }],
   }));
 
   return (

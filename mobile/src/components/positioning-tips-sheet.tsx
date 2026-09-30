@@ -1,18 +1,20 @@
 /**
- * PositioningTipsSheet — the drawer body of src/components/recording/
- * positioning-tips.tsx, on the foundation GlassSheet (vaul parity: 500ms
- * bezier(.32,.72,0,1) slide-up + backdrop fade, in AND out; swipe-down /
- * backdrop tap / "Got it" all slide it back down; drag closes at ≥25% or
- * > .4px/ms). Content is static (no stagger), as on the web.
+ * PositioningTipsSheet — the body of src/components/recording/
+ * positioning-tips.tsx, shown as a CENTRED pop-up on phone and iPad (user
+ * direction 2026-09-30: "pop out smoothly in the center of the screen" — the
+ * web still uses a bottom drawer here). GlassDialog pop: overlay fade + card
+ * scale .92→1 over 260ms ease-out (EASE.smooth), out in 180ms; backdrop tap /
+ * "Got it" close it. Tall content scrolls inside the card on small phones.
+ * Content is static (no stagger), as on the web.
  *
  * "Got it": full-width accent, h-12, glow 0 0 24px accent@35,
  * `transition-transform active:scale-[0.98]` → 150ms bezier(.4,0,.2,1).
  */
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SymbolView } from "expo-symbols";
 import { C } from "~/lib/theme";
 import { useLocale } from "~/i18n";
-import { GlassSheet, GlassSheetScrollView } from "./glass-sheet";
+import { GlassDialog } from "./glass-dialog";
 import { PressableScale } from "./motion/pressable-scale";
 
 const TIPS = [
@@ -27,10 +29,25 @@ export function PositioningTipsSheet({ open, onClose }: { open: boolean; onClose
   const rtl = dir === "rtl";
   const text = rtl ? ({ textAlign: "right", writingDirection: "rtl" } as const) : null;
   const row = { flexDirection: rtl ? ("row-reverse" as const) : ("row" as const) };
+  const { height } = useWindowDimensions();
 
   return (
-    <GlassSheet open={open} onClose={onClose} accessibilityLabel={t("record.tipsTitle")}>
-      <GlassSheetScrollView contentContainerStyle={styles.content}>
+    <GlassDialog
+      open={open}
+      onRequestClose={onClose}
+      dismissOnBackdrop
+      maxWidth={440}
+      pop={{ enterMs: 260, exitMs: 180, fromScale: 0.92 }}
+      overlayColor="rgba(6, 11, 24, 0.55)"
+      cardStyle={styles.card}
+      accessibilityLabel={t("record.tipsTitle")}
+    >
+      <ScrollView
+        style={{ maxHeight: height * 0.82 }}
+        contentContainerStyle={styles.content}
+        bounces={false}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={[styles.micTile, rtl && { alignSelf: "flex-end" }]}>
           <SymbolView name="mic.fill" tintColor={C.accent} size={22} />
         </View>
@@ -61,13 +78,14 @@ export function PositioningTipsSheet({ open, onClose }: { open: boolean; onClose
         <PressableScale onPress={onClose} accessibilityRole="button" style={styles.gotIt}>
           <Text style={styles.gotItText}>{t("record.gotIt")}</Text>
         </PressableScale>
-      </GlassSheetScrollView>
-    </GlassSheet>
+      </ScrollView>
+    </GlassDialog>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 },
+  card: { padding: 0 },
+  content: { padding: 24 },
   micTile: {
     width: 48,
     height: 48,
