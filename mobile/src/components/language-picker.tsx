@@ -20,10 +20,12 @@
  *   - Warm while pressed: bg accentSoft → amberSoft, border accent@30 →
  *     amber@30, icon accent → amber, glow → 0 0 16px amber@55 (300ms ease),
  *     scale 1 → 1.06 (200ms ease).
- *   - Outer icon wrapper winds 0 → 360° while warm and unwinds on release
- *     (500ms bezier(.22,1.2,.36,1) — overshoots); inner wrapper adds +360° per
- *     swap, accumulating (450ms same curve). Reduce Motion: colours snap, no
- *     scale, no rotation.
+ *   - ONE full turn per swap tap (+360°, accumulating), 750ms soft ease-out
+ *     (EASE.smooth, no overshoot). The web's extra hover "wind" (0→360° on
+ *     pointerenter, unwound on leave) is deliberately dropped on touch: a tap
+ *     fired wind + unwind + swap turn together and the icon whipped round
+ *     twice in ~0.5s (user: "rotating too fast", 2026-10-01). Reduce Motion:
+ *     colours snap, no scale, no rotation.
  * SHEET (vaul drawer → foundation GlassSheet: 500ms bezier(.32,.72,0,1) in/out,
  *   drag-to-dismiss). Drag can start on the grabber, the title block and the
  *   list (at its top); only the search row is no-drag, like the web's
@@ -72,7 +74,6 @@ interface Props {
 
 const CSS_EASE_IN = Easing.bezier(0.42, 0, 1, 1);
 const CSS_EASE_OUT = Easing.bezier(0, 0, 0.58, 1);
-const WIND = Easing.bezier(0.22, 1.2, 0.36, 1);
 const VALUE_OUT_MS = 150;
 
 export function LanguagePicker({ source, target, onChange, disabled }: Props) {
@@ -213,7 +214,6 @@ function SwapButton({ onSwap, disabled, label }: { onSwap: () => void; disabled?
   const reduce = useReduceMotion();
   const warm = useSharedValue(0);
   const sc = useSharedValue(1);
-  const outer = useSharedValue(0);
   const inner = useSharedValue(0);
   const spinRef = useRef(0);
 
@@ -221,13 +221,11 @@ function SwapButton({ onSwap, disabled, label }: { onSwap: () => void; disabled?
     if (reduce) {
       warm.value = on ? 1 : 0;
       sc.value = 1;
-      outer.value = 0;
       return;
     }
     const nv = { reduceMotion: ReduceMotion.Never };
     warm.value = withTiming(on ? 1 : 0, { duration: 300, easing: EASE.css, ...nv });
     sc.value = withTiming(on ? 1.06 : 1, { duration: 200, easing: EASE.css, ...nv });
-    outer.value = withTiming(on ? 360 : 0, { duration: 500, easing: WIND, ...nv });
   };
 
   const box = useAnimatedStyle(() => ({
@@ -238,7 +236,6 @@ function SwapButton({ onSwap, disabled, label }: { onSwap: () => void; disabled?
   const glow = useAnimatedStyle(() => ({ opacity: warm.value }));
   const amberIcon = useAnimatedStyle(() => ({ opacity: warm.value }));
   const greenIcon = useAnimatedStyle(() => ({ opacity: 1 - warm.value }));
-  const wind = useAnimatedStyle(() => ({ transform: [{ rotate: `${outer.value}deg` }] }));
   const spin = useAnimatedStyle(() => ({ transform: [{ rotate: `${inner.value}deg` }] }));
 
   return (
@@ -251,8 +248,8 @@ function SwapButton({ onSwap, disabled, label }: { onSwap: () => void; disabled?
         if (!reduce) {
           spinRef.current += 360;
           inner.value = withTiming(spinRef.current, {
-            duration: 450,
-            easing: WIND,
+            duration: 750,
+            easing: EASE.smooth,
             reduceMotion: ReduceMotion.Never,
           });
         }
@@ -263,17 +260,15 @@ function SwapButton({ onSwap, disabled, label }: { onSwap: () => void; disabled?
     >
       <Animated.View style={[styles.swap, box]}>
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.swapGlow, glow]} />
-        <Animated.View style={wind}>
-          <Animated.View style={spin}>
-            <View style={styles.swapIcon}>
-              <Animated.View style={[StyleSheet.absoluteFill, styles.center, greenIcon]}>
-                <SymbolView name="arrow.left.arrow.right" tintColor={C.accent} size={16} weight="semibold" />
-              </Animated.View>
-              <Animated.View style={[StyleSheet.absoluteFill, styles.center, amberIcon]}>
-                <SymbolView name="arrow.left.arrow.right" tintColor={C.amber} size={16} weight="semibold" />
-              </Animated.View>
-            </View>
-          </Animated.View>
+        <Animated.View style={spin}>
+          <View style={styles.swapIcon}>
+            <Animated.View style={[StyleSheet.absoluteFill, styles.center, greenIcon]}>
+              <SymbolView name="arrow.left.arrow.right" tintColor={C.accent} size={16} weight="semibold" />
+            </Animated.View>
+            <Animated.View style={[StyleSheet.absoluteFill, styles.center, amberIcon]}>
+              <SymbolView name="arrow.left.arrow.right" tintColor={C.amber} size={16} weight="semibold" />
+            </Animated.View>
+          </View>
         </Animated.View>
       </Animated.View>
     </Pressable>
