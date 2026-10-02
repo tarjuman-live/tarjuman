@@ -534,12 +534,14 @@ function AccountMenuImpl({ dropUp = false }: { dropUp?: boolean } = {}) {
         anchorRef={trigger}
         placement={placement}
         gap={dropUp ? 8 : 4}
-        width={224}
+        width={236}
         style={styles.menuPanel}
       >
         <Animated.View style={[styles.menuCard, { transformOrigin: origin }, zoomStyle]}>
-          <View style={styles.menuClip}>
-            <View style={styles.menuHead}>
+          {/* One big tile holding three raised tiles (user direction
+              2026-10-02, same "tiles on tiles" language as the selector). */}
+          <View style={styles.menuStack}>
+            <View style={[styles.raisedTile, styles.menuHead]}>
               <View style={[styles.menuNameRow, rtlRow(dir)]}>
                 {me?.name ? (
                   <Text style={[styles.menuName, rtlText(dir)]} numberOfLines={1}>
@@ -552,39 +554,42 @@ function AccountMenuImpl({ dropUp = false }: { dropUp?: boolean } = {}) {
                 {me?.email ?? (loading ? t("history.loading") : t("settingsAuthNav.signedIn"))}
               </Text>
             </View>
-            <PressRow
-              dim={0.2}
-              onPress={() => {
-                setOpen(false);
-                router.navigate("/settings");
-              }}
-              style={[styles.menuItem, rtlRow(dir), { justifyContent: "space-between" }]}
-            >
-              <View style={[styles.menuItemLeft, rtlRow(dir)]}>
-                <SymbolView name="gearshape" tintColor={C.t3} size={14} />
-                <Text style={styles.menuItemText}>{t("settings.title")}</Text>
-              </View>
-              <SymbolView
-                name={rtl ? "chevron.left" : "chevron.right"}
-                tintColor={C.t4}
-                size={12}
-                weight="semibold"
-              />
-            </PressRow>
-            <View style={styles.menuDivider} />
-            <PressRow
-              dim={0.2}
-              onPress={() => {
-                setOpen(false);
-                void signOut();
-              }}
-              style={[styles.menuItem, rtlRow(dir)]}
-            >
-              <View style={[styles.menuItemLeft, rtlRow(dir)]}>
-                <SymbolView name="xmark" tintColor={C.t3} size={13} />
-                <Text style={styles.menuItemText}>{t("settingsAuthNav.signOut")}</Text>
-              </View>
-            </PressRow>
+            <View style={styles.raisedTile}>
+              <PressRow
+                dim={0.2}
+                onPress={() => {
+                  setOpen(false);
+                  router.navigate("/settings");
+                }}
+                style={[styles.menuItem, rtlRow(dir), { justifyContent: "space-between" }]}
+              >
+                <View style={[styles.menuItemLeft, rtlRow(dir)]}>
+                  <SymbolView name="gearshape" tintColor={C.t3} size={14} />
+                  <Text style={styles.menuItemText}>{t("settings.title")}</Text>
+                </View>
+                <SymbolView
+                  name={rtl ? "chevron.left" : "chevron.right"}
+                  tintColor={C.t4}
+                  size={12}
+                  weight="semibold"
+                />
+              </PressRow>
+            </View>
+            <View style={styles.raisedTile}>
+              <PressRow
+                dim={0.2}
+                onPress={() => {
+                  setOpen(false);
+                  void signOut();
+                }}
+                style={[styles.menuItem, rtlRow(dir)]}
+              >
+                <View style={[styles.menuItemLeft, rtlRow(dir)]}>
+                  <SymbolView name="xmark" tintColor={C.t3} size={13} />
+                  <Text style={styles.menuItemText}>{t("settingsAuthNav.signOut")}</Text>
+                </View>
+              </PressRow>
+            </View>
           </View>
         </Animated.View>
       </AnchoredPopover>
@@ -674,20 +679,32 @@ const styles = StyleSheet.create({
   menuTileClip: { flex: 1, borderRadius: 11, overflow: "hidden", alignItems: "center", justifyContent: "center" },
   menuInitial: { color: C.accent, fontSize: 12, fontWeight: "700" },
   menuPanel: { backgroundColor: "transparent", borderWidth: 0, boxShadow: [] },
+  // The big tile: a tray (soft inset shade along its top) floating over the
+  // page, holding three raised tiles — same depth recipe as language-picker.
   menuCard: {
-    borderRadius: 12,
+    borderRadius: 18,
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.borderLight,
-    boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
+    boxShadow: "inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 40px rgba(0, 0, 0, 0.5)",
   },
-  menuClip: { borderRadius: 11, overflow: "hidden" },
-  menuHead: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border },
+  menuStack: { padding: 8, gap: 8 },
+  // A raised tile: lifted drop shadow below + faint top-edge highlight. The
+  // shadow lives on this wrapper (no overflow clip), the press-dim overlay is
+  // clipped by the PressRow inside (menuItem radius).
+  raisedTile: {
+    borderRadius: 12,
+    backgroundColor: C.surfaceLight,
+    borderWidth: 1,
+    borderColor: C.borderLight,
+    boxShadow:
+      "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 14px rgba(0, 0, 0, 0.35)",
+  },
+  menuHead: { paddingHorizontal: 14, paddingVertical: 12 },
   menuNameRow: { alignItems: "center", gap: 8, minWidth: 0 },
   menuName: { color: C.w, fontSize: 13, fontWeight: "600", flexShrink: 1 },
   menuEmail: { color: C.t3, fontSize: 12 },
-  menuItem: { paddingHorizontal: 16, paddingVertical: 12, alignItems: "center", gap: 8 },
+  menuItem: { paddingHorizontal: 14, paddingVertical: 12, alignItems: "center", gap: 8, borderRadius: 11 },
   menuItemLeft: { alignItems: "center", gap: 8 },
   menuItemText: { color: C.t2, fontSize: 13, fontWeight: "600" },
-  menuDivider: { height: 1, backgroundColor: C.border },
 });

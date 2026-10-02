@@ -38,7 +38,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -52,7 +51,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AudioManager } from "react-native-audio-api";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
-import { useAuthActions } from "@convex-dev/auth/react";
 import Animated, {
   interpolateColor,
   LayoutAnimationConfig,
@@ -77,9 +75,10 @@ import { UpgradeCard } from "~/components/upgrade-card";
 import { RecentSessions } from "~/components/recent-sessions";
 import { PositioningTips } from "~/components/positioning-tips";
 import { LocaleSwitcher, useRailLayout } from "~/components/locale-switcher";
+import { AccountMenu } from "~/components/account-card";
 import { SplitTranscript } from "~/components/split-transcript";
 import { Transcript, type TranscriptRow } from "~/components/transcript";
-import { AnchoredPopover, PressableScale, Spinner, usePulse } from "~/components/motion";
+import { Spinner } from "~/components/motion";
 import { useLiveStt } from "~/hooks/use-live-stt";
 import { useLiveTranslator } from "~/hooks/use-live-translator";
 import { useNativeRecorder } from "~/hooks/use-native-recorder";
@@ -818,155 +817,6 @@ function SpeakerChip({ on, onPress }: { on: boolean; onPress: () => void }) {
   );
 }
 
-// ─── Account menu (web components/auth/account-menu.tsx) ────────────────────
-
-const MENU_T = { duration: 200, easing: EASE.css, reduceMotion: ReduceMotion.Never };
-
-/**
- * 36×36 avatar tile, lit (border accent@40 → accent + `0 0 0 1px accent,
- * 0 0 16px accent@45`, 200ms ease) while pressed or open; active:scale-95
- * (150ms ease); animate-pulse while `me` loads. The menu grows out of the
- * avatar corner: fade + slide-from-top-1 (AnchoredPopover) + zoom .95 → 1 with
- * origin top-right, 200ms CSS ease — and back out the same way on close.
- *
- * Reduce Motion: the web's tw-animate classes are NOT reduced-motion gated, so
- * the full zoom + 4px slide plays there. AnchoredPopover drops its slide under
- * reduce (house policy for dropdowns), so this card re-adds the same -4 → 0
- * slide itself in that case — same 200ms CSS ease, in step with the fade.
- *
- * RTL UI: the header row reverses, putting the avatar at the far left, so the
- * menu anchors to the avatar's LEFT edge (bottom-start) and grows from its
- * top-left corner — otherwise the 224px panel would open off-screen.
- */
-function AccountMenu() {
-  const { t, dir } = useLocale();
-  const rtl = dir === "rtl";
-  const router = useRouter();
-  const me = useQuery(api.users.me);
-  const { signOut } = useAuthActions();
-  const reduce = useReduceMotion();
-  const [open, setOpen] = useState(false);
-  const [imageBroken, setImageBroken] = useState(false);
-  const trigger = useRef<View>(null);
-  const loading = me === undefined;
-  const pulse = usePulse(loading);
-  const showImage = Boolean(me?.image) && !imageBroken;
-  const initial = (me?.name?.[0] ?? me?.email?.[0] ?? "?").toUpperCase();
-
-  // 0 = closed pose (scale .95, y -4), 1 = open. Not reduce-gated (web isn't).
-  const p = useSharedValue(0);
-  useEffect(() => {
-    if (open) {
-      p.value = 0;
-      p.value = withTiming(1, MENU_T);
-    } else {
-      p.value = withTiming(0, MENU_T);
-    }
-  }, [open, p]);
-  const zoomStyle = useAnimatedStyle(() => ({
-    transform: [
-      // AnchoredPopover supplies the slide unless Reduce Motion is on.
-      { translateY: reduce ? -4 * (1 - p.value) : 0 },
-      { scale: 0.95 + 0.05 * p.value },
-    ],
-  }));
-
-  return (
-    <>
-      {/* Web: `animate-pulse` sits on the WHOLE 36px button while `me` loads, so
-          the accentSoft disc + accent@40 border pulse together (1 → .5 → 1,
-          2s). The pulse therefore wraps the tile, not the (empty) inner view. */}
-      <Animated.View style={pulse}>
-      <PressableScale
-        ref={trigger}
-        onPress={() => setOpen((o) => !o)}
-        scaleTo={0.95}
-        easing={EASE.css}
-        glow={{
-          borderFrom: `${C.accent}40`,
-          borderTo: C.accent,
-          // Web ring = 1px accent border + 1px shadow OUTSIDE it (2px). The
-          // glow layer starts inside the border, so 2px spread + 1px halo
-          // spread puts both on the web's border-box edge.
-          shadow: "0 0 0 2px #2ECC71, 0 0 16px 1px rgba(46,204,113,0.45)",
-          duration: 200,
-        }}
-        glowActive={open}
-        accessibilityRole="button"
-        accessibilityLabel={t("record.accountMenu")}
-        accessibilityState={{ busy: loading, expanded: open }}
-        style={[styles.avatar, { backgroundColor: showImage ? "transparent" : C.accentSoft }]}
-      >
-        <View style={styles.avatarInner}>
-          {showImage ? (
-            <Image source={{ uri: me!.image! }} style={styles.avatarImg} onError={() => setImageBroken(true)} />
-          ) : loading ? null : (
-            <Text style={styles.avatarText}>{initial}</Text>
-          )}
-        </View>
-      </PressableScale>
-      </Animated.View>
-
-      <AnchoredPopover
-        open={open}
-        onClose={() => setOpen(false)}
-        anchorRef={trigger}
-        placement={rtl ? "bottom-start" : "bottom-end"}
-        gap={4}
-        width={224}
-        style={styles.menuPanel}
-      >
-        <Animated.View style={[styles.menuCard, rtl && { transformOrigin: "top left" }, zoomStyle]}>
-          <View style={styles.menuClip}>
-            <View style={styles.menuHead}>
-              {me?.name ? (
-                <Text style={styles.menuName} numberOfLines={1}>
-                  {me.name}
-                </Text>
-              ) : null}
-              <Text style={styles.menuEmail} numberOfLines={1}>
-                {me?.email ?? (loading ? t("history.loading") : t("record.signedIn"))}
-              </Text>
-            </View>
-            <PressableScale
-              scaleTo={1}
-              pressColors={{ backgroundColor: ["rgba(0,0,0,0)", "rgba(0,0,0,0.2)"] }}
-              onPress={() => {
-                setOpen(false);
-                router.navigate("/settings");
-              }}
-              accessibilityRole="button"
-              style={[styles.menuItem, { justifyContent: "space-between" }]}
-            >
-              <View style={styles.menuItemLeft}>
-                <SymbolView name="gearshape" tintColor={C.t3} size={14} />
-                <Text style={styles.menuItemText}>{t("settings.title")}</Text>
-              </View>
-              <SymbolView name="chevron.right" tintColor={C.t4} size={12} weight="semibold" />
-            </PressableScale>
-            <View style={styles.menuDivider} />
-            <PressableScale
-              scaleTo={1}
-              pressColors={{ backgroundColor: ["rgba(0,0,0,0)", "rgba(0,0,0,0.2)"] }}
-              onPress={() => {
-                setOpen(false);
-                void signOut();
-              }}
-              accessibilityRole="button"
-              style={styles.menuItem}
-            >
-              <View style={styles.menuItemLeft}>
-                <SymbolView name="xmark" tintColor={C.t3} size={13} />
-                <Text style={styles.menuItemText}>{t("record.signOut")}</Text>
-              </View>
-            </PressableScale>
-          </View>
-        </Animated.View>
-      </AnchoredPopover>
-    </>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   stage: { flex: 1 },
@@ -1085,31 +935,4 @@ const styles = StyleSheet.create({
   },
 
   // Account menu
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: `${C.accent}40`,
-  },
-  avatarInner: { flex: 1, borderRadius: 11, overflow: "hidden", alignItems: "center", justifyContent: "center" },
-  avatarImg: { width: "100%", height: "100%" },
-  avatarText: { color: C.accent, fontSize: 12, fontWeight: "700" },
-  menuPanel: { backgroundColor: "transparent", borderWidth: 0, boxShadow: [] },
-  menuCard: {
-    borderRadius: 12,
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.borderLight,
-    boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
-    transformOrigin: "top right",
-  },
-  menuClip: { borderRadius: 11, overflow: "hidden" },
-  menuHead: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border },
-  menuName: { color: C.w, fontSize: 13, fontWeight: "600" },
-  menuEmail: { color: C.t3, fontSize: 12 },
-  menuItem: { paddingHorizontal: 16, paddingVertical: 12, flexDirection: "row", alignItems: "center", gap: 8 },
-  menuItemLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
-  menuItemText: { color: C.t2, fontSize: 13, fontWeight: "600" },
-  menuDivider: { height: 1, backgroundColor: C.border },
 });
