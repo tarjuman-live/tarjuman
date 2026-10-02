@@ -532,6 +532,11 @@ function LangRow({
 }
 
 const styles = StyleSheet.create({
+  // Tiles on a tile (user direction 2026-10-02): the card is the base layer —
+  // a slightly recessed tray (soft inner shade along its top) — and the two
+  // language tiles + swap button sit RAISED on it: a lifted drop shadow below
+  // and a faint highlight on the top edge where light catches it. Kept subtle
+  // (restrained, Apple-like) — depth, not decoration.
   card: {
     alignItems: "center",
     gap: 12,
@@ -540,6 +545,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.border,
+    boxShadow: "inset 0 2px 6px rgba(0, 0, 0, 0.35)",
   },
   tile: {
     flex: 1,
@@ -549,6 +555,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.surfaceLight,
     borderWidth: 1,
     borderColor: C.borderLight,
+    boxShadow:
+      "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.45), 0 8px 18px rgba(0, 0, 0, 0.4)",
   },
   tileLabel: {
     color: C.t3,
@@ -566,6 +574,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    // Same lift as the tiles, so it reads as resting on the same layer.
+    boxShadow:
+      "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 14px rgba(0, 0, 0, 0.35)",
   },
   swapGlow: { borderRadius: 16, boxShadow: "0 0 16px rgba(245,158,11,0.33)" },
   swapIcon: { width: 20, height: 20 },
