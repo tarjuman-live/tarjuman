@@ -1,8 +1,11 @@
+diff --git a/node_modules/@convex-dev/auth/.bun-tag-2c47005870023703 b/.bun-tag-2c47005870023703
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/server/cookies.js b/dist/server/cookies.js
-index b76dd055651c33595166c0e87afa104c0445b65b..05a6542c582f3f49ef8a5c2ff0c8cdac1d5365ed 100644
+index b76dd055651c33595166c0e87afa104c0445b65b..bbf8eb5fb9d3edb36a730926a58990c38e81a4b5 100644
 --- a/dist/server/cookies.js
 +++ b/dist/server/cookies.js
-@@ -4,7 +4,10 @@ export const SHARED_COOKIE_OPTIONS = {
+@@ -4,9 +4,14 @@ export const SHARED_COOKIE_OPTIONS = {
      sameSite: "none",
      secure: true,
      path: "/",
@@ -12,5 +15,27 @@ index b76dd055651c33595166c0e87afa104c0445b65b..05a6542c582f3f49ef8a5c2ff0c8cdac
 +    // redirectTo never reach the OAuth callback (sign-in falls back to
 +    // SITE_URL). Top-level OAuth cookies gain nothing from CHIPS.
  };
- const REDIRECT_MAX_AGE = 60 * 15; // 15 minutes in seconds
+-const REDIRECT_MAX_AGE = 60 * 15; // 15 minutes in seconds
++// Tarjuman patch: 60 min, matching the PKCE cookie TTL (oauth/checks.js) —
++// the return link must outlive a slow Google verification too.
++const REDIRECT_MAX_AGE = 60 * 60; // 60 minutes in seconds
  export function redirectToParamCookie(providerId, redirectTo) {
+     return {
+         name: redirectToParamCookieName(providerId),
+diff --git a/dist/server/oauth/checks.js b/dist/server/oauth/checks.js
+index 70fe43eb2aeeb837e54226445e482666d40c61e6..b188bbaaba448dbc859d36d3fbfcff80f4daa994 100644
+--- a/dist/server/oauth/checks.js
++++ b/dist/server/oauth/checks.js
+@@ -1,7 +1,11 @@
+ // This maps to packages/core/src/lib/actions/callback/oauth/checks.ts in the @auth/core package (commit 5af1f30a32e64591abc50ae4d2dba4682e525431)
+ import * as o from "oauth4webapi";
+ import { logWithLevel } from "../implementation/utils.js";
+-const COOKIE_TTL = 60 * 15; // 15 minutes
++// Tarjuman patch: 60 min (was 15). Google sign-in on a NEW device (a fresh
++// simulator / phone) can take 20+ minutes of verification; at 15 min the PKCE
++// cookie expired mid-flow, the code exchange failed and the user was dumped on
++// the SITE_URL landing page. Still a short-lived, single-use cookie.
++const COOKIE_TTL = 60 * 60; // 60 minutes
+ /** Returns a cookie with the given payload and options. */
+ // ConvexAuth: Auth.js calls this `sealCookie` and encrypts the payload wrapped in a JWT.
+ async function createCookie(name, payload, options) {

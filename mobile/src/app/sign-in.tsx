@@ -225,10 +225,18 @@ export default function SignIn() {
       // iOS 27 (callback arrived cookieless → Google rejected the exchange →
       // fell back to SITE_URL). Also removes the "wants to use … to sign in"
       // prompt.
+      const openedAt = Date.now();
       const result = await WebBrowser.openAuthSessionAsync(redirect.toString(), redirectTo, {
         preferEphemeralSession: true,
       });
-      if (result.type !== "success") return; // user closed the sheet
+      if (result.type !== "success") {
+        // A quick close is a deliberate cancel — stay quiet. A sheet closed
+        // after a real attempt means the flow never made it back to the app
+        // (e.g. it fell back to the website's landing page): say so, so it
+        // doesn't look like sign-in just silently did nothing.
+        if (Date.now() - openedAt > 4000) setTopError(t("settingsAuthNav.googleFailed"));
+        return;
+      }
       const code = Linking.parse(result.url).queryParams?.code;
       if (typeof code !== "string") throw new Error("Google did not return a code");
       await signIn("google", { code });
