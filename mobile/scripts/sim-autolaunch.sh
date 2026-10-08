@@ -75,6 +75,9 @@ last_web=0
 start_servers() {
   local now
   now=$(date +%s)
+  # Storage cleaners delete ~/Library/Logs; a missing log dir makes every
+  # `>>"$LOG_DIR/…"` redirect fail, so the servers would silently never start.
+  mkdir -p "$LOG_DIR"
   if ! listening 8081 && [ $((now - last_metro)) -ge 60 ]; then
     last_metro=$now
     log "starting Metro on :8081"
@@ -135,6 +138,7 @@ ensure_installed() {
   fi
   # No build anywhere: build once (this also installs on $u). mkdir is an
   # atomic lock so two booting simulators never start two builds.
+  mkdir -p "$LOG_DIR"
   if mkdir "$LOG_DIR/build.lock" 2>/dev/null; then
     log "no build found — building Tarjuman for $u (see $LOG_DIR/build.log)"
     ensure_servers
@@ -190,7 +194,9 @@ while true; do
     xcrun simctl bootstatus "$u" >/dev/null 2>&1   # wait for SpringBoard
     ensure_installed "$u" || continue
     ensure_servers
-    if xcrun simctl launch "$u" "$BUNDLE_ID" >/dev/null 2>&1; then
+    # Fresh process: if an old instance is up (e.g. after a server outage),
+    # it would just come to the front still showing its stale error.
+    if xcrun simctl launch --terminate-running-process "$u" "$BUNDLE_ID" >/dev/null 2>&1; then
       log "launched Tarjuman on $u"
     else
       log "launch failed on $u"
