@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { ConvexReactClient, useConvexAuth } from "convex/react";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
 import * as SecureStore from "expo-secure-store";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -73,8 +73,32 @@ export default function RootLayout() {
   );
 }
 
+/**
+ * DEV-ONLY sign-in bypass (user request 2026-10-09). In a development build
+ * with EXPO_PUBLIC_DEV_AUTH_BYPASS_SECRET in mobile/.env.local, a signed-out
+ * launch signs straight in via the "dev-bypass" provider (convex/auth.ts),
+ * which only the DEV deployment accepts. The `__DEV__ &&` guard lets release
+ * builds drop the secret and this whole path. Once per launch, so signing out
+ * to test the auth screens works until the next launch.
+ */
+const DEV_BYPASS_SECRET = __DEV__ ? process.env.EXPO_PUBLIC_DEV_AUTH_BYPASS_SECRET : undefined;
+
 function AuthGate() {
-  const { isLoading, isAuthenticated } = useConvexAuth();
+  const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
+  const { signIn } = useAuthActions();
+  const triedBypass = useRef(false);
+  const [bypassing, setBypassing] = useState(false);
+  useEffect(() => {
+    if (!DEV_BYPASS_SECRET || authLoading || isAuthenticated || triedBypass.current) return;
+    triedBypass.current = true;
+    setBypassing(true);
+    void signIn("dev-bypass", { secret: DEV_BYPASS_SECRET })
+      .catch(() => {})
+      .finally(() => setBypassing(false));
+  }, [authLoading, isAuthenticated, signIn]);
+  // Hold the branded loading tile while the bypass runs, so Welcome never
+  // flashes before the signed-in app.
+  const isLoading = authLoading || bypassing;
 
   // Hide the native splash as soon as the gate renders so the branded pulse
   // (the web's (app) layout loading state) is what shows while auth resolves.

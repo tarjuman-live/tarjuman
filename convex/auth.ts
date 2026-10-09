@@ -1,7 +1,43 @@
 import { Password } from "@convex-dev/auth/providers/Password";
+import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
 import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
 import { PasswordResetEmail } from "./passwordReset";
+import { internal } from "./_generated/api";
+
+/** Constant-time string compare (the Convex runtime has no timingSafeEqual). */
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/**
+ * DEV-ONLY sign-in bypass for simulators (user request 2026-10-09: "bypass the
+ * sign in"). Development builds of the iOS app call signIn("dev-bypass",
+ * { secret }) on launch and land signed in as DEV_AUTH_BYPASS_EMAIL — no
+ * Google round-trip, no password.
+ *
+ * Disabled unless BOTH Convex env vars are set on the deployment:
+ *   DEV_AUTH_BYPASS_SECRET  long random secret (also in mobile/.env.local,
+ *                           gitignored, as EXPO_PUBLIC_DEV_AUTH_BYPASS_SECRET)
+ *   DEV_AUTH_BYPASS_EMAIL   the existing account to sign in as
+ * NEVER set these on the production deployment: with them unset every
+ * attempt is refused, so the provider is inert in prod.
+ */
+const DevBypass = ConvexCredentials({
+  id: "dev-bypass",
+  authorize: async (credentials, ctx) => {
+    const expected = process.env.DEV_AUTH_BYPASS_SECRET;
+    const email = process.env.DEV_AUTH_BYPASS_EMAIL;
+    if (!expected || expected.length < 32 || !email) return null;
+    const given = credentials.secret;
+    if (typeof given !== "string" || !safeEqual(given, expected)) return null;
+    const userId = await ctx.runQuery(internal.devAuth.userIdByEmail, { email });
+    return userId ? { userId } : null;
+  },
+});
 
 /**
  * Auth setup for Tarjuman.
@@ -21,6 +57,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password({ reset: PasswordResetEmail }),
     Google,
+    DevBypass,
   ],
   callbacks: {
     /**
