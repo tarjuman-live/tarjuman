@@ -12,6 +12,7 @@ import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as billingLimits from "../billingLimits.js";
 import type * as crons from "../crons.js";
+import type * as devAuth from "../devAuth.js";
 import type * as http from "../http.js";
 import type * as passwordReset from "../passwordReset.js";
 import type * as preferences from "../preferences.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   billingLimits: typeof billingLimits;
   crons: typeof crons;
+  devAuth: typeof devAuth;
   http: typeof http;
   passwordReset: typeof passwordReset;
   preferences: typeof preferences;
