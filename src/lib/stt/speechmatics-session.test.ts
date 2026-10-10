@@ -165,6 +165,17 @@ describe("speechmatics session core", () => {
     expect(t.interim()).toBe("");
   });
 
+  it("never emits a punctuation-only segment", async () => {
+    const t = setup();
+    const ws = await connected(t);
+    ws.msg({
+      message: "AddTranscript",
+      results: [word("الحمد", 1), word("لله", 1.5, { eos: true })],
+    });
+    ws.msg({ message: "AddTranscript", results: [punct(".", 2)] });
+    expect(t.segments.map((s) => s.text)).toEqual(["الحمد لله"]);
+  });
+
   it("drops low-confidence and off-language sentences", async () => {
     const t = setup();
     const ws = await connected(t);

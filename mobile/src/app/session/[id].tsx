@@ -76,8 +76,12 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 
 /** Native nav bar (transparent, back chevron only) — the header row sits in it. */
 const NAV_BAR = 44;
-/** Room for the native back chevron where the web draws its 36px back button. */
-const BACK_GUTTER = 56;
+/**
+ * Room for the native back button where the web draws its 36px one. iOS 26+
+ * draws it as a 44pt glass circle inset 20pt (it ends at x≈64), so anything
+ * narrower puts the header's first icon under it.
+ */
+const BACK_GUTTER = 76;
 
 interface NormalizedSegment {
   id: string;

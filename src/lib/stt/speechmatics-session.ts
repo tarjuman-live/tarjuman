@@ -216,12 +216,16 @@ export function startSpeechmaticsSession(
 
   const flush = () => {
     const text = buffer.trim();
+    const words = bufferWords;
     const confs = bufferConfs;
     const speaker = dominantBufferSpeaker();
     const startSec = bufferStartSec;
     const endSec = bufferEndSec;
     resetBuffer();
-    if (!text) return;
+    // Punctuation with no words (a "." that trails a sentence the engine
+    // already closed) is not a segment — it would render as an empty card
+    // and burn a translation call.
+    if (!text || words === 0) return;
 
     const confidence = confs.length
       ? confs.reduce((a, b) => a + b, 0) / confs.length
