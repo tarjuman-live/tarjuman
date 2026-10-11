@@ -55,7 +55,8 @@
  *     (`transition-colors`). Those layers stay mounted on every item, so the
  *     item that becomes active fades its border/bg/glow OUT over 200ms while
  *     the pill glides in, as the web's dropped hover: classes do.
- *   - Brand tile: `group-hover:scale-105` → scale 1.05 while pressed, 150ms.
+ *   - No brand tile: the web rail's logo row is dropped on iPad (the nav
+ *     starts the rail).
  *   - Footer (web `<LocaleSwitcher compact dropUp /><AccountMenu dropUp />`):
  *     the locale pill plus the AccountMenu in its drop-UP variant — panel
  *     `bottom-full mb-2 origin-bottom-left`, fade + zoom .95 + 4px slide from
@@ -70,7 +71,7 @@
  * with it, so the lens always sits under the active tab.
  */
 import { useCallback, useEffect, useState, type ComponentProps } from "react";
-import { Pressable, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -88,7 +89,6 @@ import { scheduleOnRN } from "react-native-worklets";
 import { Tabs } from "expo-router";
 import { BlurView } from "expo-blur";
 import { SymbolView, type SFSymbol } from "expo-symbols";
-import { SITE_NAME } from "@shared/site";
 import { C } from "~/lib/theme";
 import { EASE, SPRING, useReduceMotion } from "~/lib/motion";
 import { rtlRow, useLocale, type MessageKey } from "~/i18n";
@@ -354,11 +354,6 @@ function SidebarRail(props: TabBarProps) {
   }, [state.index, reduce, pillY]);
   const pillStyle = useAnimatedStyle(() => ({ transform: [{ translateY: pillY.value }] }));
 
-  // Brand tile `group-hover:scale-105` → while pressed.
-  const brand = useSharedValue(0);
-  const brandTile = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.05 * brand.value }] }));
-  const brandT = { duration: 150, easing: EASE.tw, reduceMotion: ReduceMotion.Never };
-
   return (
     <View
       style={[
@@ -374,24 +369,7 @@ function SidebarRail(props: TabBarProps) {
       ]}
     >
       <View style={styles.rail}>
-        <Pressable
-          onPress={() => onTab(0)}
-          onPressIn={() => {
-            brand.value = withTiming(1, brandT);
-          }}
-          onPressOut={() => {
-            brand.value = withTiming(0, brandT);
-          }}
-          accessibilityRole="link"
-          accessibilityLabel={SITE_NAME}
-          style={[styles.brand, rtlRow(dir)]}
-        >
-          <Animated.View style={[styles.brandTile, brandTile]}>
-            <SymbolView name="mic" size={21} tintColor="#0A0F1C" />
-          </Animated.View>
-          <Text style={styles.brandName}>{SITE_NAME}</Text>
-        </Pressable>
-
+        {/* No brand row (user direction 2026-10-11): the nav starts the rail. */}
         <View style={styles.railNav} accessibilityRole="tablist">
           <Animated.View pointerEvents="none" style={[styles.pill, pillStyle]} />
           <View style={styles.railItems}>
@@ -542,18 +520,7 @@ const styles = StyleSheet.create({
     borderColor: C.borderLight,
     boxShadow: "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
   },
-  brand: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, height: 76 },
-  brandTile: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: C.accent,
-    boxShadow: `0 0 20px ${C.accent}40`,
-  },
-  brandName: { color: C.w, fontSize: 20, fontWeight: "700" },
-  railNav: { marginTop: 8, marginHorizontal: 12 },
+  railNav: { marginTop: 12, marginHorizontal: 12 },
   pill: {
     position: "absolute",
     left: 0,
