@@ -15,15 +15,17 @@ import { formatDate, formatDuration, langName } from "~/lib/lang";
 import { C } from "~/lib/theme";
 import { useLocale } from "~/i18n";
 
-export function RecentSessions() {
+export function RecentSessions({ large, limit = 3 }: { large?: boolean; limit?: number }) {
   const router = useRouter();
   const { t, dir } = useLocale();
-  const sessions = useQuery(api.sessions.getRecentSessions, { limit: 3 });
+  const sessions = useQuery(api.sessions.getRecentSessions, { limit });
   if (!sessions || sessions.length === 0) return null;
 
   return (
     <View>
-      <Text style={[styles.label, dir === "rtl" && { textAlign: "right" }]}>{t("record.recent")}</Text>
+      <Text style={[styles.label, large && lg.label, dir === "rtl" && { textAlign: "right" }]}>
+        {t("record.recent")}
+      </Text>
       {sessions.map((s) => {
         const title = s.title || s.firstSegmentText || t("record.untitled");
         return (
@@ -31,20 +33,20 @@ export function RecentSessions() {
             key={s._id}
             onPress={() => router.push({ pathname: "/session/[id]", params: { id: s._id } })}
             accessibilityRole="link"
-            style={[styles.row, { flexDirection: dir === "rtl" ? "row-reverse" : "row" }]}
+            style={[styles.row, large && lg.row, { flexDirection: dir === "rtl" ? "row-reverse" : "row" }]}
           >
-            <View style={styles.icon}>
-              <SymbolView name="doc.text" tintColor={C.t3} size={16} />
+            <View style={[styles.icon, large && lg.icon]}>
+              <SymbolView name="doc.text" tintColor={C.t3} size={large ? 20 : 16} />
             </View>
             <View style={styles.body}>
-              <Text style={styles.title} numberOfLines={1}>
+              <Text style={[styles.title, large && lg.title]} numberOfLines={1}>
                 {title}
               </Text>
-              <Text style={styles.meta} numberOfLines={1}>
+              <Text style={[styles.meta, large && lg.meta]} numberOfLines={1}>
                 {langName(s.sourceLanguage)} → {langName(s.targetLanguage)} · {formatDate(s.createdAt)}
               </Text>
             </View>
-            <Text style={styles.duration}>{formatDuration(s.duration)}</Text>
+            <Text style={[styles.duration, large && lg.duration]}>{formatDuration(s.duration)}</Text>
           </Pressable>
         );
       })}
@@ -86,4 +88,14 @@ const styles = StyleSheet.create({
   title: { color: C.w, fontSize: 14, fontWeight: "600", marginBottom: 2 },
   meta: { color: C.t4, fontSize: 11 },
   duration: { color: C.t3, fontSize: 12, fontVariant: ["tabular-nums"] },
+});
+
+/** iPad overrides (`large`), layered on `styles`. */
+const lg = StyleSheet.create({
+  label: { fontSize: 12.5, letterSpacing: 1, marginBottom: 14 },
+  row: { gap: 16, paddingHorizontal: 22, paddingVertical: 18, borderRadius: 22, marginBottom: 12 },
+  icon: { width: 48, height: 48, borderRadius: 16 },
+  title: { fontSize: 17, marginBottom: 3 },
+  meta: { fontSize: 13 },
+  duration: { fontSize: 15 },
 });

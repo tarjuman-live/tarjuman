@@ -29,7 +29,7 @@
  *     Alert; the dialog finishes its exit before the screen pops.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Share, StyleSheet, Text, View } from "react-native";
+import { Share, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import {
   useLocalSearchParams,
   useRouter,
@@ -67,6 +67,7 @@ import {
 import { formatDate, formatDuration, isRtl, langName } from "~/lib/lang";
 import { C } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
+import { useTablet } from "~/lib/layout";
 import { useT } from "~/i18n";
 import { useStaticStickyBottom } from "~/hooks/use-sticky-bottom";
 
@@ -100,6 +101,11 @@ export default function SessionScreen() {
   const router = useRouter();
   const t = useT();
   const insets = useSafeAreaInsets();
+  // iPad: a centred 760pt reading column (body, language bar, action bar)
+  // instead of 20pt gutters across a 13" screen, and a larger type scale.
+  const tablet = useTablet();
+  const { width: winW } = useWindowDimensions();
+  const column = { paddingHorizontal: tablet ? Math.max(40, (winW - 760) / 2) : 20 };
   const live = useQuery(api.sessions.getSession, { sessionId: id });
   const saveSummary = useMutation(api.sessions.saveSummary);
   // Plan usage (web usePlan) — gates Generate behind the summary cap.
@@ -247,7 +253,7 @@ export default function SessionScreen() {
               style={[styles.headerRow, { justifyContent: "space-between" }]}
             >
               <View style={styles.completeTitle}>
-                <View style={styles.checkDot}>
+                <View style={[styles.checkDot, tablet && styles.checkDotTablet]}>
                   <SymbolView
                     name="checkmark"
                     tintColor="#0A0F1C"
@@ -255,19 +261,21 @@ export default function SessionScreen() {
                     weight="bold"
                   />
                 </View>
-                <Text style={styles.completeText}>{t("record.complete")}</Text>
+                <Text style={[styles.completeText, tablet && styles.completeTextTablet]}>
+                  {t("record.complete")}
+                </Text>
               </View>
-              <Text style={styles.completeDuration}>
+              <Text style={[styles.completeDuration, tablet && styles.completeDurationTablet]}>
                 {formatDuration(session.duration)}
               </Text>
             </View>
           ) : (
             <View style={styles.headerRow}>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.title} numberOfLines={1}>
+                <Text style={[styles.title, tablet && styles.titleTablet]} numberOfLines={1}>
                   {title}
                 </Text>
-                <Text style={styles.duration}>
+                <Text style={[styles.duration, tablet && styles.durationTablet]}>
                   {formatDuration(session.duration)}
                 </Text>
               </View>
@@ -276,12 +284,12 @@ export default function SessionScreen() {
         </View>
 
         {/* Language pair */}
-        <View style={styles.langRow}>
-          <Text style={styles.langSource}>
+        <View style={[styles.langRow, tablet && styles.langRowTablet]}>
+          <Text style={[styles.langSource, tablet && styles.langTextTablet]}>
             {langName(session.sourceLanguage)}
           </Text>
-          <Text style={styles.langArrow}>→</Text>
-          <Text style={styles.langTarget}>
+          <Text style={[styles.langArrow, tablet && styles.langTextTablet]}>→</Text>
+          <Text style={[styles.langTarget, tablet && styles.langTextTablet]}>
             {langName(session.targetLanguage)}
           </Text>
         </View>
@@ -294,7 +302,7 @@ export default function SessionScreen() {
           onLayout={sticky.onLayout}
           onContentSizeChange={sticky.onContentSizeChange}
           contentInsetAdjustmentBehavior="never"
-          contentContainerStyle={styles.body}
+          contentContainerStyle={[styles.body, column, tablet && styles.bodyTablet]}
           style={{ flex: 1 }}
         >
           <SummarySection
@@ -399,7 +407,8 @@ export default function SessionScreen() {
           <View
             style={[
               styles.footer,
-              { paddingBottom: insets.bottom + 12, gap: 8 },
+              column,
+              { paddingBottom: insets.bottom + 12, gap: tablet ? 10 : 8 },
             ]}
           >
             <View style={styles.footerRow}>
@@ -419,10 +428,10 @@ export default function SessionScreen() {
                   })
                 }
                 accessibilityRole="button"
-                style={[styles.secondary, styles.radius16]}
+                style={[styles.secondary, tablet && styles.secondaryTablet, styles.radius16]}
               >
-                <SymbolView name="mic" tintColor={C.t2} size={16} />
-                <Text style={styles.secondaryText}>
+                <SymbolView name="mic" tintColor={C.t2} size={tablet ? 19 : 16} />
+                <Text style={[styles.secondaryText, tablet && styles.secondaryTextTablet]}>
                   {t("record.newRecording")}
                 </Text>
               </PressableScale>
@@ -439,15 +448,15 @@ export default function SessionScreen() {
                 router.canGoBack() ? router.back() : router.dismissTo("/")
               }
               accessibilityRole="button"
-              style={styles.done}
+              style={[styles.done, tablet && styles.doneTablet]}
             >
               <SymbolView
                 name="checkmark"
                 tintColor="#0A0F1C"
-                size={16}
+                size={tablet ? 19 : 16}
                 weight="bold"
               />
-              <Text style={styles.doneText}>{t("session.done")}</Text>
+              <Text style={[styles.doneText, tablet && styles.doneTextTablet]}>{t("session.done")}</Text>
             </PressableScale>
           </View>
         ) : (
@@ -455,6 +464,7 @@ export default function SessionScreen() {
             style={[
               styles.footer,
               styles.footerRow,
+              column,
               { paddingBottom: insets.bottom + 12 },
             ]}
           >
@@ -464,23 +474,25 @@ export default function SessionScreen() {
               onPress={shareMarkdown}
               accessibilityRole="button"
               accessibilityLabel={t("session.shareMdA11y")}
-              style={[styles.secondary, styles.radius12]}
+              style={[styles.secondary, tablet && styles.secondaryTablet, styles.radius12]}
             >
               <SymbolView
                 name="square.and.arrow.up"
                 tintColor={C.t2}
-                size={16}
+                size={tablet ? 19 : 16}
               />
-              <Text style={styles.secondaryText}>{t("session.shareMd")}</Text>
+              <Text style={[styles.secondaryText, tablet && styles.secondaryTextTablet]}>
+                {t("session.shareMd")}
+              </Text>
             </PressableScale>
             <PressableScale
               scaleTo={0.98}
               onPress={() => setDeleteOpen(true)}
               accessibilityRole="button"
               accessibilityLabel={t("session.delete")}
-              style={[styles.iconButton, styles.radius12]}
+              style={[styles.iconButton, tablet && styles.iconButtonTablet, styles.radius12]}
             >
-              <SymbolView name="trash" tintColor={C.red} size={16} />
+              <SymbolView name="trash" tintColor={C.red} size={tablet ? 19 : 16} />
             </PressableScale>
           </View>
         )}
@@ -595,6 +607,7 @@ function CopyButton({
         ? t("session.copyFailed")
         : t("record.copy");
   const color = COPY_COLOR[status];
+  const tablet = useTablet();
 
   return (
     <PressableScale
@@ -612,14 +625,14 @@ function CopyButton({
       onPress={() => void onPress()}
       accessibilityRole="button"
       accessibilityLiveRegion="polite"
-      style={[styles.secondary, fade ? styles.radius16 : styles.radius12]}
+      style={[styles.secondary, tablet && styles.secondaryTablet, fade ? styles.radius16 : styles.radius12]}
     >
       <SymbolView
         name={status === "copied" ? "checkmark" : "doc.on.doc"}
         tintColor={color}
-        size={16}
+        size={tablet ? 19 : 16}
       />
-      <Animated.Text style={[styles.secondaryText, labelStyle]}>
+      <Animated.Text style={[styles.secondaryText, tablet && styles.secondaryTextTablet, labelStyle]}>
         {label}
       </Animated.Text>
     </PressableScale>
@@ -801,4 +814,19 @@ const styles = StyleSheet.create({
     boxShadow: "0 0 18px rgba(46, 204, 113, 0.19)",
   },
   doneText: { color: "#0A0F1C", fontSize: 14, fontWeight: "700" },
+
+  // iPad (useTablet) overrides.
+  titleTablet: { fontSize: 19 },
+  durationTablet: { fontSize: 13, marginTop: 2 },
+  checkDotTablet: { width: 28, height: 28, borderRadius: 14 },
+  completeTextTablet: { fontSize: 20 },
+  completeDurationTablet: { fontSize: 17 },
+  langRowTablet: { paddingVertical: 11, gap: 10 },
+  langTextTablet: { fontSize: 14 },
+  bodyTablet: { paddingVertical: 28 },
+  secondaryTablet: { height: 52, gap: 10 },
+  secondaryTextTablet: { fontSize: 16 },
+  iconButtonTablet: { width: 52, height: 52 },
+  doneTablet: { height: 56 },
+  doneTextTablet: { fontSize: 16 },
 });

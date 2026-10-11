@@ -83,10 +83,13 @@ export function IdleRecordButton({
   onPress,
   disabled,
   accessibilityLabel,
+  large,
 }: {
   onPress: () => void;
   disabled?: boolean;
   accessibilityLabel: string;
+  /** iPad sizing (useTablet). */
+  large?: boolean;
 }) {
   const press = useSharedValue(0);
   const dim = useSharedValue(disabled ? 1 : 0);
@@ -116,8 +119,8 @@ export function IdleRecordButton({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !!disabled }}
     >
-      <Animated.View style={[styles.recOuter, outer]}>
-        <View style={styles.recClip}>
+      <Animated.View style={[styles.recOuter, large && lg.recOuter, outer]}>
+        <View style={[styles.recClip, large && lg.recClip]}>
           <LinearGradient
             colors={[C.accent, C.accentDk]}
             start={{ x: 0, y: 0 }}
@@ -127,7 +130,7 @@ export function IdleRecordButton({
           <Animated.View style={[StyleSheet.absoluteFill, bright]}>
             <LinearGradient colors={BRIGHT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           </Animated.View>
-          <SymbolView name="mic.fill" tintColor="#fff" size={40} />
+          <SymbolView name="mic.fill" tintColor="#fff" size={large ? 58 : 40} />
         </View>
       </Animated.View>
     </Pressable>
@@ -171,6 +174,7 @@ export function RecCtl({
   accessibilityLabel,
   children,
   style,
+  large,
 }: {
   variant: RecCtlVariant;
   onPress: () => void;
@@ -179,6 +183,8 @@ export function RecCtl({
   /** Replaces the icon (e.g. a spinner while stopping). */
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** iPad sizing (useTablet). */
+  large?: boolean;
 }) {
   const v = CTL[variant];
   const p = useSharedValue(0);
@@ -231,9 +237,9 @@ export function RecCtl({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !!disabled }}
     >
-      <Animated.View style={[styles.ctl, style, animated]}>
+      <Animated.View style={[styles.ctl, large && lg.ctl, style, animated]}>
         {/* Only the glyph swaps instantly (web: the icon is a ternary child). */}
-        {children ?? <SymbolView name={v.icon} tintColor={v.tint} size={22} />}
+        {children ?? <SymbolView name={v.icon} tintColor={v.tint} size={large ? 28 : 22} />}
       </Animated.View>
     </Pressable>
   );
@@ -261,4 +267,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+});
+
+/** iPad overrides (`large`), layered on `styles`. */
+const lg = StyleSheet.create({
+  recOuter: {
+    width: 176,
+    height: 176,
+    borderRadius: 88,
+    boxShadow: "0 0 56px rgba(46,204,113,0.2), 0 0 0 12px rgba(46,204,113,0.1)",
+  },
+  recClip: { borderRadius: 88 },
+  ctl: { width: 72, height: 72, borderRadius: 36 },
 });

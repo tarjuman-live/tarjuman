@@ -75,6 +75,7 @@ import { UpgradeCard } from "~/components/upgrade-card";
 import { RecentSessions } from "~/components/recent-sessions";
 import { PositioningTips } from "~/components/positioning-tips";
 import { LocaleSwitcher, useRailLayout } from "~/components/locale-switcher";
+import { useTablet } from "~/lib/layout";
 import { AccountMenu } from "~/components/account-card";
 import { SplitTranscript } from "~/components/split-transcript";
 import { Transcript, type TranscriptRow } from "~/components/transcript";
@@ -122,6 +123,7 @@ export default function RecordScreen() {
   // `lg:hidden` on the brand row + its border) and the idle column takes the
   // web's lg: layout (max-w-2xl centred, px-8, pt-12, no bottom-nav padding).
   const { railActive } = useRailLayout();
+  const tablet = useTablet();
   const prefs = useQuery(api.preferences.get);
   const usage = useQuery(api.subscriptions.getMyUsageThisMonth);
   const updatePrefs = useMutation(api.preferences.update);
@@ -467,7 +469,11 @@ export default function RecordScreen() {
               <Animated.View key="idle" entering={SWAP_IN} exiting={SWAP_OUT} style={styles.layer}>
                 {railActive ? null : header(true)}
                 <ScrollView
-                  contentContainerStyle={[styles.idle, railActive && styles.idleWide]}
+                  contentContainerStyle={[
+                    styles.idle,
+                    railActive && styles.idleWide,
+                    tablet && styles.idleTablet,
+                  ]}
                   showsVerticalScrollIndicator={false}
                   contentInsetAdjustmentBehavior="never"
                 >
@@ -476,6 +482,7 @@ export default function RecordScreen() {
                     target={target}
                     onChange={setPicked}
                     disabled={recorder.phase === "starting"}
+                    large={tablet}
                   />
 
                   {overSessionLimit ? (
@@ -485,13 +492,16 @@ export default function RecordScreen() {
                     />
                   ) : (
                     <>
-                      <View style={styles.recordArea}>
+                      <View
+                        style={[styles.recordArea, tablet && styles.recordAreaTablet]}
+                      >
                         <IdleRecordButton
                           onPress={handleRecord}
                           disabled={recorder.phase === "starting"}
                           accessibilityLabel={t("record.startRecording")}
+                          large={tablet}
                         />
-                        <Text style={styles.recordHint}>
+                        <Text style={[styles.recordHint, tablet && styles.recordHintTablet]}>
                           {recorder.phase === "starting" ? t("record.starting") : t("record.tapToStart")}
                         </Text>
                       </View>
@@ -506,8 +516,10 @@ export default function RecordScreen() {
                     </>
                   )}
 
-                  <PositioningTips />
-                  <RecentSessions />
+                  <PositioningTips large={tablet} />
+                  {/* The record area flexes, so a 4th row fills the iPad's
+                      height instead of leaving dead space under the hero. */}
+                  <RecentSessions large={tablet} limit={tablet ? 4 : 3} />
                 </ScrollView>
               </Animated.View>
             ) : view === "error" ? (
@@ -522,30 +534,33 @@ export default function RecordScreen() {
             ) : (
               <Animated.View key="live" entering={SWAP_IN} exiting={SWAP_OUT} style={styles.layer}>
                 {/* Header: status dot + label + timer */}
-                <View style={[styles.statusHeader, row]}>
+                <View style={[styles.statusHeader, tablet && styles.statusHeaderTablet, row]}>
                   <View style={[styles.statusLeft, row]}>
                     <View
                       style={[
                         styles.dot,
+                        tablet && styles.dotTablet,
                         {
                           backgroundColor: paused ? C.amber : C.red,
                           boxShadow: `0 0 8px ${paused ? C.amber : C.red}60`,
                         },
                       ]}
                     />
-                    <Text style={[styles.statusLabel, { color: paused ? C.amber : C.red }]}>
+                    <Text
+                      style={[styles.statusLabel, tablet && styles.statusLabelTablet, { color: paused ? C.amber : C.red }]}
+                    >
                       {paused ? t("record.paused") : t("record.recording")}
                     </Text>
                   </View>
-                  <Text style={styles.timer}>{formatDuration(elapsed)}</Text>
+                  <Text style={[styles.timer, tablet && styles.timerTablet]}>{formatDuration(elapsed)}</Text>
                 </View>
 
                 {/* Language bar + connection status + layout toggle */}
-                <View style={styles.langBar}>
+                <View style={[styles.langBar, tablet && styles.langBarTablet]}>
                   <View style={[styles.langBarCenter, row]}>
-                    <Text style={styles.langSrc}>{langName(source)}</Text>
-                    <Text style={styles.langArrow}>{rtl ? "←" : "→"}</Text>
-                    <Text style={styles.langTgt}>{langName(target)}</Text>
+                    <Text style={[styles.langSrc, tablet && styles.langTextTablet]}>{langName(source)}</Text>
+                    <Text style={[styles.langArrow, tablet && styles.langTextTablet]}>{rtl ? "←" : "→"}</Text>
+                    <Text style={[styles.langTgt, tablet && styles.langTextTablet]}>{langName(target)}</Text>
                     {stt.connectionState === "connected" && !paused ? <PulseDots style={lead} /> : null}
                     {stt.connectionState === "reconnecting" || stt.connectionState === "connecting" ? (
                       <Text style={[styles.connLabel, lead, { color: C.amber }]}>
@@ -594,7 +609,7 @@ export default function RecordScreen() {
 
                 {/* Compact visualizer strip — frozen while paused. */}
                 <View style={styles.vizStrip}>
-                  <AudioVisualizer subscribe={recorder.subscribeMeter} active={active && !paused} compact barCount={20} />
+                  <AudioVisualizer subscribe={recorder.subscribeMeter} active={active && !paused} compact barCount={tablet ? 32 : 20} />
                 </View>
 
                 {/* Speaker filter — only once multiple speakers are detected. */}
@@ -630,7 +645,10 @@ export default function RecordScreen() {
                 </View>
 
                 {/* Controls */}
-                <SafeAreaView edges={{ bottom: "maximum" }} style={[styles.controls, row]}>
+                <SafeAreaView
+                  edges={{ bottom: "maximum" }}
+                  style={[styles.controls, tablet && styles.controlsTablet, row]}
+                >
                   {/* ONE persistent control (web: unkeyed ternary <button>) —
                       flipping `variant` crossfades amber ⇄ accent over 150ms
                       while the press squash releases; only the glyph swaps. */}
@@ -639,14 +657,16 @@ export default function RecordScreen() {
                     onPress={paused ? handleResume : handlePause}
                     disabled={finishing}
                     accessibilityLabel={t(paused ? "record.resumeRecording" : "record.pauseRecording")}
+                    large={tablet}
                   />
                   <RecCtl
                     variant="stop"
                     onPress={handleStop}
                     disabled={finishing}
                     accessibilityLabel={t("record.stopRecording")}
+                    large={tablet}
                   >
-                    {finishing ? <Spinner size={20} color={C.red} track="rgba(239,68,68,0.2)" /> : undefined}
+                    {finishing ? <Spinner size={tablet ? 26 : 20} color={C.red} track="rgba(239,68,68,0.2)" /> : undefined}
                   </RecCtl>
                 </SafeAreaView>
               </Animated.View>
@@ -837,6 +857,10 @@ const styles = StyleSheet.create({
   idleWide: { width: "100%", maxWidth: 672, alignSelf: "center", paddingHorizontal: 32, paddingTop: 48, paddingBottom: 20 },
   recordArea: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingVertical: 28, minHeight: 220 },
   recordHint: { color: C.t3, fontSize: 14 },
+  // iPad (useTablet): a wider column, more air, the hero sized for a 13" screen.
+  idleTablet: { maxWidth: 760, paddingHorizontal: 40, paddingTop: 56, gap: 24 },
+  recordAreaTablet: { gap: 22 },
+  recordHintTablet: { fontSize: 17 },
   usage: { color: C.t3, fontSize: 12, textAlign: "center" },
 
   // Live shell
@@ -929,5 +953,13 @@ const styles = StyleSheet.create({
     borderTopColor: C.border,
   },
 
-  // Account menu
+  // Live shell on iPad (useTablet): status, timer and controls sized for a
+  // 13" screen read from a seat, not a phone held in the hand.
+  statusHeaderTablet: { paddingHorizontal: 32, paddingVertical: 20 },
+  dotTablet: { width: 12, height: 12, borderRadius: 6 },
+  statusLabelTablet: { fontSize: 16 },
+  timerTablet: { fontSize: 30 },
+  langBarTablet: { minHeight: 46, paddingVertical: 11 },
+  langTextTablet: { fontSize: 15 },
+  controlsTablet: { gap: 28, paddingTop: 20, paddingBottom: 20 },
 });

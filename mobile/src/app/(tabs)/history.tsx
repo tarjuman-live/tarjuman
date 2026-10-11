@@ -75,6 +75,7 @@ import { ConfirmDialog } from "~/components/confirm-dialog";
 import { PressableScale, Skeleton } from "~/components/motion";
 import { langName } from "~/lib/lang";
 import { C } from "~/lib/theme";
+import { useTablet } from "~/lib/layout";
 import { EASE, EASE_FN, TW_ENTER, TW_EXIT, twEnter, twExit, useReduceMotion } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
 
@@ -170,6 +171,7 @@ export default function HistoryScreen() {
   const deleteSession = useMutation(api.sessions.deleteSession);
   const reduce = useReduceMotion();
   const { t, dir } = useLocale();
+  const tablet = useTablet();
   const [query, setQuery] = useState("");
 
   const listRef = useAnimatedRef<FlatList<SessionListItem>>();
@@ -305,50 +307,56 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <HistoryEnter>
-        <View style={styles.header}>
-          <Text style={[styles.sectionLabel, rtlText(dir)]}>{t("nav.history")}</Text>
-          <View style={[styles.titleRow, rtlRow(dir)]}>
-            <Text style={[styles.title, rtlText(dir)]} accessibilityRole="header">
-              {t("history.title")}
-            </Text>
-            <Text style={styles.count}>{count}</Text>
-          </View>
+        <View style={[styles.header, tablet && styles.headerTablet]}>
+          <View style={tablet && styles.column}>
+            <Text style={[styles.sectionLabel, tablet && styles.sectionLabelTablet, rtlText(dir)]}>{t("nav.history")}</Text>
+            <View style={[styles.titleRow, rtlRow(dir)]}>
+              <Text style={[styles.title, tablet && styles.titleTablet, rtlText(dir)]} accessibilityRole="header">
+                {t("history.title")}
+              </Text>
+              <Text style={[styles.count, tablet && styles.countTablet]}>{count}</Text>
+            </View>
 
-          {total > 0 ? (
-            <Animated.View entering={TW_ENTER.fade} exiting={TW_EXIT.fade} style={[styles.search, rtlRow(dir)]}>
-              <SymbolView name="globe" tintColor={C.t4} size={14} />
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder={t("history.searchPlaceholder")}
-                placeholderTextColor={C.t4}
-                returnKeyType="search"
-                autoCorrect={false}
-                autoCapitalize="none"
-                style={[styles.searchInput, rtlText(dir)]}
-              />
-              {query ? (
-                <Animated.View entering={TW_ENTER.fade} exiting={TW_EXIT.fade}>
-                  <PressableScale
-                    scaleTo={1}
-                    onPress={() => setQuery("")}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("session.clearSearchA11y")}
-                    hitSlop={10}
-                    style={styles.clear}
-                  >
-                    <SymbolView name="xmark" tintColor={C.t3} size={10} />
-                  </PressableScale>
-                </Animated.View>
-              ) : null}
-            </Animated.View>
-          ) : null}
+            {total > 0 ? (
+              <Animated.View
+                entering={TW_ENTER.fade}
+                exiting={TW_EXIT.fade}
+                style={[styles.search, tablet && styles.searchTablet, rtlRow(dir)]}
+              >
+                <SymbolView name="globe" tintColor={C.t4} size={tablet ? 17 : 14} />
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder={t("history.searchPlaceholder")}
+                  placeholderTextColor={C.t4}
+                  returnKeyType="search"
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  style={[styles.searchInput, tablet && styles.searchInputTablet, rtlText(dir)]}
+                />
+                {query ? (
+                  <Animated.View entering={TW_ENTER.fade} exiting={TW_EXIT.fade}>
+                    <PressableScale
+                      scaleTo={1}
+                      onPress={() => setQuery("")}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("session.clearSearchA11y")}
+                      hitSlop={10}
+                      style={styles.clear}
+                    >
+                      <SymbolView name="xmark" tintColor={C.t3} size={10} />
+                    </PressableScale>
+                  </Animated.View>
+                ) : null}
+              </Animated.View>
+            ) : null}
+          </View>
         </View>
 
         {filtered === undefined ? (
-          <View style={styles.skeletons}>
+          <View style={[styles.skeletons, tablet && styles.listTablet]}>
             {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} style={{ width: "100%", height: 84 }} rounded={16} />
+              <Skeleton key={i} style={{ width: "100%", height: tablet ? 86 : 84 }} rounded={tablet ? 20 : 16} />
             ))}
           </View>
         ) : (
@@ -389,7 +397,7 @@ export default function HistoryScreen() {
               viewportH.value = e.nativeEvent.layout.height;
               setListH(e.nativeEvent.layout.height);
             }}
-            contentContainerStyle={styles.list}
+            contentContainerStyle={[styles.list, tablet && styles.listTablet]}
             keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"
           />
@@ -516,6 +524,15 @@ const styles = StyleSheet.create({
   messageFlex: { flex: 1 },
   messageTitle: { color: C.t3, fontSize: 14, lineHeight: 20, textAlign: "center" },
   messageSub: { color: C.t4, fontSize: 12, lineHeight: 16, marginTop: 4, textAlign: "center" },
+  // iPad (useTablet): the Record screen's column (760 max, 40 gutters) and type scale.
+  headerTablet: { paddingHorizontal: 40, paddingTop: 32, paddingBottom: 24 },
+  column: { width: "100%", maxWidth: 680, alignSelf: "center" },
+  sectionLabelTablet: { fontSize: 12.5, letterSpacing: 1, marginBottom: 6 },
+  titleTablet: { fontSize: 34 },
+  countTablet: { fontSize: 15 },
+  searchTablet: { height: 52, borderRadius: 18, paddingHorizontal: 18, gap: 10 },
+  searchInputTablet: { fontSize: 16 },
+  listTablet: { width: "100%", maxWidth: 760, alignSelf: "center", paddingHorizontal: 40 },
   clearLink: {
     color: C.accent,
     fontSize: 12,

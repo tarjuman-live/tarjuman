@@ -44,9 +44,9 @@
  *     WITH the opacity, as the web's backdrop-filter does.
  *
  * SIDEBAR RAIL (sidebar.tsx / globals.css `.sidebar-nav-pill`)
- *   - Island tile: w240, radius 16, surface, a borderLight border and a soft
+ *   - Island tile: w256, radius 20 (web w240 / 16, scaled for iPad), surface, a borderLight border and a soft
  *     shadow, in a 12pt gutter.
- *   - Pill: translateY(index × 48), 320ms bezier(.3,.9,.4,1). It is instant
+ *   - Pill: translateY(index × NAV_ITEM_PITCH), 320ms bezier(.3,.9,.4,1). It is instant
  *     under Reduce Motion, which the web gates with its own media query. It
  *     carries accentSoft, a 1px accent border and a 0 0 16px accent@25 glow.
  *   - Inactive items: `transition-all duration-200` hover → press. Border goes
@@ -113,8 +113,10 @@ const FLYING_V = 8;
 /** `.nav-lens-flying` blur(6px). GlassBackground uses 60 for its 28px blur. */
 const FLYING_BLUR = 13;
 
-// sidebar.tsx constants.
-const NAV_ITEM_PITCH = 48;
+// sidebar.tsx constants, scaled up for the iPad (the rail only exists at
+// ≥1024pt, i.e. a full-screen iPad): 52pt items, 16pt labels, 22pt icons.
+const RAIL_ITEM_H = 52;
+const NAV_ITEM_PITCH = RAIL_ITEM_H + 4;
 const PILL_EASE = Easing.bezier(0.3, 0.9, 0.4, 1);
 /** lg breakpoint. At or above it the web swaps the bottom nav for the sidebar. */
 const LG = 1024;
@@ -385,7 +387,7 @@ function SidebarRail(props: TabBarProps) {
           style={[styles.brand, rtlRow(dir)]}
         >
           <Animated.View style={[styles.brandTile, brandTile]}>
-            <SymbolView name="mic" size={18} tintColor="#0A0F1C" />
+            <SymbolView name="mic" size={21} tintColor="#0A0F1C" />
           </Animated.View>
           <Text style={styles.brandName}>{SITE_NAME}</Text>
         </Pressable>
@@ -477,7 +479,7 @@ function RailItem({
       style={[styles.railItem, rowStyle, itemStyle]}
     >
       <Animated.View pointerEvents="none" style={[styles.railGlow, glowStyle]} />
-      <CrossfadeIcon name={icon} size={20} sel={iconSel} />
+      <CrossfadeIcon name={icon} size={22} sel={iconSel} />
       <Animated.Text numberOfLines={1} style={[styles.railLabel, labelStyle]}>
         {label}
       </Animated.Text>
@@ -533,32 +535,32 @@ const styles = StyleSheet.create({
   railHost: { height: "100%" },
   rail: {
     flex: 1,
-    width: 240,
-    borderRadius: 16,
+    width: 256,
+    borderRadius: 20,
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.borderLight,
     boxShadow: "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
   },
-  brand: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, height: 64 },
+  brand: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, height: 76 },
   brandTile: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: C.accent,
     boxShadow: `0 0 20px ${C.accent}40`,
   },
-  brandName: { color: C.w, fontSize: 17, fontWeight: "700" },
+  brandName: { color: C.w, fontSize: 20, fontWeight: "700" },
   railNav: { marginTop: 8, marginHorizontal: 12 },
   pill: {
     position: "absolute",
     left: 0,
     right: 0,
     top: 0,
-    height: 44,
-    borderRadius: 12,
+    height: RAIL_ITEM_H,
+    borderRadius: 14,
     backgroundColor: C.accentSoft,
     borderWidth: 1,
     borderColor: C.accent,
@@ -568,14 +570,14 @@ const styles = StyleSheet.create({
   railItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    height: 44,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    gap: 14,
+    height: RAIL_ITEM_H,
+    paddingHorizontal: 14,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "transparent",
   },
-  railLabel: { fontSize: 14, fontWeight: "600", flexShrink: 1 },
+  railLabel: { fontSize: 16, fontWeight: "600", flexShrink: 1 },
   /** Hover glow 0 0 16px accent@35, faded by the item's press/hover value. */
   railGlow: {
     position: "absolute",
@@ -583,7 +585,7 @@ const styles = StyleSheet.create({
     left: -1,
     right: -1,
     bottom: -1,
-    borderRadius: 12,
+    borderRadius: 14,
     boxShadow: "0 0 16px rgba(46, 204, 113, 0.35)",
   },
   railFooter: {

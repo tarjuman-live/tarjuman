@@ -28,7 +28,7 @@ function acked(): boolean {
   }
 }
 
-export function PositioningTips({ showCard = true }: { showCard?: boolean }) {
+export function PositioningTips({ showCard = true, large }: { showCard?: boolean; large?: boolean }) {
   const { t, dir } = useLocale();
   const [open, setOpen] = useState(false);
 
@@ -48,18 +48,23 @@ export function PositioningTips({ showCard = true }: { showCard?: boolean }) {
         <PressableScale
           onPress={() => setOpen(true)}
           accessibilityRole="button"
-          style={[styles.card, { flexDirection: rtl ? "row-reverse" : "row" }]}
+          style={[styles.card, large && lg.card, { flexDirection: rtl ? "row-reverse" : "row" }]}
         >
-          <View style={styles.icon}>
-            <SymbolView name="mic.fill" tintColor={C.accent} size={15} />
+          <View style={[styles.icon, large && lg.icon]}>
+            <SymbolView name="mic.fill" tintColor={C.accent} size={large ? 19 : 15} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, rtl && styles.rtl]}>{t("record.tipsTitle")}</Text>
-            <Text style={[styles.body, rtl && styles.rtl]} numberOfLines={2}>
+            <Text style={[styles.title, large && lg.title, rtl && styles.rtl]}>{t("record.tipsTitle")}</Text>
+            <Text style={[styles.body, large && lg.body, rtl && styles.rtl]} numberOfLines={2}>
               {t("record.tipsCardBody")}
             </Text>
           </View>
-          <SymbolView name={rtl ? "chevron.left" : "chevron.right"} tintColor={C.t4} size={13} weight="semibold" />
+          <SymbolView
+            name={rtl ? "chevron.left" : "chevron.right"}
+            tintColor={C.t4}
+            size={large ? 16 : 13}
+            weight="semibold"
+          />
         </PressableScale>
       ) : null}
       <PositioningTipsSheet open={open} onClose={close} />
@@ -91,4 +96,12 @@ const styles = StyleSheet.create({
   title: { color: C.w, fontSize: 14, fontWeight: "600", marginBottom: 2 },
   body: { color: C.t3, fontSize: 12, lineHeight: 17 },
   rtl: { textAlign: "right", writingDirection: "rtl" },
+});
+
+/** iPad overrides (`large`), layered on `styles`. */
+const lg = StyleSheet.create({
+  card: { gap: 16, paddingHorizontal: 20, paddingVertical: 16, borderRadius: 20 },
+  icon: { width: 42, height: 42, borderRadius: 13 },
+  title: { fontSize: 17, marginBottom: 3 },
+  body: { fontSize: 14, lineHeight: 20 },
 });

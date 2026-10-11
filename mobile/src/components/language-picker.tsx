@@ -70,13 +70,15 @@ interface Props {
   target: string;
   onChange: (next: { source: string; target: string }) => void;
   disabled?: boolean;
+  /** iPad sizing (useTablet): bigger tiles, type and swap button. */
+  large?: boolean;
 }
 
 const CSS_EASE_IN = Easing.bezier(0.42, 0, 1, 1);
 const CSS_EASE_OUT = Easing.bezier(0, 0, 0.58, 1);
 const VALUE_OUT_MS = 150;
 
-export function LanguagePicker({ source, target, onChange, disabled }: Props) {
+export function LanguagePicker({ source, target, onChange, disabled, large }: Props) {
   const { t, dir } = useLocale();
   const [open, setOpen] = useState<null | "source" | "target">(null);
   // Keeps the sheet's title/selection stable while it slides out.
@@ -89,16 +91,18 @@ export function LanguagePicker({ source, target, onChange, disabled }: Props) {
   };
 
   return (
-    <View style={[styles.card, { flexDirection: rtl ? "row-reverse" : "row" }]}>
+    <View style={[styles.card, large && lg.card, { flexDirection: rtl ? "row-reverse" : "row" }]}>
       <LangTile
         label={t("record.listeningTo")}
         value={langName(source)}
         slide={rtl ? -1 : 1}
         disabled={disabled}
+        large={large}
         onPress={() => openSheet("source")}
       />
       <SwapButton
         disabled={disabled}
+        large={large}
         label={t("record.swapLanguages")}
         onSwap={() => {
           void Haptics.selectionAsync();
@@ -110,6 +114,7 @@ export function LanguagePicker({ source, target, onChange, disabled }: Props) {
         value={langName(target)}
         slide={rtl ? 1 : -1}
         disabled={disabled}
+        large={large}
         onPress={() => openSheet("target")}
       />
 
@@ -139,12 +144,14 @@ function LangTile({
   value,
   slide,
   disabled,
+  large,
   onPress,
 }: {
   label: string;
   value: string;
   slide: 1 | -1;
   disabled?: boolean;
+  large?: boolean;
   onPress: () => void;
 }) {
   const reduce = useReduceMotion();
@@ -189,10 +196,10 @@ function LangTile({
       glow={TILE_GLOW}
       accessibilityRole="button"
       accessibilityLabel={`${label}: ${value}`}
-      style={styles.tile}
+      style={[styles.tile, large && lg.tile]}
     >
-      <Text style={[styles.tileLabel, align]}>{label}</Text>
-      <Animated.Text style={[styles.tileValue, align, valueStyle]} numberOfLines={1}>
+      <Text style={[styles.tileLabel, large && lg.tileLabel, align]}>{label}</Text>
+      <Animated.Text style={[styles.tileValue, large && lg.tileValue, align, valueStyle]} numberOfLines={1}>
         {shown}
       </Animated.Text>
     </PressableScale>
@@ -210,7 +217,17 @@ const TILE_GLOW = { shadow: "0 0 0 2px #2ECC71, 0 8px 28px 1px rgba(46, 204, 113
 
 // ─── Swap ─────────────────────────────────────────────────────────────────────
 
-function SwapButton({ onSwap, disabled, label }: { onSwap: () => void; disabled?: boolean; label: string }) {
+function SwapButton({
+  onSwap,
+  disabled,
+  large,
+  label,
+}: {
+  onSwap: () => void;
+  disabled?: boolean;
+  large?: boolean;
+  label: string;
+}) {
   const reduce = useReduceMotion();
   const warm = useSharedValue(0);
   const sc = useSharedValue(1);
@@ -258,15 +275,15 @@ function SwapButton({ onSwap, disabled, label }: { onSwap: () => void; disabled?
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Animated.View style={[styles.swap, box]}>
-        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.swapGlow, glow]} />
+      <Animated.View style={[styles.swap, large && lg.swap, box]}>
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.swapGlow, large && lg.swapGlow, glow]} />
         <Animated.View style={spin}>
-          <View style={styles.swapIcon}>
+          <View style={[styles.swapIcon, large && lg.swapIcon]}>
             <Animated.View style={[StyleSheet.absoluteFill, styles.center, greenIcon]}>
-              <SymbolView name="arrow.left.arrow.right" tintColor={C.accent} size={16} weight="semibold" />
+              <SymbolView name="arrow.left.arrow.right" tintColor={C.accent} size={large ? 21 : 16} weight="semibold" />
             </Animated.View>
             <Animated.View style={[StyleSheet.absoluteFill, styles.center, amberIcon]}>
-              <SymbolView name="arrow.left.arrow.right" tintColor={C.amber} size={16} weight="semibold" />
+              <SymbolView name="arrow.left.arrow.right" tintColor={C.amber} size={large ? 21 : 16} weight="semibold" />
             </Animated.View>
           </View>
         </Animated.View>
@@ -625,4 +642,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+});
+
+/** iPad overrides (`large`), layered on `styles`. */
+const lg = StyleSheet.create({
+  card: { gap: 16, padding: 28, borderRadius: 28 },
+  tile: { paddingHorizontal: 24, paddingVertical: 22, borderRadius: 20 },
+  tileLabel: { fontSize: 13, letterSpacing: 1.04, marginBottom: 6 },
+  tileValue: { fontSize: 22 },
+  swap: { width: 54, height: 54, borderRadius: 20 },
+  swapGlow: { borderRadius: 20 },
+  swapIcon: { width: 26, height: 26 },
 });

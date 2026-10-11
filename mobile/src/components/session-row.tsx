@@ -31,6 +31,7 @@ import { SymbolView } from "expo-symbols";
 import { formatDate, formatDuration, langName } from "~/lib/lang";
 import { C } from "~/lib/theme";
 import { TW } from "~/lib/motion";
+import { useTablet } from "~/lib/layout";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
 import { AnchoredPopover, PressableScale } from "~/components/motion";
 
@@ -68,10 +69,10 @@ function useTitle(s: SessionListItem) {
   return s.title || s.firstSegmentText || t("session.untitled");
 }
 
-function DocTile({ style }: { style?: ViewStyle }) {
+function DocTile({ style, large }: { style?: ViewStyle; large?: boolean }) {
   return (
-    <View style={[styles.tile, style]}>
-      <SymbolView name="doc" tintColor={C.t3} size={16} />
+    <View style={[styles.tile, large && lg.tile, style]}>
+      <SymbolView name="doc" tintColor={C.t3} size={large ? 20 : 16} />
     </View>
   );
 }
@@ -90,6 +91,7 @@ function HistoryCard({
   const router = useRouter();
   const { t, dir } = useLocale();
   const title = useTitle(s);
+  const large = useTablet();
   const [menuOpen, setMenuOpen] = useState(false);
   const kebabRef = useRef<View>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -117,24 +119,26 @@ function HistoryCard({
         onPress={() => router.push({ pathname: "/session/[id]", params: { id: s._id } })}
         accessibilityRole="link"
         accessibilityLabel={title}
-        style={[styles.link, rtlRow(dir)]}
+        style={[styles.link, large && lg.link, rtlRow(dir)]}
       >
-        <DocTile style={{ marginTop: 2 }} />
+        <DocTile style={{ marginTop: 2 }} large={large} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <View style={[styles.titleRow, rtlRow(dir)]}>
-            <Text style={[styles.title, { flexShrink: 1 }, rtlText(dir)]} numberOfLines={1}>
+            <Text style={[styles.title, large && lg.title, { flexShrink: 1 }, rtlText(dir)]} numberOfLines={1}>
               {title}
             </Text>
-            {s.summary ? <Text style={styles.badge}>✦ {t("session.summaryBadge")}</Text> : null}
+            {s.summary ? <Text style={[styles.badge, large && lg.badge]}>✦ {t("session.summaryBadge")}</Text> : null}
           </View>
           <View style={[styles.metaRow, rtlRow(dir)]}>
-            <Text style={styles.meta}>{langName(s.sourceLanguage)}</Text>
-            <Text style={styles.meta}>→</Text>
-            <Text style={styles.meta}>{langName(s.targetLanguage)}</Text>
-            <Text style={styles.meta}>·</Text>
-            <Text style={styles.meta}>{formatDate(s.createdAt)}</Text>
-            <Text style={styles.meta}>·</Text>
-            <Text style={[styles.meta, { fontVariant: ["tabular-nums"] }]}>{formatDuration(s.duration)}</Text>
+            <Text style={[styles.meta, large && lg.meta]}>{langName(s.sourceLanguage)}</Text>
+            <Text style={[styles.meta, large && lg.meta]}>→</Text>
+            <Text style={[styles.meta, large && lg.meta]}>{langName(s.targetLanguage)}</Text>
+            <Text style={[styles.meta, large && lg.meta]}>·</Text>
+            <Text style={[styles.meta, large && lg.meta]}>{formatDate(s.createdAt)}</Text>
+            <Text style={[styles.meta, large && lg.meta]}>·</Text>
+            <Text style={[styles.meta, large && lg.meta, { fontVariant: ["tabular-nums"] }]}>
+              {formatDuration(s.duration)}
+            </Text>
           </View>
         </View>
       </PressableScale>
@@ -150,13 +154,13 @@ function HistoryCard({
             accessibilityLabel={t("session.options")}
             accessibilityState={{ expanded: menuOpen }}
             hitSlop={4}
-            style={styles.kebab}
+            style={[styles.kebab, large && lg.kebab]}
           >
             <View style={styles.kebabIcon}>
-              <SymbolView name="ellipsis" tintColor={C.t3} size={18} style={styles.vertical} />
+              <SymbolView name="ellipsis" tintColor={C.t3} size={large ? 22 : 18} style={[styles.vertical, large && lg.vertical]} />
             </View>
             <Animated.View style={[styles.kebabIcon, iconOpen]}>
-              <SymbolView name="ellipsis" tintColor={C.w} size={18} style={styles.vertical} />
+              <SymbolView name="ellipsis" tintColor={C.w} size={large ? 22 : 18} style={[styles.vertical, large && lg.vertical]} />
             </Animated.View>
           </PressableScale>
         </View>
@@ -262,4 +266,15 @@ const styles = StyleSheet.create({
   itemBottom: { borderBottomLeftRadius: 11, borderBottomRightRadius: 11 },
   itemText: { fontSize: 13, fontWeight: "600" },
   divider: { borderTopWidth: 1, borderTopColor: C.border },
+});
+
+/** iPad overrides (useTablet), layered on `styles` — matches the Record screen's large Recent rows. */
+const lg = StyleSheet.create({
+  tile: { width: 48, height: 48, borderRadius: 16 },
+  link: { gap: 16, paddingHorizontal: 22, paddingVertical: 18 },
+  title: { fontSize: 17 },
+  badge: { fontSize: 10.5, paddingHorizontal: 7, paddingVertical: 3 },
+  meta: { fontSize: 13 },
+  kebab: { width: 44, height: 44, borderRadius: 10 },
+  vertical: { width: 22, height: 22 },
 });
