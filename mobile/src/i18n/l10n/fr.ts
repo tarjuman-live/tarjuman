@@ -74,7 +74,6 @@ export const FR = {
   "welcome-sections.contactA11y": "Nous écrire",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Démarrage…",
   "record.startRecording": "Démarrer l'enregistrement",
   "record.sessionsUsage": "{used} sur {limit} sessions ce mois-ci",

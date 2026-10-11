@@ -72,7 +72,6 @@ export const NO = {
   "welcome-sections.contactA11y": "Send oss en e-post",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Starter…",
   "record.startRecording": "Start opptak",
   "record.sessionsUsage": "{used} av {limit} økter denne måneden",

@@ -72,7 +72,6 @@ export const UK = {
   "welcome-sections.contactA11y": "Напишіть нам",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Запуск…",
   "record.startRecording": "Почати запис",
   "record.sessionsUsage": "{used} з {limit} сесій цього місяця",

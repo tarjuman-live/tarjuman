@@ -74,7 +74,6 @@ export const UR = {
   "welcome-sections.contactA11y": "ہمیں ای میل کریں",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "شروع ہو رہا ہے…",
   "record.startRecording": "ریکارڈنگ شروع کریں",
   "record.sessionsUsage": "اس مہینے {limit} میں سے {used} سیشنز",

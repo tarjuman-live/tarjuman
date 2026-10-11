@@ -74,7 +74,6 @@ export const ID = {
   "welcome-sections.contactA11y": "Kirim email ke kami",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Memulai…",
   "record.startRecording": "Mulai merekam",
   "record.sessionsUsage": "{used} dari {limit} sesi bulan ini",

@@ -72,7 +72,6 @@ export const SV = {
   "welcome-sections.contactA11y": "Mejla oss",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Startar…",
   "record.startRecording": "Starta inspelning",
   "record.sessionsUsage": "{used} av {limit} sessioner den här månaden",

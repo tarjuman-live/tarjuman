@@ -72,7 +72,6 @@ export const HI = {
   "welcome-sections.contactA11y": "हमें ईमेल करें",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "शुरू हो रहा है…",
   "record.startRecording": "रिकॉर्डिंग शुरू करें",
   "record.sessionsUsage": "इस महीने {limit} में से {used} सत्र",

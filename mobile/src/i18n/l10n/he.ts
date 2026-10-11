@@ -71,7 +71,6 @@ export const HE = {
   "welcome-sections.contactA11y": "שלחו לנו אימייל",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "מתחיל…",
   "record.startRecording": "התחלת הקלטה",
   "record.sessionsUsage": "{used} מתוך {limit} מפגשים החודש",

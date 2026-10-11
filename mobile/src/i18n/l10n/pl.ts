@@ -72,7 +72,6 @@ export const PL = {
   "welcome-sections.contactA11y": "Napisz do nas",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Uruchamianie…",
   "record.startRecording": "Rozpocznij nagrywanie",
   "record.sessionsUsage": "{used} z {limit} sesji w tym miesiącu",

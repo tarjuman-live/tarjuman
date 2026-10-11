@@ -74,7 +74,6 @@ export const AR = {
   "welcome-sections.contactA11y": "راسلنا",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "جارٍ البدء…",
   "record.startRecording": "بدء التسجيل",
   "record.sessionsUsage": "{used} من {limit} جلسات هذا الشهر",

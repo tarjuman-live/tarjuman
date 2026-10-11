@@ -74,7 +74,6 @@ export const MS = {
   "welcome-sections.contactA11y": "E-mel kami",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Memulakan…",
   "record.startRecording": "Mula merakam",
   "record.sessionsUsage": "{used} daripada {limit} sesi bulan ini",

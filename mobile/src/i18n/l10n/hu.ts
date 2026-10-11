@@ -72,7 +72,6 @@ export const HU = {
   "welcome-sections.contactA11y": "Írj nekünk e-mailt",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Indítás…",
   "record.startRecording": "Felvétel indítása",
   "record.sessionsUsage": "{used} / {limit} munkamenet ebben a hónapban",

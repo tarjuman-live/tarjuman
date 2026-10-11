@@ -72,7 +72,6 @@ export const KO = {
   "welcome-sections.contactA11y": "이메일 보내기",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "시작하는 중…",
   "record.startRecording": "녹음 시작",
   "record.sessionsUsage": "이번 달 {limit}개 중 {used}개 세션 사용",

@@ -72,7 +72,6 @@ export const RO = {
   "welcome-sections.contactA11y": "Trimite-ne un e-mail",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Se pornește…",
   "record.startRecording": "Începe înregistrarea",
   "record.sessionsUsage": "{used} din {limit} sesiuni luna aceasta",

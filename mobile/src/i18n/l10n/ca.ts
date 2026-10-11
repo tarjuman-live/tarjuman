@@ -72,7 +72,6 @@ export const CA = {
   "welcome-sections.contactA11y": "Envia'ns un correu",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Iniciant…",
   "record.startRecording": "Comença a gravar",
   "record.sessionsUsage": "{used} de {limit} sessions aquest mes",

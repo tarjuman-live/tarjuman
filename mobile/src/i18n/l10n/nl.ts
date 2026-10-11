@@ -74,7 +74,6 @@ export const NL = {
   "welcome-sections.contactA11y": "Mail ons",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Starten…",
   "record.startRecording": "Opname starten",
   "record.sessionsUsage": "{used} van {limit} sessies deze maand",

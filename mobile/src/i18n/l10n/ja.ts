@@ -73,7 +73,6 @@ export const JA = {
   "welcome-sections.contactA11y": "メールで問い合わせる",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "開始中…",
   "record.startRecording": "録音を開始",
   "record.sessionsUsage": "今月 {used}/{limit} セッション",

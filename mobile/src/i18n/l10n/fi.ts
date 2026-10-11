@@ -72,7 +72,6 @@ export const FI = {
   "welcome-sections.contactA11y": "Lähetä meille sähköpostia",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Käynnistetään…",
   "record.startRecording": "Aloita tallennus",
   "record.sessionsUsage": "{used}/{limit} istuntoa tässä kuussa",

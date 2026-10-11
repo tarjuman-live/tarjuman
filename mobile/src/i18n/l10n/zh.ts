@@ -70,7 +70,6 @@ export const ZH = {
   "welcome-sections.contactA11y": "给我们发邮件",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "正在启动…",
   "record.startRecording": "开始录音",
   "record.sessionsUsage": "本月已用 {used}/{limit} 个会话",

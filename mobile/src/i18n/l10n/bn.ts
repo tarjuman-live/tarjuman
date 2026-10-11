@@ -74,7 +74,6 @@ export const BN = {
   "welcome-sections.contactA11y": "আমাদের ইমেল করুন",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "শুরু হচ্ছে…",
   "record.startRecording": "রেকর্ডিং শুরু করুন",
   "record.sessionsUsage": "এই মাসে {limit}টির মধ্যে {used}টি সেশন",

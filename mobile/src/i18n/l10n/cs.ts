@@ -72,7 +72,6 @@ export const CS = {
   "welcome-sections.contactA11y": "Napište nám",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Spouštění…",
   "record.startRecording": "Spustit nahrávání",
   "record.sessionsUsage": "{used} z {limit} relací tento měsíc",

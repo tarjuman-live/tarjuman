@@ -72,7 +72,6 @@ export const EL = {
   "welcome-sections.contactA11y": "Στείλτε μας email",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Έναρξη…",
   "record.startRecording": "Έναρξη εγγραφής",
   "record.sessionsUsage": "{used} από {limit} συνεδρίες αυτόν τον μήνα",

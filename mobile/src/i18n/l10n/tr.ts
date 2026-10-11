@@ -74,7 +74,6 @@ export const TR = {
   "welcome-sections.contactA11y": "Bize e-posta gönderin",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Başlatılıyor…",
   "record.startRecording": "Kaydı başlat",
   "record.sessionsUsage": "Bu ay {limit} oturumdan {used} kullanıldı",

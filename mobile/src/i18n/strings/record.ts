@@ -12,7 +12,6 @@ import type { NativeStrings } from "../types";
  */
 export const RECORD_STRINGS = {
   // Idle
-  "record.brand": { en: "Tarjuman" },
   "record.starting": { en: "Starting…" },
   "record.startRecording": { en: "Start recording" },
   "record.sessionsUsage": { en: "{used} of {limit} sessions this month" },

@@ -72,7 +72,6 @@ export const DA = {
   "welcome-sections.contactA11y": "Send os en e-mail",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Starter…",
   "record.startRecording": "Start optagelse",
   "record.sessionsUsage": "{used} af {limit} sessioner denne måned",

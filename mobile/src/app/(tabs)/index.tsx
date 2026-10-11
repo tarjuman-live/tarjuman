@@ -451,10 +451,6 @@ export default function RecordScreen() {
 
   const header = (withLocale: boolean) => (
     <View style={[styles.appHeader, row]}>
-      <View style={[styles.brand, row]}>
-        <SymbolView name="globe" tintColor={C.accent} size={18} />
-        <Text style={styles.brandText}>{t("record.brand")}</Text>
-      </View>
       <View style={[styles.headerActions, row]}>
         {withLocale ? <LocaleSwitcher variant="pill" /> : null}
         <AccountMenu />
@@ -827,12 +823,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     alignItems: "center",
-    justifyContent: "space-between",
+    // Actions only (no brand row): end-aligned, mirrored by `row` in RTL.
+    justifyContent: "flex-end",
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
-  brand: { alignItems: "center", gap: 8 },
-  brandText: { color: C.w, fontSize: 16, fontWeight: "700" },
   headerActions: { alignItems: "center", gap: 8 },
 
   // Idle

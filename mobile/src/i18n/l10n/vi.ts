@@ -72,7 +72,6 @@ export const VI = {
   "welcome-sections.contactA11y": "Gửi email cho chúng tôi",
 
   // record
-  "record.brand": "Tarjuman",
   "record.starting": "Đang bắt đầu…",
   "record.startRecording": "Bắt đầu ghi âm",
   "record.sessionsUsage": "{used}/{limit} phiên trong tháng này",
