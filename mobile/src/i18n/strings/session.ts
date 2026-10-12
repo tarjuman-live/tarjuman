@@ -14,6 +14,20 @@ export const SESSION_STRINGS = {
   "session.noMatch": { en: "No sessions match “{q}”." },
   "session.clearSearchA11y": { en: "Clear search" },
 
+  // History filters (native-only — the web history page has search only)
+  "session.filterAnyTime": { en: "Any time" },
+  "session.filterToday": { en: "Today" },
+  "session.filterWeek": { en: "Past 7 days" },
+  "session.filterMonth": { en: "Past 30 days" },
+  "session.filterAllLanguages": { en: "All languages" },
+  "session.filterAnyLength": { en: "Any length" },
+  "session.filterShort": { en: "Under 5 min" },
+  "session.filterMedium": { en: "5–30 min" },
+  "session.filterLong": { en: "Over 30 min" },
+  "session.filterSummarized": { en: "Summarized" },
+  "session.filterClear": { en: "Clear filters" },
+  "session.filterNoMatch": { en: "No sessions match these filters." },
+
   // Session card (session-card.tsx)
   "session.untitled": { en: "Untitled session" },
   "session.summaryBadge": { en: "Summary" },

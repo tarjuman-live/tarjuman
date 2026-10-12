@@ -70,6 +70,8 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/api";
 import type { Id } from "@convex/dataModel";
 import { SessionRow, type SessionListItem } from "~/components/session-row";
+import { ClearFiltersLink, HistoryFilterBar } from "~/components/history-filters";
+import { NO_FILTERS, applyHistoryFilters, filtersActive, type HistoryFilters } from "@shared/history-filters";
 import { PromptDialog } from "~/components/prompt-dialog";
 import { ConfirmDialog } from "~/components/confirm-dialog";
 import { PressableScale, Skeleton } from "~/components/motion";
@@ -173,6 +175,8 @@ export default function HistoryScreen() {
   const { t, dir } = useLocale();
   const tablet = useTablet();
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<HistoryFilters>(NO_FILTERS);
+  const filtering = filtersActive(filters);
 
   const listRef = useAnimatedRef<FlatList<SessionListItem>>();
   const headRef = useAnimatedRef<Animated.View>();
@@ -197,18 +201,21 @@ export default function HistoryScreen() {
   const [deleteTarget, setDeleteTarget] = useState<SessionListItem | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  // Title + language names + summary, case-insensitive substring (web useMemo).
+  // Title + language names + summary, case-insensitive substring (web useMemo),
+  // then the filter chips (date / language pair / length / summarized).
   const filtered = useMemo(() => {
     if (!sessions) return undefined;
     const q = query.trim().toLowerCase();
-    if (!q) return sessions;
-    return sessions.filter((s) =>
-      [s.title ?? "", langName(s.sourceLanguage), langName(s.targetLanguage), s.summary ?? ""]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [sessions, query]);
+    const searched = q
+      ? sessions.filter((s) =>
+          [s.title ?? "", langName(s.sourceLanguage), langName(s.targetLanguage), s.summary ?? ""]
+            .join(" ")
+            .toLowerCase()
+            .includes(q)
+        )
+      : sessions;
+    return applyHistoryFilters(searched, filters);
+  }, [sessions, query, filters]);
 
   // Removal → spacer of the removed height, set during render (derived state)
   // so it lands in the SAME commit that drops the rows.
@@ -267,7 +274,7 @@ export default function HistoryScreen() {
   const count =
     sessions === undefined
       ? t("history.loading")
-      : query.trim()
+      : query.trim() || filtering
         ? t("session.countOf", { visible, total })
         : total === 1
           ? t("session.countOne")
@@ -297,9 +304,18 @@ export default function HistoryScreen() {
       </Animated.View>
     ) : (
       <Animated.View key="nomatch" entering={messageIn} exiting={messageOut} style={[styles.message, messageSlot]}>
-        <Text style={styles.messageTitle}>{t("session.noMatch", { q: query })}</Text>
-        <Text style={styles.clearLink} onPress={() => setQuery("")} accessibilityRole="button">
-          {t("history.clearSearch")}
+        <Text style={styles.messageTitle}>
+          {query.trim() ? t("session.noMatch", { q: query }) : t("session.filterNoMatch")}
+        </Text>
+        <Text
+          style={styles.clearLink}
+          onPress={() => {
+            setQuery("");
+            setFilters(NO_FILTERS);
+          }}
+          accessibilityRole="button"
+        >
+          {query.trim() ? t("history.clearSearch") : t("session.filterClear")}
         </Text>
       </Animated.View>
     );
@@ -314,7 +330,12 @@ export default function HistoryScreen() {
               <Text style={[styles.title, tablet && styles.titleTablet, rtlText(dir)]} accessibilityRole="header">
                 {t("history.title")}
               </Text>
-              <Text style={[styles.count, tablet && styles.countTablet]}>{count}</Text>
+              {/* Count first in the tree (Yoga takes a row's baseline from its
+                  first child — the text), Clear drawn before it visually. */}
+              <View style={[styles.countRow, { flexDirection: dir === "rtl" ? "row" : "row-reverse" }]}>
+                <Text style={[styles.count, tablet && styles.countTablet]}>{count}</Text>
+                <ClearFiltersLink visible={filtering} large={tablet} onPress={() => setFilters(NO_FILTERS)} />
+              </View>
             </View>
 
             {total > 0 ? (
@@ -350,6 +371,12 @@ export default function HistoryScreen() {
                 ) : null}
               </Animated.View>
             ) : null}
+
+            {total > 0 && sessions ? (
+              <Animated.View entering={TW_ENTER.fade} exiting={TW_EXIT.fade}>
+                <HistoryFilterBar value={filters} onChange={setFilters} sessions={sessions} large={tablet} />
+              </Animated.View>
+            ) : null}
           </View>
         </View>
 
@@ -360,6 +387,18 @@ export default function HistoryScreen() {
             ))}
           </View>
         ) : (
+          // The viewport is measured on this wrapper, NOT via FlatList's own
+          // onLayout: VirtualizedList also forwards the ListEmptyComponent's
+          // layout to that prop, so the message's fixed slot (viewport − pads)
+          // fed back into the viewport and shrank 136pt per pass until the
+          // empty / no-match message collapsed out of sight.
+          <View
+            style={styles.listViewport}
+            onLayout={(e: LayoutChangeEvent) => {
+              viewportH.value = e.nativeEvent.layout.height;
+              setListH(e.nativeEvent.layout.height);
+            }}
+          >
           <Animated.FlatList
             ref={listRef}
             data={filtered}
@@ -393,14 +432,11 @@ export default function HistoryScreen() {
                 />
               ) : null
             }
-            onLayout={(e: LayoutChangeEvent) => {
-              viewportH.value = e.nativeEvent.layout.height;
-              setListH(e.nativeEvent.layout.height);
-            }}
             contentContainerStyle={[styles.list, tablet && styles.listTablet]}
             keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"
           />
+          </View>
         )}
       </HistoryEnter>
 
@@ -497,6 +533,7 @@ const styles = StyleSheet.create({
   titleRow: { alignItems: "baseline", justifyContent: "space-between", marginBottom: 16 },
   title: { color: C.w, fontSize: 24, fontWeight: "700", flexShrink: 1 },
   count: { color: C.t3, fontSize: 12 },
+  countRow: { alignItems: "center", gap: 10, flexShrink: 0 },
   search: {
     alignItems: "center",
     gap: 8,
@@ -522,6 +559,7 @@ const styles = StyleSheet.create({
   marker: { height: 0 },
   message: { alignItems: "center", justifyContent: "center", paddingHorizontal: 32, paddingBottom: 48 },
   messageFlex: { flex: 1 },
+  listViewport: { flex: 1 },
   messageTitle: { color: C.t3, fontSize: 14, lineHeight: 20, textAlign: "center" },
   messageSub: { color: C.t4, fontSize: 12, lineHeight: 16, marginTop: 4, textAlign: "center" },
   // iPad (useTablet): the Record screen's column (760 max, 40 gutters) and type scale.

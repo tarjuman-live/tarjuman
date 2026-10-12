@@ -123,8 +123,13 @@ export function AnchoredPopover({
     if (vertical) {
       if (vertical === "bottom") pos.top = anchor.y + anchor.h + gap;
       else pos.bottom = win.height - anchor.y + gap;
-      if (alignEnd) pos.right = Math.max(margin, win.width - (anchor.x + anchor.w));
-      else pos.left = Math.max(margin, anchor.x);
+      // Clamp on BOTH sides: a trigger near the far edge (e.g. a filter chip
+      // in a sideways-scrolling row) must not push the panel off-screen. Until
+      // the panel has laid out, its declared width / minWidth stands in.
+      const pw = panel?.w ?? width ?? minWidth ?? 0;
+      const maxInset = Math.max(margin, win.width - margin - pw);
+      if (alignEnd) pos.right = Math.min(Math.max(margin, win.width - (anchor.x + anchor.w)), maxInset);
+      else pos.left = Math.min(Math.max(margin, anchor.x), maxInset);
     } else if (side) {
       const pw = panel?.w ?? width ?? 176;
       const ph = panel?.h ?? 92;
