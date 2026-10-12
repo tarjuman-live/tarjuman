@@ -13,7 +13,7 @@
  * For pushed stack screens (session/[id]) keep the native push; wrapping the
  * content is optional (replayOnFocus={false} plays once on mount).
  */
-import { useCallback, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { useFocusEffect } from "expo-router";
 import Animated, {
@@ -23,6 +23,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { EASE, useReduceMotion } from "~/lib/motion";
+import { themeJustSwitched } from "~/lib/theme";
 
 export interface ScreenEnterProps {
   children: ReactNode;
@@ -33,8 +34,13 @@ export interface ScreenEnterProps {
 
 export function ScreenEnter({ children, style, replayOnFocus = true }: ScreenEnterProps) {
   const reduce = useReduceMotion();
-  const p = useSharedValue(reduce ? 1 : 0);
-  const played = useSharedValue(0);
+  // A remount caused by a theme switch starts at rest: it is crossfaded in
+  // from a snapshot of the screen it replaces, so it must not replay its
+  // entrance (that would dip the content mid-crossfade).
+  const [atRest] = useState(themeJustSwitched);
+  const p = useSharedValue(reduce || atRest ? 1 : 0);
+  const played = useSharedValue(atRest ? 1 : 0);
+  const skipNext = useRef(atRest);
 
   useFocusEffect(
     useCallback(() => {
@@ -42,11 +48,15 @@ export function ScreenEnter({ children, style, replayOnFocus = true }: ScreenEnt
         p.value = 1;
         return;
       }
+      if (skipNext.current) {
+        skipNext.current = false;
+        return;
+      }
       if (!replayOnFocus && played.value) return;
       played.value = 1;
       p.value = 0;
       p.value = withTiming(1, { duration: 200, easing: EASE.css, reduceMotion: ReduceMotion.Never });
-    }, [reduce, replayOnFocus, p, played])
+    }, [reduce, replayOnFocus, p, played, skipNext])
   );
 
   const animated = useAnimatedStyle(() => ({

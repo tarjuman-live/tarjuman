@@ -18,7 +18,7 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { SymbolView, type SFSymbol } from "expo-symbols";
-import { C, requestThemeMode, themed, useThemeMode, type ThemeMode } from "~/lib/theme";
+import { C, prepareThemeSwitch, requestThemeMode, themed, useThemeMode, type ThemeMode } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { rtlRow, useLocale } from "~/i18n";
 
@@ -36,7 +36,12 @@ export function AppearancePicker() {
   return (
     <View style={[styles.tray, rtlRow(dir)]} accessibilityRole="radiogroup">
       <ModeTile icon="moon.fill" label={t("settingsAuthNav.themeDark")} on={mode === "dark"} onPress={() => pick("dark")} />
-      <ModeTile icon="sun.max.fill" label={t("settingsAuthNav.themeLight")} on={mode === "light"} onPress={() => pick("light")} />
+      <ModeTile
+        icon="sun.max.fill"
+        label={t("settingsAuthNav.themeLight")}
+        on={mode === "light"}
+        onPress={() => pick("light")}
+      />
     </View>
   );
 }
@@ -69,6 +74,8 @@ function ModeTile({ icon, label, on, onPress }: { icon: SFSymbol; label: string;
       onPress={onPress}
       onPressIn={() => {
         press.value = withTiming(1, PRESS_T);
+        // Snapshot the screen now, so the switch starts the moment you lift.
+        if (!on) prepareThemeSwitch();
       }}
       onPressOut={() => {
         press.value = withTiming(0, PRESS_T);

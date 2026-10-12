@@ -68,7 +68,7 @@ import { SymbolView } from "expo-symbols";
 import { api } from "@convex/api";
 import { BILLING_ENABLED, PLAN_META } from "../../../convex/billingLimits";
 import { API_URL } from "~/lib/config";
-import { C, themed } from "~/lib/theme";
+import { C, themed, useThemeScrollKeeper } from "~/lib/theme";
 import { EASE, REDUCE_MOTION, useReduceMotion } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
 import { ScreenEnter, Skeleton, PressableScale } from "~/components/motion";
@@ -131,6 +131,9 @@ function formatDate(ms: number): string {
 type DeleteStage = "confirm" | "final" | "error";
 
 export default function SettingsScreen() {
+  // The theme is switched FROM this screen: it remounts under the crossfade,
+  // so it must come back at the same scroll position.
+  const scrollKeeper = useThemeScrollKeeper("settings");
   const router = useRouter();
   const { t, dir } = useLocale();
   const reduce = useReduceMotion();
@@ -460,7 +463,7 @@ export default function SettingsScreen() {
             </Text>
           </View>
         )}
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView {...scrollKeeper} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           {body}
         </ScrollView>
       </ScreenEnter>

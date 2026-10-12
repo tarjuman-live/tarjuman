@@ -1,5 +1,5 @@
-import { useSyncExternalStore } from "react";
-import { Appearance } from "react-native";
+import { useRef, useState, useSyncExternalStore } from "react";
+import { Appearance, type ScrollView } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { COLORS } from "@shared/constants";
 
@@ -22,9 +22,13 @@ import { COLORS } from "@shared/constants";
  *   - Module-level style sheets are built through `themed(() =>
  *     StyleSheet.create(…))`, which rebuilds lazily the first time they are
  *     read after a switch.
- *   - The root layout remounts every screen's content (screenLayout keyed by
- *     the theme version) behind a short fade, so everything re-reads `C`.
- *     Navigation state survives — you stay on Settings.
+ *   - The root layout crossfades from a snapshot of the old look. Underneath,
+ *     the visible screen remounts at once (at rest: no entrance animation,
+ *     same scroll — themeJustSwitched / useThemeScrollKeeper) and hidden
+ *     screens remount a beat later, out of sight (ThemeRemount), so
+ *     everything re-reads `C`. A re-render alone is NOT enough: the React
+ *     Compiler caches each component's output, so cached subtrees would keep
+ *     the old colours. Navigation state is never touched.
  */
 
 export type ThemeMode = "dark" | "light";
@@ -95,6 +99,7 @@ function readStored(): ThemeMode {
 
 let mode: ThemeMode = readStored();
 let version = 0;
+let switchedAt = 0;
 const listeners = new Set<() => void>();
 
 /** The live palette. Read it at render time (or inside `themed`), never cache it in a module constant. */
@@ -111,6 +116,7 @@ export function setThemeMode(next: ThemeMode): void {
   mode = next;
   C = { ...(next === "light" ? LIGHT : DARK) };
   version++;
+  switchedAt = Date.now();
   SecureStore.setItemAsync(KEY, next).catch(() => {});
   Appearance.setColorScheme?.(next);
   for (const l of listeners) l();
@@ -118,23 +124,69 @@ export function setThemeMode(next: ThemeMode): void {
 
 /**
  * Settings calls this; the root layout registers the handler that runs the
- * switch behind a fade (see ThemeVeil in app/_layout.tsx). Without a handler
+ * switch as a snapshot crossfade (ThemeCrossfade in app/_layout.tsx). Without a handler
  * (or under Reduce Motion) it switches instantly.
  */
 type SwitchHandler = (next: ThemeMode) => void;
 let switchHandler: SwitchHandler | null = null;
+let prepareHandler: (() => void) | null = null;
 
-export function registerThemeSwitcher(h: SwitchHandler): () => void {
+export function registerThemeSwitcher(h: SwitchHandler, prepare?: () => void): () => void {
   switchHandler = h;
+  prepareHandler = prepare ?? null;
   return () => {
-    if (switchHandler === h) switchHandler = null;
+    if (switchHandler === h) {
+      switchHandler = null;
+      prepareHandler = null;
+    }
   };
+}
+
+/** Call on press-IN of a theme option: lets the transition get ready early. */
+export function prepareThemeSwitch(): void {
+  prepareHandler?.();
 }
 
 export function requestThemeMode(next: ThemeMode): void {
   if (next === mode) return;
   if (switchHandler) switchHandler(next);
   else setThemeMode(next);
+}
+
+/**
+ * True for a moment after a switch. Screens remounted by the switch use it to
+ * mount already at rest (no entrance fade, same scroll position) — under the
+ * crossfade they must look exactly like the screen they replace.
+ */
+export const themeJustSwitched = (): boolean => switchedAt > 0 && Date.now() - switchedAt < 1500;
+
+const scrollMemo = new Map<string, number>();
+
+/**
+ * Keeps a ScrollView's offset across a theme remount:
+ *   <ScrollView {...useThemeScrollKeeper("settings")} …>
+ * A normal mount starts at the top; one caused by a switch starts where the
+ * old instance was.
+ */
+export function useThemeScrollKeeper(id: string) {
+  const [y] = useState(() => (themeJustSwitched() ? (scrollMemo.get(id) ?? 0) : 0));
+  const ref = useRef<ScrollView | null>(null);
+  const pending = useRef(y > 0);
+  return {
+    ref,
+    contentOffset: { x: 0, y },
+    scrollEventThrottle: 16,
+    onScroll: (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      scrollMemo.set(id, e.nativeEvent.contentOffset.y);
+    },
+    // contentOffset alone is clamped to 0 if the content isn't laid out yet
+    // at mount; re-apply it once the content has a size.
+    onContentSizeChange: (_w: number, h: number) => {
+      if (!pending.current || h <= y) return;
+      pending.current = false;
+      ref.current?.scrollTo({ y, animated: false });
+    },
+  };
 }
 
 function subscribe(l: () => void) {
