@@ -468,6 +468,7 @@ function LanguageSheet({
                 entering={anim ? ROW_ADD : undefined}
                 exiting={anim ? ROW_REMOVE : undefined}
                 layout={anim ? ROW_MOVE : undefined}
+                style={styles.rowWrap}
               >
                 <LangRow
                   name={lang.name}
@@ -491,7 +492,6 @@ function LanguageSheet({
 }
 
 const ROW_T = { duration: 150, easing: EASE.tw, reduceMotion: ReduceMotion.Never };
-const SURFACE_LIGHT_CLEAR = "rgba(21,29,48,0)";
 
 function LangRow({
   name,
@@ -508,24 +508,31 @@ function LangRow({
   rtl: boolean;
   onPress: () => void;
 }) {
+  // Every language is a raised tile (user direction 2026-10-12, same
+  // "tiles on tiles" language as the app-language menu). Press lights the
+  // house outline-glow — border → accent, bg → accent-soft, 0 0 18px glow —
+  // 150ms in and out. A pick tweens the new tile to the selected rest state
+  // (accent-soft bg, accent border, softer 14px glow) and the old one back,
+  // while the sheet slides out; it mounts at rest (no tween on open).
   const p = useSharedValue(0);
-  // Web row `transition-colors` (150ms tw): when a pick flips isSelected, the
-  // new row tweens (hovered surfaceLight / transparent) → accentSoft and the
-  // old row accentSoft → transparent while the drawer slides out. Mounts at
-  // rest (no tween on open). The name colour / checkmark swap instantly (web).
   const sel = useSharedValue(selected ? 1 : 0);
   useEffect(() => {
     sel.value = withTiming(selected ? 1 : 0, ROW_T);
   }, [selected, sel]);
-  const bg = useAnimatedStyle(() => {
-    const base = interpolateColor(p.value, [0, 1], [SURFACE_LIGHT_CLEAR, C.surfaceLight]) as string;
-    return { backgroundColor: interpolateColor(sel.value, [0, 1], [base, C.accentSoft]) };
+  const tile = useAnimatedStyle(() => {
+    const lit = Math.max(p.value, sel.value);
+    return {
+      backgroundColor: interpolateColor(lit, [0, 1], [C.surfaceLight, C.accentSoft]) as string,
+      borderColor: interpolateColor(lit, [0, 1], [C.borderLight, C.accent]) as string,
+    };
   });
+  const restGlow = useAnimatedStyle(() => ({ opacity: sel.value * (1 - p.value) }));
+  const hotGlow = useAnimatedStyle(() => ({ opacity: p.value }));
   return (
     <Pressable
       onPress={onPress}
       onPressIn={() => {
-        if (!selected) p.value = withTiming(1, ROW_T);
+        p.value = withTiming(1, ROW_T);
       }}
       onPressOut={() => {
         p.value = withTiming(0, ROW_T);
@@ -533,7 +540,9 @@ function LangRow({
       accessibilityRole="button"
       accessibilityState={{ selected }}
     >
-      <Animated.View style={[styles.row, { flexDirection: rtl ? "row-reverse" : "row" }, bg]}>
+      <Animated.View style={[styles.row, { flexDirection: rtl ? "row-reverse" : "row" }, tile]}>
+        <Animated.View pointerEvents="none" style={[styles.rowGlow, styles.rowGlowRest, restGlow]} />
+        <Animated.View pointerEvents="none" style={[styles.rowGlow, styles.rowGlowHot, hotGlow]} />
         <View style={[styles.rowNames, { flexDirection: rtl ? "row-reverse" : "row" }]}>
           <Text style={[styles.rowName, selected && { color: C.accent }]}>{name}</Text>
           <Text style={[styles.rowNative, { writingDirection: nativeRtl ? "rtl" : "ltr" }]}>{native}</Text>
@@ -621,16 +630,28 @@ const styles = themed(() => StyleSheet.create({
   },
   searchInput: { flex: 1, color: C.w, fontSize: 14, paddingVertical: 0 },
   clear: { padding: 2, borderRadius: 4 },
-  list: { paddingHorizontal: 12, paddingVertical: 8, paddingBottom: 12 },
+  list: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 16 },
+  // Gap between the language tiles (on the wrapper, so the add/remove/move
+  // layout animations carry it).
+  rowWrap: { marginBottom: 8 },
   empty: { paddingVertical: 32, alignItems: "center" },
   emptyText: { color: C.t3, fontSize: 14 },
+  // A raised tile (account-card raisedTile): lifted drop shadow + faint
+  // top-edge highlight. bg / border are animated (rest ↔ lit ↔ selected).
   row: {
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    boxShadow:
+      "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 14px rgba(0, 0, 0, 0.35)",
   },
+  // Glow layers on the tile's border box (inset −1 → outer radius 13).
+  rowGlow: { position: "absolute", top: -1, left: -1, right: -1, bottom: -1, borderRadius: 13 },
+  rowGlowRest: { boxShadow: "0 0 14px rgba(46, 204, 113, 0.28)" },
+  rowGlowHot: { boxShadow: "0 0 18px rgba(46, 204, 113, 0.4)" },
   rowNames: { flex: 1, alignItems: "center", gap: 12 },
   rowName: { color: C.w, fontSize: 14, fontWeight: "600" },
   rowNative: { color: C.t3, fontSize: 13, flexShrink: 1 },
