@@ -31,11 +31,14 @@
  *     is capped to the room on that side, and while the keyboard is up the
  *     panel is kept clear of it (the cap/offset glide with the keyboard's own
  *     duration).
- *   - Option rows: `transition-all duration-150` — hover (→ press) lights the
- *     house outline-glow: border transparent → accent, bg → accent-soft,
- *     shadow → 0 0 18px rgba(46,204,113,.4). The selected row rests on the
- *     softer glow (0 0 14px rgba(46,204,113,.28)) + accent text + check, and
- *     pressing it bumps the glow to 18px/.4.
+ *   - Tiles on tiles (user direction 2026-10-12, same language as the
+ *     language selector and the profile menu): the panel is a recessed tray
+ *     and EVERY language is a raised tile (surfaceLight, borderLight, lifted
+ *     shadow + top-edge highlight). Press (web hover) lights the house
+ *     outline-glow: border → accent, bg → accent-soft, glow 0 0 18px
+ *     rgba(46,204,113,.4), 150ms. The selected tile rests on accent-soft +
+ *     accent border + the softer glow (0 0 14px .28) + accent text + check,
+ *     and pressing it bumps the glow to 18px/.4.
  *
  * Native deviations (documented):
  *   - The search field is NOT auto-focused: on a phone that raises the
@@ -448,8 +451,8 @@ function LocaleOption({
   onPress: () => void;
 }) {
   const p = useSharedValue(0);
-  const restBorder = selected ? C.accent : "rgba(46, 204, 113, 0)";
-  const restBg = selected ? C.accentSoft : "rgba(46, 204, 113, 0)";
+  const restBorder = selected ? C.accent : C.borderLight;
+  const restBg = selected ? C.accentSoft : C.surfaceLight;
 
   const box = useAnimatedStyle(() => ({
     borderColor: interpolateColor(p.value, [0, 1], [restBorder, C.accent]) as string,
@@ -508,43 +511,48 @@ const styles = StyleSheet.create({
   triggerRow: { height: 36, paddingHorizontal: 12, gap: 6 },
   code: { fontSize: 12, fontWeight: "700" },
   native: { color: C.w, fontSize: 13, fontWeight: "600" },
-  // Web: surface bg, rounded-xl, 1px borderLight, `0 16px 40px rgba(0,0,0,.5)`,
-  // py-1, min-w-[240px]. No overflow:hidden (it would clip the shadow).
+  // The tray: surface, rounded, a soft inner shade along the top (recessed)
+  // + the web's deep drop shadow. No overflow:hidden (it would clip it).
   panel: {
     position: "absolute",
     minWidth: PANEL_MIN_W,
-    paddingVertical: 4,
+    paddingTop: 8,
     backgroundColor: C.surface,
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: C.borderLight,
-    boxShadow: "0 16px 40px rgba(0, 0, 0, 0.5)",
+    boxShadow: "inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 16px 40px rgba(0, 0, 0, 0.5)",
   },
-  searchWrap: { paddingHorizontal: 8, paddingTop: 4, paddingBottom: 6 },
+  searchWrap: { paddingHorizontal: 8, paddingBottom: 8 },
+  // Recessed into the tray (the tiles below are the raised layer).
   search: {
-    height: 32,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     fontSize: 13,
     color: C.w,
-    backgroundColor: C.surfaceLight,
+    backgroundColor: "rgba(10, 16, 30, 0.7)",
     borderWidth: 1,
     borderColor: C.borderLight,
   },
   empty: { paddingHorizontal: 12, paddingVertical: 12, fontSize: 12, color: C.t4 },
   list: { flexGrow: 0, flexShrink: 1 },
-  listContent: { paddingHorizontal: 4, paddingBottom: 4, gap: 2 },
+  listContent: { paddingHorizontal: 8, paddingBottom: 10, gap: 8 },
+  // A raised tile (account-card.tsx raisedTile): lifted drop shadow + faint
+  // top-edge highlight. Its bg/border are animated (rest ↔ lit).
   option: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
+    boxShadow:
+      "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 14px rgba(0, 0, 0, 0.35)",
   },
-  glowLayer: { position: "absolute", top: -1, left: -1, right: -1, bottom: -1, borderRadius: 8 },
+  glowLayer: { position: "absolute", top: -1, left: -1, right: -1, bottom: -1, borderRadius: 13 },
   optionText: { alignItems: "center", gap: 8, flexShrink: 1 },
-  optionNative: { fontSize: 13, fontWeight: "600" },
-  optionLabel: { fontSize: 11, fontWeight: "600", color: C.t4 },
+  optionNative: { fontSize: 14, fontWeight: "600" },
+  optionLabel: { fontSize: 12, fontWeight: "600", color: C.t4 },
 });
