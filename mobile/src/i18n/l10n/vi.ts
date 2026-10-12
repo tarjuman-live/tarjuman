@@ -205,10 +205,6 @@ export const VI = {
   // pro tools
   "proTools.aiTools": "Công cụ AI",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Mở khóa công cụ AI với Pro",
-  "proTools.lockedMessage":
-    "Ghi chú học tập AI, Hỏi bài giảng và dịch bản phiên âm sang bất kỳ ngôn ngữ nào là tính năng của Tarjuman Pro.",
-  "proTools.upgrade": "Nâng cấp",
   "proTools.tabNotes": "Ghi chú học tập",
   "proTools.tabAsk": "Hỏi",
   "proTools.tabTranslate": "Dịch",

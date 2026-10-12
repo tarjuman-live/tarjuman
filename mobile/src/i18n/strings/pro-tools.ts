@@ -12,11 +12,6 @@ import type { NativeStrings } from "../types";
 export const PRO_TOOLS_STRINGS = {
   "proTools.aiTools": { en: "AI tools" },
   "proTools.proBadge": { en: "✦ Pro" },
-  "proTools.lockedTitle": { en: "Unlock AI tools with Pro" },
-  "proTools.lockedMessage": {
-    en: "AI study notes, Ask-the-lecture, and any-language transcript translation are Tarjuman Pro features.",
-  },
-  "proTools.upgrade": { en: "Upgrade" },
 
   "proTools.tabNotes": { en: "Study notes" },
   "proTools.tabAsk": { en: "Ask" },

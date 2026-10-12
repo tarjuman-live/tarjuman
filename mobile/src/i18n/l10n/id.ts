@@ -207,10 +207,6 @@ export const ID = {
   // pro tools
   "proTools.aiTools": "Alat AI",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Buka alat AI dengan Pro",
-  "proTools.lockedMessage":
-    "Catatan belajar AI, Tanya-kajian, dan terjemahan transkrip ke bahasa apa pun adalah fitur Tarjuman Pro.",
-  "proTools.upgrade": "Tingkatkan",
   "proTools.tabNotes": "Catatan belajar",
   "proTools.tabAsk": "Tanya",
   "proTools.tabTranslate": "Terjemahkan",

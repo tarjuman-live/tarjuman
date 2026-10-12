@@ -205,10 +205,6 @@ export const EL = {
   // pro tools
   "proTools.aiTools": "Εργαλεία AI",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Ξεκλειδώστε τα εργαλεία AI με το Pro",
-  "proTools.lockedMessage":
-    "Οι σημειώσεις μελέτης AI, οι ερωτήσεις στη διάλεξη και η μετάφραση της μεταγραφής σε οποιαδήποτε γλώσσα είναι λειτουργίες του Tarjuman Pro.",
-  "proTools.upgrade": "Αναβάθμιση",
   "proTools.tabNotes": "Σημειώσεις",
   "proTools.tabAsk": "Ερώτηση",
   "proTools.tabTranslate": "Μετάφραση",

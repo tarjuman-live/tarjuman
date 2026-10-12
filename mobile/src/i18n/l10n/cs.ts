@@ -205,10 +205,6 @@ export const CS = {
   // pro tools
   "proTools.aiTools": "AI nástroje",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Odemkněte AI nástroje s Pro",
-  "proTools.lockedMessage":
-    "AI studijní poznámky, dotazy na přednášku a překlad přepisu do libovolného jazyka jsou funkce Tarjuman Pro.",
-  "proTools.upgrade": "Upgradovat",
   "proTools.tabNotes": "Poznámky",
   "proTools.tabAsk": "Zeptat se",
   "proTools.tabTranslate": "Přeložit",

@@ -206,10 +206,6 @@ export const JA = {
   // pro tools
   "proTools.aiTools": "AI ツール",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Pro で AI ツールを利用",
-  "proTools.lockedMessage":
-    "AI 学習ノート、講義への質問、任意の言語への文字起こし翻訳は Tarjuman Pro の機能です。",
-  "proTools.upgrade": "アップグレード",
   "proTools.tabNotes": "学習ノート",
   "proTools.tabAsk": "質問",
   "proTools.tabTranslate": "翻訳",

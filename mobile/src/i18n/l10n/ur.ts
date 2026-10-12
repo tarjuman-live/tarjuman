@@ -207,10 +207,6 @@ export const UR = {
   // pro tools
   "proTools.aiTools": "اے آئی ٹولز",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Pro کے ساتھ اے آئی ٹولز کھولیں",
-  "proTools.lockedMessage":
-    "اے آئی اسٹڈی نوٹس، لیکچر سے پوچھیں، اور کسی بھی زبان میں ٹرانسکرپٹ کا ترجمہ Tarjuman Pro کی خصوصیات ہیں۔",
-  "proTools.upgrade": "اپ گریڈ",
   "proTools.tabNotes": "اسٹڈی نوٹس",
   "proTools.tabAsk": "پوچھیں",
   "proTools.tabTranslate": "ترجمہ",

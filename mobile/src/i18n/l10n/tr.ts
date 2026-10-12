@@ -207,10 +207,6 @@ export const TR = {
   // pro tools
   "proTools.aiTools": "Yapay zekâ araçları",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Yapay zekâ araçlarını Pro ile açın",
-  "proTools.lockedMessage":
-    "Yapay zekâ ders notları, Derse sor ve metnin herhangi bir dile çevrilmesi Tarjuman Pro özellikleridir.",
-  "proTools.upgrade": "Yükselt",
   "proTools.tabNotes": "Ders notları",
   "proTools.tabAsk": "Sor",
   "proTools.tabTranslate": "Çevir",

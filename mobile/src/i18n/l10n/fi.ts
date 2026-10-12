@@ -205,10 +205,6 @@ export const FI = {
   // pro tools
   "proTools.aiTools": "Tekoälytyökalut",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Avaa tekoälytyökalut Prolla",
-  "proTools.lockedMessage":
-    "Tekoälyn opiskelumuistiinpanot, Kysy luennolta ja litteroinnin kääntäminen mille tahansa kielelle ovat Tarjuman Pron ominaisuuksia.",
-  "proTools.upgrade": "Päivitä",
   "proTools.tabNotes": "Muistiinpanot",
   "proTools.tabAsk": "Kysy",
   "proTools.tabTranslate": "Käännä",

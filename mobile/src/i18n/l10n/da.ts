@@ -205,10 +205,6 @@ export const DA = {
   // pro tools
   "proTools.aiTools": "AI-værktøjer",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Lås op for AI-værktøjer med Pro",
-  "proTools.lockedMessage":
-    "AI-studienoter, Spørg forelæsningen og oversættelse af transskriptionen til ethvert sprog er Tarjuman Pro-funktioner.",
-  "proTools.upgrade": "Opgrader",
   "proTools.tabNotes": "Studienoter",
   "proTools.tabAsk": "Spørg",
   "proTools.tabTranslate": "Oversæt",

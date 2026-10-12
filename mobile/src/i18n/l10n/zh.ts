@@ -196,9 +196,6 @@ export const ZH = {
   // pro tools
   "proTools.aiTools": "AI 工具",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "升级 Pro 解锁 AI 工具",
-  "proTools.lockedMessage": "AI 学习笔记、向讲座提问，以及将转写翻译成任意语言，都是 Tarjuman Pro 功能。",
-  "proTools.upgrade": "升级",
   "proTools.tabNotes": "学习笔记",
   "proTools.tabAsk": "提问",
   "proTools.tabTranslate": "翻译",

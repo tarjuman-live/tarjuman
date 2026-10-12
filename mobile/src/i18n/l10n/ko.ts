@@ -205,10 +205,6 @@ export const KO = {
   // pro tools
   "proTools.aiTools": "AI 도구",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Pro로 AI 도구 잠금 해제",
-  "proTools.lockedMessage":
-    "AI 학습 노트, 강의에 질문하기, 모든 언어로 전사본 번역은 Tarjuman Pro 기능입니다.",
-  "proTools.upgrade": "업그레이드",
   "proTools.tabNotes": "학습 노트",
   "proTools.tabAsk": "질문",
   "proTools.tabTranslate": "번역",

@@ -207,10 +207,6 @@ export const BN = {
   // pro tools
   "proTools.aiTools": "এআই টুলস",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Pro দিয়ে এআই টুলস আনলক করুন",
-  "proTools.lockedMessage":
-    "এআই স্টাডি নোট, লেকচারকে জিজ্ঞাসা এবং যেকোনো ভাষায় ট্রান্সক্রিপ্ট অনুবাদ Tarjuman Pro-র ফিচার।",
-  "proTools.upgrade": "আপগ্রেড",
   "proTools.tabNotes": "স্টাডি নোট",
   "proTools.tabAsk": "জিজ্ঞাসা",
   "proTools.tabTranslate": "অনুবাদ",

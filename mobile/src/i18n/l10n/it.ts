@@ -207,10 +207,6 @@ export const IT = {
   // pro tools
   "proTools.aiTools": "Strumenti IA",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Sblocca gli strumenti IA con Pro",
-  "proTools.lockedMessage":
-    "Appunti di studio IA, Chiedi alla lezione e la traduzione della trascrizione in qualsiasi lingua sono funzioni di Tarjuman Pro.",
-  "proTools.upgrade": "Passa a Pro",
   "proTools.tabNotes": "Appunti di studio",
   "proTools.tabAsk": "Chiedi",
   "proTools.tabTranslate": "Traduci",

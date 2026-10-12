@@ -207,10 +207,6 @@ export const AR = {
   // pro tools
   "proTools.aiTools": "أدوات الذكاء الاصطناعي",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "افتح أدوات الذكاء الاصطناعي مع Pro",
-  "proTools.lockedMessage":
-    "ملاحظات الدراسة بالذكاء الاصطناعي، واسأل المحاضرة، وترجمة التفريغ إلى أي لغة هي ميزات Tarjuman Pro.",
-  "proTools.upgrade": "ترقية",
   "proTools.tabNotes": "ملاحظات الدراسة",
   "proTools.tabAsk": "اسأل",
   "proTools.tabTranslate": "ترجمة",

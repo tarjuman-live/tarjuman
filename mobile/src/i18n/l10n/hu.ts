@@ -205,10 +205,6 @@ export const HU = {
   // pro tools
   "proTools.aiTools": "MI-eszközök",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Oldd fel az MI-eszközöket a Pro-val",
-  "proTools.lockedMessage":
-    "Az MI-jegyzetek, a „Kérdezd az előadást” és az átirat bármely nyelvre fordítása a Tarjuman Pro funkciói.",
-  "proTools.upgrade": "Frissítés",
   "proTools.tabNotes": "Jegyzetek",
   "proTools.tabAsk": "Kérdés",
   "proTools.tabTranslate": "Fordítás",

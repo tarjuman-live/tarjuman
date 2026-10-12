@@ -207,10 +207,6 @@ export const RU = {
   // pro tools
   "proTools.aiTools": "ИИ-инструменты",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Откройте ИИ-инструменты с Pro",
-  "proTools.lockedMessage":
-    "ИИ-конспекты для учёбы, «Спросите лекцию» и перевод расшифровки на любой язык — функции Tarjuman Pro.",
-  "proTools.upgrade": "Улучшить",
   "proTools.tabNotes": "Учебные заметки",
   "proTools.tabAsk": "Спросить",
   "proTools.tabTranslate": "Перевод",

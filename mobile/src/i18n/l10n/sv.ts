@@ -205,10 +205,6 @@ export const SV = {
   // pro tools
   "proTools.aiTools": "AI-verktyg",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Lås upp AI-verktyg med Pro",
-  "proTools.lockedMessage":
-    "AI-studieanteckningar, Fråga föreläsningen och översättning av transkriptionen till valfritt språk är Tarjuman Pro-funktioner.",
-  "proTools.upgrade": "Uppgradera",
   "proTools.tabNotes": "Anteckningar",
   "proTools.tabAsk": "Fråga",
   "proTools.tabTranslate": "Översätt",

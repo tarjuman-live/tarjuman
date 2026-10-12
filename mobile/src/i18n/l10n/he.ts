@@ -199,9 +199,6 @@ export const HE = {
   // pro tools
   "proTools.aiTools": "כלי AI",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "פתחו את כלי ה-AI עם Pro",
-  "proTools.lockedMessage": "סיכומי לימוד AI, שאלות על ההרצאה ותרגום התמלול לכל שפה הם תכונות של Tarjuman Pro.",
-  "proTools.upgrade": "שדרוג",
   "proTools.tabNotes": "סיכומי לימוד",
   "proTools.tabAsk": "שאלה",
   "proTools.tabTranslate": "תרגום",

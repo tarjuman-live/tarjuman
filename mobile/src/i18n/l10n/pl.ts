@@ -205,10 +205,6 @@ export const PL = {
   // pro tools
   "proTools.aiTools": "Narzędzia AI",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Odblokuj narzędzia AI z Pro",
-  "proTools.lockedMessage":
-    "Notatki AI do nauki, pytania do wykładu i tłumaczenie transkrypcji na dowolny język to funkcje Tarjuman Pro.",
-  "proTools.upgrade": "Ulepsz",
   "proTools.tabNotes": "Notatki",
   "proTools.tabAsk": "Zapytaj",
   "proTools.tabTranslate": "Tłumacz",

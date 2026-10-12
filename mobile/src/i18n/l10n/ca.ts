@@ -205,10 +205,6 @@ export const CA = {
   // pro tools
   "proTools.aiTools": "Eines d'IA",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Desbloqueja les eines d'IA amb Pro",
-  "proTools.lockedMessage":
-    "Els apunts d'estudi amb IA, Pregunta a la conferència i la traducció de la transcripció a qualsevol idioma són funcions de Tarjuman Pro.",
-  "proTools.upgrade": "Millora",
   "proTools.tabNotes": "Apunts",
   "proTools.tabAsk": "Pregunta",
   "proTools.tabTranslate": "Tradueix",

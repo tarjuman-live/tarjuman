@@ -205,10 +205,6 @@ export const HI = {
   // pro tools
   "proTools.aiTools": "AI टूल",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Pro के साथ AI टूल अनलॉक करें",
-  "proTools.lockedMessage":
-    "AI स्टडी नोट्स, लेक्चर से पूछें, और किसी भी भाषा में ट्रांसक्रिप्ट अनुवाद Tarjuman Pro की सुविधाएँ हैं।",
-  "proTools.upgrade": "अपग्रेड करें",
   "proTools.tabNotes": "स्टडी नोट्स",
   "proTools.tabAsk": "पूछें",
   "proTools.tabTranslate": "अनुवाद",

@@ -205,10 +205,6 @@ export const RO = {
   // pro tools
   "proTools.aiTools": "Instrumente AI",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Deblochează instrumentele AI cu Pro",
-  "proTools.lockedMessage":
-    "Notițele de studiu AI, Întreabă prelegerea și traducerea transcrierii în orice limbă sunt funcții Tarjuman Pro.",
-  "proTools.upgrade": "Treci la Pro",
   "proTools.tabNotes": "Notițe de studiu",
   "proTools.tabAsk": "Întreabă",
   "proTools.tabTranslate": "Tradu",

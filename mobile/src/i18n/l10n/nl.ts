@@ -207,10 +207,6 @@ export const NL = {
   // pro tools
   "proTools.aiTools": "AI-tools",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Ontgrendel AI-tools met Pro",
-  "proTools.lockedMessage":
-    "AI-studienotities, Vraag-de-lezing en vertaling van het transcript naar elke taal zijn functies van Tarjuman Pro.",
-  "proTools.upgrade": "Upgraden",
   "proTools.tabNotes": "Studienotities",
   "proTools.tabAsk": "Vragen",
   "proTools.tabTranslate": "Vertalen",

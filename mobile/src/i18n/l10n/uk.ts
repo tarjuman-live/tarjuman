@@ -205,10 +205,6 @@ export const UK = {
   // pro tools
   "proTools.aiTools": "AI-інструменти",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "Відкрийте AI-інструменти з Pro",
-  "proTools.lockedMessage":
-    "AI-конспекти, запитання до лекції та переклад транскрипції будь-якою мовою — це функції Tarjuman Pro.",
-  "proTools.upgrade": "Покращити",
   "proTools.tabNotes": "Конспект",
   "proTools.tabAsk": "Запитати",
   "proTools.tabTranslate": "Переклад",

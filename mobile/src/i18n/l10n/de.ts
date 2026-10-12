@@ -207,10 +207,6 @@ export const DE = {
   // pro tools
   "proTools.aiTools": "KI-Werkzeuge",
   "proTools.proBadge": "✦ Pro",
-  "proTools.lockedTitle": "KI-Werkzeuge mit Pro freischalten",
-  "proTools.lockedMessage":
-    "KI-Lernnotizen, Frag-den-Vortrag und die Übersetzung des Transkripts in jede Sprache sind Funktionen von Tarjuman Pro.",
-  "proTools.upgrade": "Upgraden",
   "proTools.tabNotes": "Lernnotizen",
   "proTools.tabAsk": "Fragen",
   "proTools.tabTranslate": "Übersetzen",
