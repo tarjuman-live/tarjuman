@@ -229,6 +229,10 @@ export const ID = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Kembali",
+  "settingsAuthNav.appearance": "Tampilan",
+  "settingsAuthNav.themeDark": "Gelap",
+  "settingsAuthNav.themeLight": "Terang",
+  "settingsAuthNav.appearanceHint": "Mode gelap lebih nyaman di mata di masjid atau ruang kuliah.",
   "settingsAuthNav.searchLanguages": "Cari bahasa…",
   "settingsAuthNav.noLanguages": "Bahasa tidak ditemukan.",
   "settingsAuthNav.yourAccount": "Akun Anda",

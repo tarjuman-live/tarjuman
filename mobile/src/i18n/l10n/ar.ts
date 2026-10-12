@@ -229,6 +229,10 @@ export const AR = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "رجوع",
+  "settingsAuthNav.appearance": "المظهر",
+  "settingsAuthNav.themeDark": "داكن",
+  "settingsAuthNav.themeLight": "فاتح",
+  "settingsAuthNav.appearanceHint": "الوضع الداكن أريح للعين في المسجد أو قاعة المحاضرات.",
   "settingsAuthNav.searchLanguages": "ابحث عن لغة…",
   "settingsAuthNav.noLanguages": "لم يتم العثور على لغات.",
   "settingsAuthNav.yourAccount": "حسابك",

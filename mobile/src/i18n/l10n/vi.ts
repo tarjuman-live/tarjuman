@@ -227,6 +227,10 @@ export const VI = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Quay lại",
+  "settingsAuthNav.appearance": "Giao diện",
+  "settingsAuthNav.themeDark": "Tối",
+  "settingsAuthNav.themeLight": "Sáng",
+  "settingsAuthNav.appearanceHint": "Chế độ tối dịu mắt hơn trong thánh đường hoặc giảng đường.",
   "settingsAuthNav.searchLanguages": "Tìm ngôn ngữ…",
   "settingsAuthNav.noLanguages": "Không tìm thấy ngôn ngữ.",
   "settingsAuthNav.yourAccount": "Tài khoản của bạn",

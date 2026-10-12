@@ -229,6 +229,10 @@ export const TR = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Geri",
+  "settingsAuthNav.appearance": "Görünüm",
+  "settingsAuthNav.themeDark": "Koyu",
+  "settingsAuthNav.themeLight": "Açık",
+  "settingsAuthNav.appearanceHint": "Koyu mod, camide veya amfide gözü daha az yorar.",
   "settingsAuthNav.searchLanguages": "Dil ara…",
   "settingsAuthNav.noLanguages": "Dil bulunamadı.",
   "settingsAuthNav.yourAccount": "Hesabınız",

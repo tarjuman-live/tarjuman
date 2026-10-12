@@ -227,6 +227,10 @@ export const CA = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Enrere",
+  "settingsAuthNav.appearance": "Aparença",
+  "settingsAuthNav.themeDark": "Fosc",
+  "settingsAuthNav.themeLight": "Clar",
+  "settingsAuthNav.appearanceHint": "El mode fosc és més suau per als ulls en una mesquita o una aula.",
   "settingsAuthNav.searchLanguages": "Cerca idiomes…",
   "settingsAuthNav.noLanguages": "No s'ha trobat cap idioma.",
   "settingsAuthNav.yourAccount": "El teu compte",

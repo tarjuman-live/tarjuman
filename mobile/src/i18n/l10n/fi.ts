@@ -227,6 +227,10 @@ export const FI = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Takaisin",
+  "settingsAuthNav.appearance": "Ulkoasu",
+  "settingsAuthNav.themeDark": "Tumma",
+  "settingsAuthNav.themeLight": "Vaalea",
+  "settingsAuthNav.appearanceHint": "Tumma tila on silmille lempeämpi moskeijassa tai luentosalissa.",
   "settingsAuthNav.searchLanguages": "Hae kieliä…",
   "settingsAuthNav.noLanguages": "Kieliä ei löytynyt.",
   "settingsAuthNav.yourAccount": "Tilisi",

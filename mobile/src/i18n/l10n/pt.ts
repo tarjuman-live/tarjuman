@@ -229,6 +229,10 @@ export const PT = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Voltar",
+  "settingsAuthNav.appearance": "Aparência",
+  "settingsAuthNav.themeDark": "Escuro",
+  "settingsAuthNav.themeLight": "Claro",
+  "settingsAuthNav.appearanceHint": "O modo escuro é mais confortável para os olhos na mesquita ou no auditório.",
   "settingsAuthNav.searchLanguages": "Buscar idiomas…",
   "settingsAuthNav.noLanguages": "Nenhum idioma encontrado.",
   "settingsAuthNav.yourAccount": "Sua conta",

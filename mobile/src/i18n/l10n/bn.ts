@@ -229,6 +229,10 @@ export const BN = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "ফিরে যান",
+  "settingsAuthNav.appearance": "চেহারা",
+  "settingsAuthNav.themeDark": "ডার্ক",
+  "settingsAuthNav.themeLight": "লাইট",
+  "settingsAuthNav.appearanceHint": "মসজিদ বা লেকচার হলে ডার্ক মোড চোখের জন্য আরামদায়ক।",
   "settingsAuthNav.searchLanguages": "ভাষা খুঁজুন…",
   "settingsAuthNav.noLanguages": "কোনো ভাষা পাওয়া যায়নি।",
   "settingsAuthNav.yourAccount": "আপনার অ্যাকাউন্ট",

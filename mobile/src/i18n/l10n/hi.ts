@@ -227,6 +227,10 @@ export const HI = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "वापस",
+  "settingsAuthNav.appearance": "रूप",
+  "settingsAuthNav.themeDark": "डार्क",
+  "settingsAuthNav.themeLight": "लाइट",
+  "settingsAuthNav.appearanceHint": "मस्जिद या लेक्चर हॉल में डार्क मोड आँखों के लिए आरामदायक है।",
   "settingsAuthNav.searchLanguages": "भाषाएँ खोजें…",
   "settingsAuthNav.noLanguages": "कोई भाषा नहीं मिली।",
   "settingsAuthNav.yourAccount": "आपका खाता",

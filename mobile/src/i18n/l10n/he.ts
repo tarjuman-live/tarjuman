@@ -220,6 +220,10 @@ export const HE = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "חזרה",
+  "settingsAuthNav.appearance": "מראה",
+  "settingsAuthNav.themeDark": "כהה",
+  "settingsAuthNav.themeLight": "בהיר",
+  "settingsAuthNav.appearanceHint": "מצב כהה נעים יותר לעיניים במסגד או באולם הרצאות.",
   "settingsAuthNav.searchLanguages": "חיפוש שפות…",
   "settingsAuthNav.noLanguages": "לא נמצאו שפות.",
   "settingsAuthNav.yourAccount": "החשבון שלך",

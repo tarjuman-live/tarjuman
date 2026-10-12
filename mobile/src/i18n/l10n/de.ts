@@ -229,6 +229,10 @@ export const DE = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Zurück",
+  "settingsAuthNav.appearance": "Darstellung",
+  "settingsAuthNav.themeDark": "Dunkel",
+  "settingsAuthNav.themeLight": "Hell",
+  "settingsAuthNav.appearanceHint": "Dunkel schont die Augen in der Moschee oder im Hörsaal.",
   "settingsAuthNav.searchLanguages": "Sprachen suchen…",
   "settingsAuthNav.noLanguages": "Keine Sprachen gefunden.",
   "settingsAuthNav.yourAccount": "Dein Konto",

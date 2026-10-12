@@ -229,6 +229,10 @@ export const RU = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Назад",
+  "settingsAuthNav.appearance": "Оформление",
+  "settingsAuthNav.themeDark": "Тёмная",
+  "settingsAuthNav.themeLight": "Светлая",
+  "settingsAuthNav.appearanceHint": "Тёмная тема бережнее к глазам в мечети или лекционном зале.",
   "settingsAuthNav.searchLanguages": "Поиск языков…",
   "settingsAuthNav.noLanguages": "Языки не найдены.",
   "settingsAuthNav.yourAccount": "Ваш аккаунт",

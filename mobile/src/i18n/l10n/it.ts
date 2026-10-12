@@ -229,6 +229,10 @@ export const IT = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Indietro",
+  "settingsAuthNav.appearance": "Aspetto",
+  "settingsAuthNav.themeDark": "Scuro",
+  "settingsAuthNav.themeLight": "Chiaro",
+  "settingsAuthNav.appearanceHint": "Il tema scuro affatica meno gli occhi in moschea o in aula.",
   "settingsAuthNav.searchLanguages": "Cerca lingue…",
   "settingsAuthNav.noLanguages": "Nessuna lingua trovata.",
   "settingsAuthNav.yourAccount": "Il tuo account",

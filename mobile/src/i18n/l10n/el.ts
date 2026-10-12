@@ -227,6 +227,10 @@ export const EL = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Πίσω",
+  "settingsAuthNav.appearance": "Εμφάνιση",
+  "settingsAuthNav.themeDark": "Σκούρο",
+  "settingsAuthNav.themeLight": "Φωτεινό",
+  "settingsAuthNav.appearanceHint": "Το σκούρο είναι πιο ξεκούραστο για τα μάτια σε τζαμί ή αίθουσα διαλέξεων.",
   "settingsAuthNav.searchLanguages": "Αναζήτηση γλωσσών…",
   "settingsAuthNav.noLanguages": "Δεν βρέθηκαν γλώσσες.",
   "settingsAuthNav.yourAccount": "Ο λογαριασμός σας",

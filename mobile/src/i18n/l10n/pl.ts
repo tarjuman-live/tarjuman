@@ -227,6 +227,10 @@ export const PL = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Wstecz",
+  "settingsAuthNav.appearance": "Wygląd",
+  "settingsAuthNav.themeDark": "Ciemny",
+  "settingsAuthNav.themeLight": "Jasny",
+  "settingsAuthNav.appearanceHint": "Tryb ciemny jest łagodniejszy dla oczu w meczecie lub na sali wykładowej.",
   "settingsAuthNav.searchLanguages": "Szukaj języków…",
   "settingsAuthNav.noLanguages": "Nie znaleziono języków.",
   "settingsAuthNav.yourAccount": "Twoje konto",

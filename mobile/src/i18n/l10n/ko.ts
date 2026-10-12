@@ -227,6 +227,10 @@ export const KO = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "뒤로",
+  "settingsAuthNav.appearance": "화면 모드",
+  "settingsAuthNav.themeDark": "다크",
+  "settingsAuthNav.themeLight": "라이트",
+  "settingsAuthNav.appearanceHint": "모스크나 강의실에서는 다크 모드가 눈이 편합니다.",
   "settingsAuthNav.searchLanguages": "언어 검색…",
   "settingsAuthNav.noLanguages": "언어를 찾을 수 없습니다.",
   "settingsAuthNav.yourAccount": "내 계정",

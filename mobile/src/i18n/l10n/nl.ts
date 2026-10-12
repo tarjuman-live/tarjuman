@@ -229,6 +229,10 @@ export const NL = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Terug",
+  "settingsAuthNav.appearance": "Weergave",
+  "settingsAuthNav.themeDark": "Donker",
+  "settingsAuthNav.themeLight": "Licht",
+  "settingsAuthNav.appearanceHint": "Donker is rustiger voor de ogen in een moskee of collegezaal.",
   "settingsAuthNav.searchLanguages": "Talen zoeken…",
   "settingsAuthNav.noLanguages": "Geen talen gevonden.",
   "settingsAuthNav.yourAccount": "Je account",

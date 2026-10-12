@@ -89,7 +89,7 @@ import { scheduleOnRN } from "react-native-worklets";
 import { Tabs } from "expo-router";
 import { BlurView } from "expo-blur";
 import { SymbolView, type SFSymbol } from "expo-symbols";
-import { C, themed } from "~/lib/theme";
+import { C, themed, themedShadow, getThemeMode } from "~/lib/theme";
 import { EASE, SPRING, useReduceMotion } from "~/lib/motion";
 import { rtlRow, useLocale, type MessageKey } from "~/i18n";
 import { useRecordNavHidden } from "~/components/record-button";
@@ -273,7 +273,7 @@ function BottomNav(props: TabBarProps) {
         importantForAccessibility={hidden ? "no-hide-descendants" : "auto"}
         style={[styles.capsule, FADE_GLASS_FRAME, capsuleStyle]}
       >
-        <FadeGlass progress={fade} radius={999} shadow={CAPSULE_SHADOW} />
+        <FadeGlass progress={fade} radius={999} shadow={themedShadow(CAPSULE_SHADOW)} />
         <Animated.View style={[styles.tabRow, rtlRow(dir), contentFade]}>
           {state.routes.map((route, i) => {
             const meta = TABS[route.name];
@@ -503,7 +503,9 @@ const styles = themed(() => StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: 999,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    // Light mode: a white lens reads as nothing on white glass — tint it with
+    // the accent instead so the selected tab stays obvious.
+    backgroundColor: getThemeMode() === "light" ? C.accentSoft : "rgba(255, 255, 255, 0.08)",
     boxShadow:
       "inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 1px rgba(0, 0, 0, 0.25), 0 2px 10px rgba(0, 0, 0, 0.25)",
   },

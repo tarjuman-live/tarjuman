@@ -227,6 +227,10 @@ export const UK = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Назад",
+  "settingsAuthNav.appearance": "Вигляд",
+  "settingsAuthNav.themeDark": "Темна",
+  "settingsAuthNav.themeLight": "Світла",
+  "settingsAuthNav.appearanceHint": "Темна тема дбайливіша до очей у мечеті чи лекційній залі.",
   "settingsAuthNav.searchLanguages": "Пошук мов…",
   "settingsAuthNav.noLanguages": "Мов не знайдено.",
   "settingsAuthNav.yourAccount": "Ваш обліковий запис",

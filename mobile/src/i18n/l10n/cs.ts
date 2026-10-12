@@ -227,6 +227,10 @@ export const CS = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Zpět",
+  "settingsAuthNav.appearance": "Vzhled",
+  "settingsAuthNav.themeDark": "Tmavý",
+  "settingsAuthNav.themeLight": "Světlý",
+  "settingsAuthNav.appearanceHint": "Tmavý režim je šetrnější k očím v mešitě nebo v posluchárně.",
   "settingsAuthNav.searchLanguages": "Hledat jazyky…",
   "settingsAuthNav.noLanguages": "Žádné jazyky nenalezeny.",
   "settingsAuthNav.yourAccount": "Váš účet",

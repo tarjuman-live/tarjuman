@@ -229,6 +229,10 @@ export const MS = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Kembali",
+  "settingsAuthNav.appearance": "Penampilan",
+  "settingsAuthNav.themeDark": "Gelap",
+  "settingsAuthNav.themeLight": "Cerah",
+  "settingsAuthNav.appearanceHint": "Mod gelap lebih selesa untuk mata di masjid atau dewan kuliah.",
   "settingsAuthNav.searchLanguages": "Cari bahasa…",
   "settingsAuthNav.noLanguages": "Tiada bahasa ditemui.",
   "settingsAuthNav.yourAccount": "Akaun anda",

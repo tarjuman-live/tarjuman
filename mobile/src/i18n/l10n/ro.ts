@@ -227,6 +227,10 @@ export const RO = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Înapoi",
+  "settingsAuthNav.appearance": "Aspect",
+  "settingsAuthNav.themeDark": "Întunecat",
+  "settingsAuthNav.themeLight": "Luminos",
+  "settingsAuthNav.appearanceHint": "Modul întunecat e mai blând cu ochii în moschee sau în sala de curs.",
   "settingsAuthNav.searchLanguages": "Caută limbi…",
   "settingsAuthNav.noLanguages": "Nu s-au găsit limbi.",
   "settingsAuthNav.yourAccount": "Contul tău",

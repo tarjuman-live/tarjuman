@@ -217,6 +217,10 @@ export const ZH = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "返回",
+  "settingsAuthNav.appearance": "外观",
+  "settingsAuthNav.themeDark": "深色",
+  "settingsAuthNav.themeLight": "浅色",
+  "settingsAuthNav.appearanceHint": "在清真寺或报告厅里，深色模式更护眼。",
   "settingsAuthNav.searchLanguages": "搜索语言…",
   "settingsAuthNav.noLanguages": "未找到语言。",
   "settingsAuthNav.yourAccount": "你的账户",

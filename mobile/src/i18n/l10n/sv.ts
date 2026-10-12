@@ -227,6 +227,10 @@ export const SV = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Tillbaka",
+  "settingsAuthNav.appearance": "Utseende",
+  "settingsAuthNav.themeDark": "Mörkt",
+  "settingsAuthNav.themeLight": "Ljust",
+  "settingsAuthNav.appearanceHint": "Mörkt läge är skonsammare för ögonen i en moské eller föreläsningssal.",
   "settingsAuthNav.searchLanguages": "Sök språk…",
   "settingsAuthNav.noLanguages": "Inga språk hittades.",
   "settingsAuthNav.yourAccount": "Ditt konto",

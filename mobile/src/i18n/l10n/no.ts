@@ -227,6 +227,10 @@ export const NO = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Tilbake",
+  "settingsAuthNav.appearance": "Utseende",
+  "settingsAuthNav.themeDark": "Mørk",
+  "settingsAuthNav.themeLight": "Lys",
+  "settingsAuthNav.appearanceHint": "Mørk modus er skånsommere for øynene i en moské eller et auditorium.",
   "settingsAuthNav.searchLanguages": "Søk etter språk…",
   "settingsAuthNav.noLanguages": "Fant ingen språk.",
   "settingsAuthNav.yourAccount": "Kontoen din",

@@ -13,6 +13,10 @@ export const SETTINGS_AUTH_NAV_STRINGS = {
   // ── LocaleSwitcher (shared/locale-switcher.tsx) ──
   // Settings header back tile (web: aria-label="Back")
   "settingsAuthNav.back": { en: "Back" },
+  "settingsAuthNav.appearance": { en: "Appearance" },
+  "settingsAuthNav.themeDark": { en: "Dark" },
+  "settingsAuthNav.themeLight": { en: "Light" },
+  "settingsAuthNav.appearanceHint": { en: "Dark is easier on the eyes in a masjid or lecture hall." },
   "settingsAuthNav.searchLanguages": { en: "Search languages…" },
   "settingsAuthNav.noLanguages": { en: "No languages found." },
 

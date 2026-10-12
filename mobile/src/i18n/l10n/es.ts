@@ -229,6 +229,10 @@ export const ES = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Atrás",
+  "settingsAuthNav.appearance": "Apariencia",
+  "settingsAuthNav.themeDark": "Oscuro",
+  "settingsAuthNav.themeLight": "Claro",
+  "settingsAuthNav.appearanceHint": "El modo oscuro es más cómodo para la vista en una mezquita o un aula.",
   "settingsAuthNav.searchLanguages": "Buscar idiomas…",
   "settingsAuthNav.noLanguages": "No se encontraron idiomas.",
   "settingsAuthNav.yourAccount": "Tu cuenta",

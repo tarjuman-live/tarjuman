@@ -229,6 +229,10 @@ export const UR = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "واپس",
+  "settingsAuthNav.appearance": "ظاہری شکل",
+  "settingsAuthNav.themeDark": "ڈارک",
+  "settingsAuthNav.themeLight": "لائٹ",
+  "settingsAuthNav.appearanceHint": "مسجد یا لیکچر ہال میں ڈارک موڈ آنکھوں کے لیے آرام دہ ہے۔",
   "settingsAuthNav.searchLanguages": "زبانیں تلاش کریں…",
   "settingsAuthNav.noLanguages": "کوئی زبان نہیں ملی۔",
   "settingsAuthNav.yourAccount": "آپ کا اکاؤنٹ",

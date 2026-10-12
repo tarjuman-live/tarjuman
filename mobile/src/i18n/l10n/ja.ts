@@ -228,6 +228,10 @@ export const JA = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "戻る",
+  "settingsAuthNav.appearance": "外観",
+  "settingsAuthNav.themeDark": "ダーク",
+  "settingsAuthNav.themeLight": "ライト",
+  "settingsAuthNav.appearanceHint": "モスクや講義室ではダークの方が目に優しいです。",
   "settingsAuthNav.searchLanguages": "言語を検索…",
   "settingsAuthNav.noLanguages": "言語が見つかりません。",
   "settingsAuthNav.yourAccount": "アカウント",

@@ -74,6 +74,7 @@ import { rtlRow, rtlText, useLocale } from "~/i18n";
 import { ScreenEnter, Skeleton, PressableScale } from "~/components/motion";
 import { AccountCard, FADE_GLASS_FRAME, FadeGlass, PressRow } from "~/components/account-card";
 import { LocaleSwitcher } from "~/components/locale-switcher";
+import { AppearancePicker } from "~/components/appearance-picker";
 import { LanguagePicker } from "~/components/language-picker";
 import { Toggle } from "~/components/toggle";
 import { PromptDialog } from "~/components/prompt-dialog";
@@ -232,6 +233,13 @@ export default function SettingsScreen() {
             <Text style={[styles.rowTitle, { flexShrink: 1 }, text]}>{t("settings.appLanguage")}</Text>
             <LocaleSwitcher variant="row" />
           </View>
+        </View>
+
+        {/* Appearance — dark (default) / light. Native-only: the web is dark-only. */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, text]}>{t("settingsAuthNav.appearance")}</Text>
+          <AppearancePicker />
+          <Text style={[styles.hint, text]}>{t("settingsAuthNav.appearanceHint")}</Text>
         </View>
 
         {/* Subscription — only where the web shows it (billing live, or dev ≙ SHOW_PRICING). */}

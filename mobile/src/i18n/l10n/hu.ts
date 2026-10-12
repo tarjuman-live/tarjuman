@@ -227,6 +227,10 @@ export const HU = {
 
   // settings / auth / nav
   "settingsAuthNav.back": "Vissza",
+  "settingsAuthNav.appearance": "Megjelenés",
+  "settingsAuthNav.themeDark": "Sötét",
+  "settingsAuthNav.themeLight": "Világos",
+  "settingsAuthNav.appearanceHint": "A sötét mód kíméletesebb a szemnek a mecsetben vagy az előadóteremben.",
   "settingsAuthNav.searchLanguages": "Nyelvek keresése…",
   "settingsAuthNav.noLanguages": "Nincs találat.",
   "settingsAuthNav.yourAccount": "Fiókod",
