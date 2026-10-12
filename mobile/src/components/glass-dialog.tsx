@@ -20,6 +20,7 @@ import type { ReactNode } from "react";
 import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { EASE } from "~/lib/motion";
+import { C } from "~/lib/theme";
 import { useT } from "~/i18n";
 import { GlassBackground, GLASS } from "./glass";
 import { usePresenceProgress } from "./motion/presence";
@@ -56,7 +57,7 @@ export function GlassDialog({
   maxWidth = 420,
   duration = 150,
   pop,
-  overlayColor = "rgba(6, 11, 24, 0.4)",
+  overlayColor = C.scrim,
   cardStyle,
   accessibilityLabel,
   children,

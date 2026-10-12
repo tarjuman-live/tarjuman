@@ -36,7 +36,7 @@ import { SymbolView } from "expo-symbols";
 import { useAuthToken } from "@convex-dev/auth/react";
 import { apiUrl } from "~/lib/config";
 import { isRtl } from "~/lib/lang";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, twEnter, twExit, useReduceMotion } from "~/lib/motion";
 import { useT } from "~/i18n";
 import { PressableScale, useTypewriter } from "~/components/motion";
@@ -552,7 +552,7 @@ export function SummaryMarkdown({ text, lang, baseSize }: { text: string; lang: 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   ctaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 20 },
   generate: {
     flex: 1,
@@ -599,4 +599,4 @@ const styles = StyleSheet.create({
   quote: { borderColor: C.accent, marginVertical: 12 },
   list: { marginBottom: 12, gap: 8 },
   marker: { color: C.w },
-});
+}));

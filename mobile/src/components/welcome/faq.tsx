@@ -15,7 +15,7 @@
  */
 import type { ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useT, type MessageKey } from "~/i18n";
 import { Reveal } from "~/components/motion/reveal";
 import { HeadingReveal } from "~/components/motion/heading-reveal";
@@ -61,10 +61,10 @@ export function Faq({
 /** Reveal delay the web gives the BackToTop pill after the last row (480ms). */
 Faq.backToTopDelay = 60 + FAQ_KEYS.length * 70;
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // max-w-3xl mx-auto px-6 py-16
   section: { width: "100%", maxWidth: 768, alignSelf: "center", paddingHorizontal: 24, paddingVertical: 64 },
   heading: { fontSize: 24, fontWeight: "700", color: C.w },
   // mt-10 flex flex-col gap-3
   list: { marginTop: 40, gap: 12 },
-});
+}));

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { ConvexReactClient, useConvexAuth } from "convex/react";
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
@@ -6,12 +6,27 @@ import * as SecureStore from "expo-secure-store";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { SymbolView } from "expo-symbols";
-import { DarkTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from "expo-router";
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Animated, { ReducedMotionConfig, ReduceMotion } from "react-native-reanimated";
+import Animated, {
+  ReducedMotionConfig,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { CONVEX_URL } from "~/lib/config";
-import { C } from "~/lib/theme";
-import { TW_EXIT } from "~/lib/motion";
+import {
+  C,
+  registerThemeSwitcher,
+  setThemeMode,
+  themed,
+  useThemeMode,
+  useThemeVersion,
+  type ThemeMode,
+} from "~/lib/theme";
+import { EASE, TW_EXIT, useReduceMotion } from "~/lib/motion";
 import { LocaleProvider, useT } from "~/i18n";
 import { usePulse } from "~/components/motion/pulse";
 import { ErrorScreen } from "~/components/error-screen";
@@ -31,17 +46,21 @@ const secureStorage = {
   removeItem: SecureStore.deleteItemAsync,
 };
 
-const theme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    primary: C.accent,
-    background: C.bg,
-    card: C.bg,
-    text: C.w,
-    border: C.border,
-  },
-};
+/** React Navigation's theme, rebuilt from the live palette on every switch. */
+function navTheme(mode: ThemeMode) {
+  const base = mode === "light" ? DefaultTheme : DarkTheme;
+  return {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary: C.accent,
+      background: C.bg,
+      card: C.bg,
+      text: C.w,
+      border: C.border,
+    },
+  };
+}
 
 /**
  * Root error boundary — mirrors src/app/(app)/error.tsx. Renders above the
@@ -56,6 +75,9 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 }
 
 export default function RootLayout() {
+  // Re-render (navigation theme, status bar) on every theme switch.
+  useThemeVersion();
+  const mode = useThemeMode();
   return (
     <GestureHandlerRootView style={styles.fill}>
       {/* Global reduced-motion policy (web MotionConfig reducedMotion="user"):
@@ -63,9 +85,10 @@ export default function RootLayout() {
       <ReducedMotionConfig mode={ReduceMotion.System} />
       <ConvexAuthProvider client={convex} storage={secureStorage}>
         <LocaleProvider>
-          <ThemeProvider value={theme}>
-            <StatusBar style="light" />
+          <ThemeProvider value={navTheme(mode)}>
+            <StatusBar style={mode === "light" ? "dark" : "light"} />
             <AuthGate />
+            <ThemeVeil />
           </ThemeProvider>
         </LocaleProvider>
       </ConvexAuthProvider>
@@ -83,7 +106,58 @@ export default function RootLayout() {
  */
 const DEV_BYPASS_SECRET = __DEV__ ? process.env.EXPO_PUBLIC_DEV_AUTH_BYPASS_SECRET : undefined;
 
+/**
+ * Wraps every root-stack screen: a theme switch changes the key, so each
+ * screen's content remounts and re-reads the palette — while the navigator
+ * (and so the current screen, e.g. Settings) is untouched.
+ */
+function ThemeRemount({ children }: { children: ReactNode }) {
+  const v = useThemeVersion();
+  return <Fragment key={v}>{children}</Fragment>;
+}
+
+/**
+ * The switch transition: a veil in the OLD background fades in (160ms CSS
+ * ease), the palette flips and every screen remounts underneath it, then the
+ * veil fades out (300ms) revealing the new theme — a dip, never a cut. Reduce
+ * Motion: instant.
+ */
+function ThemeVeil() {
+  const reduce = useReduceMotion();
+  const o = useSharedValue(0);
+  const [veil, setVeil] = useState<string | null>(null);
+
+  useEffect(() => {
+    const finish = () => setVeil(null);
+    const apply = (next: ThemeMode) => {
+      setThemeMode(next);
+      // Give the remounted screens a couple of frames to paint first.
+      setTimeout(() => {
+        o.value = withTiming(0, { duration: 300, easing: EASE.css, reduceMotion: ReduceMotion.Never }, (done) => {
+          if (done) scheduleOnRN(finish);
+        });
+      }, 60);
+    };
+    return registerThemeSwitcher((next) => {
+      if (reduce) {
+        setThemeMode(next);
+        return;
+      }
+      setVeil(C.bg);
+      o.value = withTiming(1, { duration: 160, easing: EASE.css, reduceMotion: ReduceMotion.Never }, (done) => {
+        if (done) scheduleOnRN(apply, next);
+      });
+    });
+  }, [reduce, o]);
+
+  const style = useAnimatedStyle(() => ({ opacity: o.value }));
+  if (!veil) return null;
+  return <Animated.View pointerEvents="auto" style={[StyleSheet.absoluteFill, { backgroundColor: veil }, style]} />;
+}
+
 function AuthGate() {
+  // Header options (tint) read the palette at render → follow switches.
+  useThemeVersion();
   const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
   const { signIn } = useAuthActions();
   const triedBypass = useRef(false);
@@ -109,7 +183,10 @@ function AuthGate() {
   return (
     <View style={styles.fill}>
       {!isLoading && (
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}>
+        <Stack
+          screenLayout={({ children }) => <ThemeRemount>{children}</ThemeRemount>}
+          screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}
+        >
           <Stack.Protected guard={isAuthenticated}>
             <Stack.Screen name="(tabs)" />
             {/* Settings is reached from the profile popup (AccountMenu), like the
@@ -175,7 +252,7 @@ function AuthLoading() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   fill: { flex: 1, backgroundColor: C.bg },
   gate: { backgroundColor: C.bg, alignItems: "center", justifyContent: "center" },
   tile: {
@@ -187,4 +264,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     boxShadow: `0 0 30px ${C.accent}40`,
   },
-});
+}));

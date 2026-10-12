@@ -40,7 +40,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SymbolView, type SFSymbol } from "expo-symbols";
 import { fetch as expoFetch } from "expo/fetch";
 import { useAuthToken } from "@convex-dev/auth/react";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { apiUrl } from "~/lib/config";
 import { isRtl, langName } from "~/lib/lang";
@@ -231,8 +231,8 @@ export function brighten(hex: string, k = 1.1): string {
   return `rgb(${ch((n >> 16) & 255)},${ch((n >> 8) & 255)},${ch(n & 255)})`;
 }
 
-const GRADIENT: [string, string] = [C.accent, C.accentDk];
-const GRADIENT_BRIGHT: [string, string] = [brighten(C.accent), brighten(C.accentDk)];
+const gradient = (): [string, string] => [C.accent, C.accentDk];
+const gradientBright = (): [string, string] => [brighten(C.accent), brighten(C.accentDk)];
 
 /**
  * CSS `linear-gradient(135deg, a, b)` on any box size: the gradient line runs
@@ -325,9 +325,9 @@ export function ProButton({
         <View pointerEvents="none" style={styles.btnFill}>
           {variant === "gradient" ? (
             <>
-              <CssGradient135 colors={GRADIENT} />
+              <CssGradient135 colors={gradient()} />
               <Animated.View style={[StyleSheet.absoluteFill, bright]}>
-                <CssGradient135 colors={GRADIENT_BRIGHT} />
+                <CssGradient135 colors={gradientBright()} />
               </Animated.View>
             </>
           ) : (
@@ -560,7 +560,7 @@ export function ProMarkdown({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // flex items-center gap-2 mb-3
   controls: { alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" },
   hint: { color: C.t3, fontSize: 13, lineHeight: 19, marginBottom: 12 },
@@ -583,4 +583,4 @@ const styles = StyleSheet.create({
   mdStrong: { fontWeight: "700", color: C.w },
   mdEm: { fontStyle: "italic" },
   mdCode: { fontFamily: "Menlo", fontSize: 13, backgroundColor: "rgba(240,244,248,0.1)" },
-});
+}));

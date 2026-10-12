@@ -29,7 +29,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { SymbolView } from "expo-symbols";
 import { formatDate, formatDuration, langName } from "~/lib/lang";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { TW } from "~/lib/motion";
 import { useTablet } from "~/lib/layout";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
@@ -208,7 +208,7 @@ function HistoryCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   tile: {
     width: 40,
     height: 40,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   itemBottom: { borderBottomLeftRadius: 11, borderBottomRightRadius: 11 },
   itemText: { fontSize: 13, fontWeight: "600" },
   divider: { borderTopWidth: 1, borderTopColor: C.border },
-});
+}));
 
 /** iPad overrides (useTablet), layered on `styles` — matches the Record screen's large Recent rows. */
 const lg = StyleSheet.create({

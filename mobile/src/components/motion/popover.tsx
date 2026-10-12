@@ -37,7 +37,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, useReduceMotion } from "~/lib/motion";
 import { useT } from "~/i18n";
 import { usePresenceProgress } from "./presence";
@@ -176,7 +176,7 @@ export function AnchoredPopover({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   panel: {
     backgroundColor: C.surface,
     borderRadius: 12,
@@ -186,4 +186,4 @@ const styles = StyleSheet.create({
     // inner list backgrounds yourself if they touch the edges.
     boxShadow: "0 16px 40px rgba(0, 0, 0, 0.5)",
   },
-});
+}));

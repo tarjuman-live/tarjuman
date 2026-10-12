@@ -56,7 +56,7 @@ import {
   cssEase,
   REDUCE_MOTION,
 } from "~/lib/motion";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import {
   align,
   fontSizeForLang,
@@ -317,8 +317,8 @@ function PaneLabel({ name, color }: { name: string; color: string }) {
     <View pointerEvents="none" style={styles.labelRow}>
       <View style={styles.chipOuter}>
         <View style={styles.chipInner}>
-          <BlurView tint="dark" intensity={40} style={StyleSheet.absoluteFill} />
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(20, 28, 46, 0.55)" }]} />
+          <BlurView tint={C.blurTint} intensity={40} style={StyleSheet.absoluteFill} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: C.glass }]} />
           <Text style={[styles.chipText, { color }]}>{name}</Text>
         </View>
       </View>
@@ -467,7 +467,7 @@ export function SplitTranscript({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   fill: { flex: 1 },
   // flex-1 min-h-0 flex-col md:flex-row gap-3 p-3
   split: { flex: 1, gap: 12, padding: 12 },
@@ -529,4 +529,4 @@ const styles = StyleSheet.create({
     boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 1px rgba(0, 0, 0, 0.22)",
   },
   chipText: { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
-});
+}));

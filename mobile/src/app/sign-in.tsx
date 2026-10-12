@@ -67,7 +67,7 @@ import * as WebBrowser from "expo-web-browser";
 import { BlurView } from "expo-blur";
 import { SymbolView } from "expo-symbols";
 import Svg, { Path } from "react-native-svg";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, twEnter, type TwAnimateOptions } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale, type TFunction } from "~/i18n";
 import { FADE_GLASS_FRAME, FadeGlass } from "~/components/account-card";
@@ -270,9 +270,9 @@ export default function SignIn() {
         accessibilityRole="button"
         accessibilityLabel={t("foundation.close")}
       >
-        <AnimatedBlurView tint="dark" animatedProps={overlayBlur} style={StyleSheet.absoluteFill} />
+        <AnimatedBlurView tint={C.blurTint} animatedProps={overlayBlur} style={StyleSheet.absoluteFill} />
         <Animated.View
-          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(6, 11, 24, 0.55)" }, overlayDim]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: C.scrimStrong }, overlayDim]}
         />
       </Pressable>
 
@@ -600,7 +600,7 @@ function GoogleGlyph() {
   );
 }
 
-export const authStyles = StyleSheet.create({
+export const authStyles = themed(() => StyleSheet.create({
   labelRow: { alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
   label: { color: C.t4, fontSize: 11, fontWeight: "600", letterSpacing: 0.275, textTransform: "uppercase" },
   fieldError: { color: C.red, fontSize: 11, fontWeight: "600", marginTop: 4 },
@@ -633,9 +633,9 @@ export const authStyles = StyleSheet.create({
     boxShadow: `0 0 24px ${C.accent}30`,
   },
   submitText: { color: "#0A0F1C", fontSize: 14, fontWeight: "700" },
-});
+}));
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   ...authStyles,
   fill: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
@@ -675,4 +675,4 @@ const styles = StyleSheet.create({
   googleText: { color: C.w, fontSize: 14, fontWeight: "600" },
   switchLine: { color: C.t3, fontSize: 13, textAlign: "center" },
   switchLink: { color: C.accent, fontWeight: "600" },
-});
+}));

@@ -16,7 +16,7 @@
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { interpolateColor, useAnimatedStyle } from "react-native-reanimated";
 import { useRouter } from "expo-router";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { useHoverProgress } from "~/components/motion/hover-card";
 import { useT } from "~/i18n";
@@ -58,7 +58,7 @@ export function TryItFree({ style }: { style?: StyleProp<ViewStyle> }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // mt-2 px-6 py-3 rounded-xl font-bold; border 1px accent; glow 0 0 24px accent@35%
   btn: {
     marginTop: 8,
@@ -71,4 +71,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   label: { fontSize: 16, lineHeight: 24, fontWeight: "700" },
-});
+}));

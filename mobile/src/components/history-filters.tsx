@@ -45,7 +45,7 @@ import {
   type LengthRange,
 } from "@shared/history-filters";
 import { langName } from "~/lib/lang";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, TW_ENTER, TW_EXIT, useReduceMotion } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale, type TKey } from "~/i18n";
 import { AnchoredPopover, PressableScale } from "~/components/motion";
@@ -535,7 +535,7 @@ function MenuItem({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   bar: { marginTop: 12, marginHorizontal: -4 },
   barLarge: { marginTop: 14 },
   scroller: { overflow: "visible" },
@@ -629,4 +629,4 @@ const styles = StyleSheet.create({
   pillCount: { color: C.t4, fontSize: 12, fontVariant: ["tabular-nums"] },
   panelDivider: { borderTopWidth: 1, borderTopColor: C.border },
   toggleWrap: { borderBottomLeftRadius: 11, borderBottomRightRadius: 11, overflow: "hidden" },
-});
+}));

@@ -37,7 +37,7 @@ import Animated, {
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import { useIsFocused } from "expo-router";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, twEnter, twExit, useReduceMotion } from "~/lib/motion";
 import { usePulse } from "~/components/motion/pulse";
 import { useT } from "~/i18n";
@@ -390,7 +390,7 @@ function EqBar({ index, reduce }: { index: number; reduce: boolean }) {
   return <Animated.View style={[styles.eqBar, style]} />;
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { position: "relative", alignItems: "center" },
   glow: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, opacity: 0.6 },
   phone: { position: "relative", width: 300 },
@@ -488,4 +488,4 @@ const styles = StyleSheet.create({
   pauseBar: { width: 4, height: 14, borderRadius: 2, backgroundColor: C.amber },
   stopSquare: { width: 14, height: 14, borderRadius: 3, backgroundColor: C.red },
   caption: { marginTop: 16, textAlign: "center", fontSize: 12, color: C.t4 },
-});
+}));

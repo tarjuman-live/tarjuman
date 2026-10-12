@@ -12,7 +12,7 @@ import { useQuery } from "convex/react";
 import { SymbolView } from "expo-symbols";
 import { api } from "@convex/api";
 import { formatDate, formatDuration, langName } from "~/lib/lang";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useLocale } from "~/i18n";
 
 export function RecentSessions({ large, limit = 3 }: { large?: boolean; limit?: number }) {
@@ -54,7 +54,7 @@ export function RecentSessions({ large, limit = 3 }: { large?: boolean; limit?: 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   label: {
     color: C.t3,
     fontSize: 11,
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   title: { color: C.w, fontSize: 14, fontWeight: "600", marginBottom: 2 },
   meta: { color: C.t4, fontSize: 11 },
   duration: { color: C.t3, fontSize: 12, fontVariant: ["tabular-nums"] },
-});
+}));
 
 /** iPad overrides (`large`), layered on `styles`. */
 const lg = StyleSheet.create({

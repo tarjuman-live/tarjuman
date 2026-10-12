@@ -13,7 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SymbolView } from "expo-symbols";
 import * as WebBrowser from "expo-web-browser";
 import { API_URL } from "~/lib/config";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useT } from "~/i18n";
 import { PressableScale } from "./motion/pressable-scale";
 
@@ -44,7 +44,7 @@ export function UpgradeCard({ title, message }: { title: string; message: string
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   card: {
     borderRadius: 16,
     paddingHorizontal: 16,
@@ -67,4 +67,4 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   pillText: { color: "#0A0F1C", fontSize: 13, fontWeight: "700" },
-});
+}));

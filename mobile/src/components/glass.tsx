@@ -14,18 +14,20 @@
  */
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { BlurView } from "expo-blur";
+import { C, themed, themedShadow } from "~/lib/theme";
 
-export const GLASS = {
-  tint: "rgba(20, 28, 46, 0.6)",
-  border: "rgba(255, 255, 255, 0.1)",
-  shadow: "0 24px 60px rgba(0, 0, 0, 0.5)",
+/** Follows the theme (light: white glass, slate hairline, softened shadow). */
+export const GLASS = themed(() => ({
+  tint: C.glass,
+  border: C.borderLight,
+  shadow: themedShadow("0 24px 60px rgba(0, 0, 0, 0.5)"),
   /** Outer container defaults (border + shadow). */
   card: {
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: C.borderLight,
     boxShadow: "0 24px 60px rgba(0, 0, 0, 0.5)",
   } satisfies ViewStyle,
-} as const;
+}));
 
 export interface GlassBackgroundProps {
   /** Uniform radius, or per-corner via style. */
@@ -43,7 +45,7 @@ export function GlassBackground({ radius = 24, topOnly = false, intensity = 60, 
     : { borderRadius: radius };
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, corners, { overflow: "hidden" }, style]}>
-      <BlurView tint="dark" intensity={intensity} style={StyleSheet.absoluteFill} />
+      <BlurView tint={C.blurTint} intensity={intensity} style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: GLASS.tint }]} />
       {/* inset 0 1px 0 rgba(255,255,255,.12) / inset 0 -1px 0 rgba(0,0,0,.25) */}
       <View style={[StyleSheet.absoluteFill, corners, { boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.25)" }]} />

@@ -131,7 +131,7 @@ export function PromptDialog({
             borderRadius: 8,
             fontSize: 14,
             color: C.w,
-            backgroundColor: "rgba(10, 16, 30, 0.7)",
+            backgroundColor: C.inset,
             borderWidth: 1,
             marginBottom: 20,
           },

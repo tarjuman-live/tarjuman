@@ -20,7 +20,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
 
@@ -89,7 +89,7 @@ export function Toggle({ label, description, checked, onChange, disabled }: Togg
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   row: {
     width: "100%",
     paddingHorizontal: 16,
@@ -105,4 +105,4 @@ const styles = StyleSheet.create({
   // Offsets are from the padding box (inside the 1px border), as in CSS:
   // left 3, vertically centred in the 22px inner height.
   knob: { position: "absolute", left: 3, top: 2, width: 18, height: 18, borderRadius: 9 },
-});
+}));

@@ -13,7 +13,7 @@
  */
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useT } from "~/i18n";
 import { GlassDialog } from "./glass-dialog";
 import { PressableScale } from "./motion/pressable-scale";
@@ -104,7 +104,7 @@ export function ConfirmDialog({
   );
 }
 
-export const dialogStyles = StyleSheet.create({
+export const dialogStyles = themed(() => StyleSheet.create({
   title: { color: C.w, fontSize: 16, fontWeight: "700", marginBottom: 8 },
   message: { color: C.t2, fontSize: 13, lineHeight: 13 * 1.625, marginBottom: 20 },
   errorBox: {
@@ -128,5 +128,5 @@ export const dialogStyles = StyleSheet.create({
   cancelText: { color: C.t2, fontSize: 13, fontWeight: "600" },
   confirm: { height: 40, paddingHorizontal: 16, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   confirmText: { fontSize: 13, fontWeight: "700" },
-});
+}));
 const styles = dialogStyles;

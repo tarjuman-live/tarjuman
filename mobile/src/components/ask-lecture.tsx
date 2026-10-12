@@ -42,7 +42,7 @@ import Animated, {
   type LayoutAnimation,
 } from "react-native-reanimated";
 import { useAuthToken } from "@convex-dev/auth/react";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, useReduceMotion } from "~/lib/motion";
 import { isRtl } from "~/lib/lang";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
@@ -297,7 +297,7 @@ export function AskLecture({ transcript, targetLang }: { transcript: string; tar
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   hint: { color: C.t3, fontSize: 13, lineHeight: 19, marginBottom: 12 },
   glideOuter: { overflow: "hidden" },
   glideInner: { position: "absolute", top: 0, left: 0, right: 0 },
@@ -328,4 +328,4 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.borderLight,
   },
-});
+}));

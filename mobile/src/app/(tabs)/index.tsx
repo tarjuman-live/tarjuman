@@ -85,7 +85,7 @@ import { useLiveTranslator } from "~/hooks/use-live-translator";
 import { useNativeRecorder } from "~/hooks/use-native-recorder";
 import { makeId } from "~/lib/ids";
 import { formatDuration, langName } from "~/lib/lang";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, twEnter, twExit, TW_ENTER, TW_EXIT, useReduceMotion } from "~/lib/motion";
 import { useLocale } from "~/i18n";
 
@@ -833,7 +833,7 @@ function SpeakerChip({ on, onPress }: { on: boolean; onPress: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   stage: { flex: 1 },
   layer: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
@@ -962,4 +962,4 @@ const styles = StyleSheet.create({
   langBarTablet: { minHeight: 46, paddingVertical: 11 },
   langTextTablet: { fontSize: 15 },
   controlsTablet: { gap: 28, paddingTop: 20, paddingBottom: 20 },
-});
+}));

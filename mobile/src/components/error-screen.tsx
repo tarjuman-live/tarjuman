@@ -14,7 +14,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SymbolView } from "expo-symbols";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useT } from "~/i18n";
 import { PressableScale } from "./motion/pressable-scale";
 import Animated from "react-native-reanimated";
@@ -55,7 +55,7 @@ export function ErrorScreen({ error, onRetry }: ErrorScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   wrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, paddingBottom: 60, gap: 20 },
   tile: {
@@ -81,4 +81,4 @@ const styles = StyleSheet.create({
     boxShadow: `0 0 24px ${C.accent}35`,
   },
   retryText: { color: "#0A0F1C", fontSize: 14, fontWeight: "700" },
-});
+}));

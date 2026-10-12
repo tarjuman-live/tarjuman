@@ -31,7 +31,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { SymbolView } from "expo-symbols";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, twEnter, useReduceMotion } from "~/lib/motion";
 import { useT } from "~/i18n";
 
@@ -158,7 +158,7 @@ function ShimmerBar({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   card: {
     paddingHorizontal: 16,
     paddingVertical: 16,
@@ -182,4 +182,4 @@ const styles = StyleSheet.create({
   bar: { borderRadius: 6, overflow: "hidden" },
   barPreLayout: { backgroundColor: ACCENT_6 },
   tiles: { flexDirection: "row", height: "100%" },
-});
+}));

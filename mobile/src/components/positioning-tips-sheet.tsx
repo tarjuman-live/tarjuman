@@ -12,7 +12,7 @@
  */
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useLocale } from "~/i18n";
 import { GlassDialog } from "./glass-dialog";
 import { PressableScale } from "./motion/pressable-scale";
@@ -38,7 +38,7 @@ export function PositioningTipsSheet({ open, onClose }: { open: boolean; onClose
       dismissOnBackdrop
       maxWidth={440}
       pop={{ enterMs: 260, exitMs: 180, fromScale: 0.92 }}
-      overlayColor="rgba(6, 11, 24, 0.55)"
+      overlayColor={C.scrimStrong}
       cardStyle={styles.card}
       accessibilityLabel={t("record.tipsTitle")}
     >
@@ -83,7 +83,7 @@ export function PositioningTipsSheet({ open, onClose }: { open: boolean; onClose
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   card: { padding: 0 },
   content: { padding: 24 },
   micTile: {
@@ -137,4 +137,4 @@ const styles = StyleSheet.create({
     boxShadow: "0 0 24px rgba(46,204,113,0.21)",
   },
   gotItText: { color: "#0A0F1C", fontSize: 14, fontWeight: "700" },
-});
+}));

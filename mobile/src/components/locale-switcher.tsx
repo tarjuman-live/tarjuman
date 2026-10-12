@@ -70,7 +70,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SymbolView } from "expo-symbols";
 import * as Haptics from "expo-haptics";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { rtlRow, rtlText, UI_LOCALES, useLocale, type LocaleCode } from "~/i18n";
 import { usePresenceProgress } from "./motion/presence";
@@ -90,7 +90,7 @@ export interface LocaleSwitcherProps {
 const SORTED_LOCALES = [...UI_LOCALES].sort((a, b) => a.label.localeCompare(b.label));
 
 /** Web trigger glow: `0 0 0 1px accent, 0 0 16px rgba(46,204,113,0.4)`, 200ms ease. */
-const TRIGGER_SHADOW = `0 0 0 1px ${C.accent}, 0 0 16px rgba(46, 204, 113, 0.4)`;
+const triggerShadow = () => `0 0 0 1px ${C.accent}, 0 0 16px rgba(46, 204, 113, 0.4)`;
 const TRIGGER_T = { duration: 200, easing: EASE.css, reduceMotion: ReduceMotion.Never };
 const TRIGGER_RADIUS = 12;
 const TRIGGER_BORDER = 1;
@@ -489,7 +489,7 @@ function LocaleOption({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   trigger: {
     borderRadius: TRIGGER_RADIUS,
     borderWidth: TRIGGER_BORDER,
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     right: -TRIGGER_BORDER,
     bottom: -TRIGGER_BORDER,
     borderRadius: TRIGGER_RADIUS,
-    boxShadow: TRIGGER_SHADOW,
+    boxShadow: triggerShadow(),
   },
   triggerCompact: { width: 36, height: 36, justifyContent: "center" },
   triggerRow: { height: 36, paddingHorizontal: 12, gap: 6 },
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     fontSize: 13,
     color: C.w,
-    backgroundColor: "rgba(10, 16, 30, 0.7)",
+    backgroundColor: C.inset,
     borderWidth: 1,
     borderColor: C.borderLight,
   },
@@ -555,4 +555,4 @@ const styles = StyleSheet.create({
   optionText: { alignItems: "center", gap: 8, flexShrink: 1 },
   optionNative: { fontSize: 14, fontWeight: "600" },
   optionLabel: { fontSize: 12, fontWeight: "600", color: C.t4 },
-});
+}));

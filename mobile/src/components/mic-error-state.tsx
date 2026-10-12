@@ -8,7 +8,7 @@
  */
 import { StyleSheet, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useT } from "~/i18n";
 import { PressableScale } from "./motion/pressable-scale";
 
@@ -46,7 +46,7 @@ export function MicErrorState({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   wrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 20, paddingHorizontal: 32 },
   tile: {
     width: 64,
@@ -69,4 +69,4 @@ const styles = StyleSheet.create({
     boxShadow: "0 0 24px rgba(46,204,113,0.21)",
   },
   retryText: { color: "#0A0F1C", fontSize: 14, fontWeight: "700" },
-});
+}));

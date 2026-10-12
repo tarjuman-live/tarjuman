@@ -46,7 +46,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/api";
 import type { Id } from "@convex/dataModel";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { API_URL } from "~/lib/config";
 import { EASE, SPIN, useReduceMotion } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
@@ -105,7 +105,7 @@ export function FadeGlass({
         style={[fgStyles.frame, { borderRadius: radius, borderColor, boxShadow: shadow }, fade]}
       />
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: "hidden" }]}>
-        <AnimatedBlurView tint="dark" animatedProps={blur} style={StyleSheet.absoluteFill} />
+        <AnimatedBlurView tint={C.blurTint} animatedProps={blur} style={StyleSheet.absoluteFill} />
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: GLASS.tint }, fade]} />
         <Animated.View
           style={[
@@ -133,6 +133,46 @@ const fgStyles = StyleSheet.create({
  * a pressed overlay (black at `dim`, default .1 → settings rows; .2 → the
  * account-menu items), 150ms Tailwind curve. Put bg/border/radius in `style`.
  */
+/**
+ * A raised menu tile that lights the house outline-glow while pressed (user
+ * direction 2026-10-12): border borderLight → accent, bg surfaceLight →
+ * accent-soft and a 0 0 18px accent@40 glow fade in, 150ms Tailwind curve, and
+ * back out on release — the same lit state as the language tiles.
+ */
+function GlowTile({
+  onPress,
+  style,
+  children,
+}: {
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+  children: ReactNode;
+}) {
+  const p = useSharedValue(0);
+  const tile = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(p.value, [0, 1], [C.surfaceLight, C.accentSoft]) as string,
+    borderColor: interpolateColor(p.value, [0, 1], [C.borderLight, C.accent]) as string,
+  }));
+  const glow = useAnimatedStyle(() => ({ opacity: p.value }));
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => {
+        p.value = withTiming(1, TW_T);
+      }}
+      onPressOut={() => {
+        p.value = withTiming(0, TW_T);
+      }}
+      accessibilityRole="button"
+    >
+      <Animated.View style={[styles.raisedTile, tile]}>
+        <Animated.View pointerEvents="none" style={[styles.tileGlow, glow]} />
+        <View style={style}>{children}</View>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 export function PressRow({
   children,
   onPress,
@@ -182,10 +222,10 @@ export function PressRow({
 // ─── PlanBadge ───────────────────────────────────────────────────────────────
 
 /** components/billing/plan-badge.tsx — renders nothing for free / loading. */
-const TIER: Record<string, { label: string; color: string; soft: string }> = {
+const TIER = themed((): Record<string, { label: string; color: string; soft: string }> => ({
   pro: { label: "Pro", color: C.accent, soft: C.accentSoft },
   scholar: { label: "Scholar", color: C.amber, soft: C.amberSoft },
-};
+}));
 
 export function PlanBadge() {
   const usage = useQuery(api.subscriptions.getMyUsageThisMonth, {});
@@ -554,15 +594,13 @@ function AccountMenuImpl({ dropUp = false }: { dropUp?: boolean } = {}) {
                 {me?.email ?? (loading ? t("history.loading") : t("settingsAuthNav.signedIn"))}
               </Text>
             </View>
-            <View style={styles.raisedTile}>
-              <PressRow
-                dim={0.2}
-                onPress={() => {
-                  setOpen(false);
-                  router.navigate("/settings");
-                }}
-                style={[styles.menuItem, rtlRow(dir), { justifyContent: "space-between" }]}
-              >
+            <GlowTile
+              onPress={() => {
+                setOpen(false);
+                router.navigate("/settings");
+              }}
+              style={[styles.menuItem, rtlRow(dir), { justifyContent: "space-between" }]}
+            >
                 <View style={[styles.menuItemLeft, rtlRow(dir)]}>
                   <SymbolView name="gearshape" tintColor={C.t3} size={14} />
                   <Text style={styles.menuItemText}>{t("settings.title")}</Text>
@@ -573,23 +611,19 @@ function AccountMenuImpl({ dropUp = false }: { dropUp?: boolean } = {}) {
                   size={12}
                   weight="semibold"
                 />
-              </PressRow>
-            </View>
-            <View style={styles.raisedTile}>
-              <PressRow
-                dim={0.2}
-                onPress={() => {
-                  setOpen(false);
-                  void signOut();
-                }}
-                style={[styles.menuItem, rtlRow(dir)]}
-              >
+            </GlowTile>
+            <GlowTile
+              onPress={() => {
+                setOpen(false);
+                void signOut();
+              }}
+              style={[styles.menuItem, rtlRow(dir)]}
+            >
                 <View style={[styles.menuItemLeft, rtlRow(dir)]}>
                   <SymbolView name="xmark" tintColor={C.t3} size={13} />
                   <Text style={styles.menuItemText}>{t("settingsAuthNav.signOut")}</Text>
                 </View>
-              </PressRow>
-            </View>
+            </GlowTile>
           </View>
         </Animated.View>
       </AnchoredPopover>
@@ -597,7 +631,7 @@ function AccountMenuImpl({ dropUp = false }: { dropUp?: boolean } = {}) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   pressRow: { overflow: "hidden" },
   overlayBlack: { backgroundColor: "#000" },
   card: {
@@ -700,6 +734,16 @@ const styles = StyleSheet.create({
     boxShadow:
       "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 14px rgba(0, 0, 0, 0.35)",
   },
+  // Glow layer on the tile's border box (inset −1 → outer radius 13).
+  tileGlow: {
+    position: "absolute",
+    top: -1,
+    left: -1,
+    right: -1,
+    bottom: -1,
+    borderRadius: 13,
+    boxShadow: "0 0 18px rgba(46, 204, 113, 0.4)",
+  },
   menuHead: { paddingHorizontal: 14, paddingVertical: 12 },
   menuNameRow: { alignItems: "center", gap: 8, minWidth: 0 },
   menuName: { color: C.w, fontSize: 13, fontWeight: "600", flexShrink: 1 },
@@ -707,4 +751,4 @@ const styles = StyleSheet.create({
   menuItem: { paddingHorizontal: 14, paddingVertical: 12, alignItems: "center", gap: 8, borderRadius: 11 },
   menuItemLeft: { alignItems: "center", gap: 8 },
   menuItemText: { color: C.t2, fontSize: 13, fontWeight: "600" },
-});
+}));

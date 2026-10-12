@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, useReduceMotion } from "~/lib/motion";
 import { useLocale, useT, rtlText, type MessageKey } from "~/i18n";
 import { Collapsible } from "~/components/motion/collapsible";
@@ -98,7 +98,7 @@ export function FaqItem({ qKey, aKey, defaultOpen = false }: FaqItemProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // rounded-2xl border (colours animated by HoverCard)
   row: {
     borderRadius: 16,
@@ -120,4 +120,4 @@ const styles = StyleSheet.create({
   chevron: { width: 20, height: 20, flexShrink: 0 },
   // px-5 pb-5 text-2 text-sm leading-relaxed
   answer: { paddingHorizontal: 20, paddingBottom: 20, fontSize: 14, lineHeight: 22.75, color: C.t2 },
-});
+}));

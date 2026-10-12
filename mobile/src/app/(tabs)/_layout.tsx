@@ -89,7 +89,7 @@ import { scheduleOnRN } from "react-native-worklets";
 import { Tabs } from "expo-router";
 import { BlurView } from "expo-blur";
 import { SymbolView, type SFSymbol } from "expo-symbols";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, SPRING, useReduceMotion } from "~/lib/motion";
 import { rtlRow, useLocale, type MessageKey } from "~/i18n";
 import { useRecordNavHidden } from "~/components/record-button";
@@ -465,7 +465,7 @@ function RailItem({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // Bottom nav
   navHost: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   capsule: {
@@ -564,4 +564,4 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: C.border,
   },
-});
+}));

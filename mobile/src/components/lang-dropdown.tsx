@@ -57,7 +57,7 @@ import Animated, {
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import { LANGUAGES } from "@shared/constants";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { langName } from "~/lib/lang";
 import { EASE } from "~/lib/motion";
 import { rtlRow, useLocale } from "~/i18n";
@@ -350,7 +350,7 @@ function LangOption({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   disabled: { opacity: 0.5 },
   // Same panel chrome as AnchoredPopover (surface, rounded-xl, borderLight,
   // deep shadow). No overflow:hidden — it would clip the shadow.
@@ -392,4 +392,4 @@ const styles = StyleSheet.create({
   optionLabel: { alignItems: "center", gap: 8, flexShrink: 1 },
   optionNative: { fontSize: 13, fontWeight: "600" },
   optionName: { fontSize: 11, fontWeight: "600", color: C.t4 },
-});
+}));

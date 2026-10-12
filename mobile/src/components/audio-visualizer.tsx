@@ -45,7 +45,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, TW_ENTER, TW_EXIT } from "~/lib/motion";
 import { useT } from "~/i18n";
 import type { NativeRecorder } from "~/hooks/use-native-recorder";
@@ -427,7 +427,7 @@ function Bar({
   return <Animated.View style={[{ width, borderRadius: width / 2, opacity }, style]} />;
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   wrap: { alignItems: "center", gap: 8, width: "100%" },
   bars: { flexDirection: "row", alignItems: "flex-end", justifyContent: "center", width: "100%" },
   hint: {
@@ -443,4 +443,4 @@ const styles = StyleSheet.create({
   },
   hintText: { color: C.amber, fontSize: 11, fontWeight: "600" },
   strong: { color: C.accent, fontSize: 12, fontWeight: "600" },
-});
+}));

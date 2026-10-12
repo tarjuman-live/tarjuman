@@ -30,7 +30,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { CONTACT_EMAIL, SITE_NAME, SITE_URL, SOCIAL_LINKS } from "@shared/site";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { useT } from "~/i18n";
 import { Reveal } from "~/components/motion/reveal";
@@ -166,7 +166,7 @@ export function WelcomeFooter({ style }: { style?: StyleProp<ViewStyle> }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   footer: { width: "100%", position: "relative" },
   // max-w-5xl mx-auto px-6 py-12 flex-col items-center gap-6
   inner: {
@@ -194,4 +194,4 @@ const styles = StyleSheet.create({
   // flex items-center gap-4
   socials: { flexDirection: "row", alignItems: "center", gap: 16 },
   icon: { width: 20, height: 20 },
-});
+}));

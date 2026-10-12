@@ -23,7 +23,7 @@ import type { ReactNode } from "react";
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import Svg, { Circle, Path } from "react-native-svg";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { useLocale, useT, rtlText, type MessageKey } from "~/i18n";
 import { Reveal } from "~/components/motion/reveal";
@@ -154,7 +154,7 @@ export function FeatureCards({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // max-w-5xl mx-auto px-6 py-16
   section: { width: "100%", maxWidth: 1024, alignSelf: "center", paddingHorizontal: 24, paddingVertical: 64 },
   // text-2xl font-bold leading-tight
@@ -185,4 +185,4 @@ const styles = StyleSheet.create({
   title: { marginTop: 16, fontSize: 18, lineHeight: 28, fontWeight: "600", color: C.w },
   // mt-1.5 text-2 text-sm leading-relaxed
   body: { marginTop: 6, fontSize: 14, lineHeight: 22.75, color: C.t2 },
-});
+}));

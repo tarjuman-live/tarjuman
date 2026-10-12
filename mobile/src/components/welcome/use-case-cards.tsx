@@ -13,7 +13,7 @@
  */
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { useLocale, useT, rtlText, type MessageKey } from "~/i18n";
 import { Reveal } from "~/components/motion/reveal";
@@ -64,7 +64,7 @@ export function UseCaseCards({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // max-w-5xl mx-auto px-6 py-16
   section: { width: "100%", maxWidth: 1024, alignSelf: "center", paddingHorizontal: 24, paddingVertical: 64 },
   heading: { fontSize: 24, fontWeight: "700", color: C.w },
@@ -82,4 +82,4 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, lineHeight: 24, fontWeight: "600", color: C.accent },
   // mt-1.5 text-2 text-sm leading-relaxed
   body: { marginTop: 6, fontSize: 14, lineHeight: 22.75, color: C.t2 },
-});
+}));

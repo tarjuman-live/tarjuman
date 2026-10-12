@@ -59,7 +59,7 @@ import * as Haptics from "expo-haptics";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { LANGUAGES } from "@shared/constants";
 import { langName } from "~/lib/lang";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, useReduceMotion } from "~/lib/motion";
 import { useLocale } from "~/i18n";
 import { GlassSheet, GlassSheetScrollView } from "./glass-sheet";
@@ -548,7 +548,7 @@ function LangRow({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // Tiles on a tile (user direction 2026-10-02): the card is the base layer —
   // a slightly recessed tray (soft inner shade along its top) — and the two
   // language tiles + swap button sit RAISED on it: a lifted drop shadow below
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 40,
     borderRadius: 10,
-    backgroundColor: "rgba(10, 16, 30, 0.7)",
+    backgroundColor: C.inset,
     borderWidth: 1,
     borderColor: C.borderLight,
   },
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-});
+}));
 
 /** iPad overrides (`large`), layered on `styles`. */
 const lg = StyleSheet.create({

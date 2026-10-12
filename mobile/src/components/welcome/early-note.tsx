@@ -18,7 +18,7 @@
  * (accessible={false}) carries the padding and drives the press lift.
  */
 import { StyleSheet, Text, View } from "react-native";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useT } from "~/i18n";
 import { HeadingReveal } from "~/components/motion/heading-reveal";
 import { Reveal } from "~/components/motion/reveal";
@@ -54,7 +54,7 @@ export function EarlyNote({ wide = false }: { wide?: boolean }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   section: { width: "100%", maxWidth: 1024, alignSelf: "center", paddingHorizontal: 24, paddingVertical: 64 },
   sectionWide: { paddingVertical: 96 },
   // text-2xl sm:text-3xl font-bold text-center leading-tight
@@ -81,4 +81,4 @@ const styles = StyleSheet.create({
   cta: { marginTop: 28, alignItems: "center" },
   // mt-7 text-xs text-4
   foot: { marginTop: 28, color: C.t4, fontSize: 12, lineHeight: 16, textAlign: "center" },
-});
+}));

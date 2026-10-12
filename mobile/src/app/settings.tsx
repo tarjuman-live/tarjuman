@@ -68,7 +68,7 @@ import { SymbolView } from "expo-symbols";
 import { api } from "@convex/api";
 import { BILLING_ENABLED, PLAN_META } from "../../../convex/billingLimits";
 import { API_URL } from "~/lib/config";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE, REDUCE_MOTION, useReduceMotion } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
 import { ScreenEnter, Skeleton, PressableScale } from "~/components/motion";
@@ -689,7 +689,7 @@ function DeleteDialogLayer({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     paddingHorizontal: 20,
@@ -748,8 +748,8 @@ const styles = StyleSheet.create({
   },
   dangerText: { color: C.red, fontSize: 14, fontWeight: "600" },
   legal: { paddingHorizontal: 20, paddingTop: 28, gap: 16 },
-  dialogOverlay: { backgroundColor: "rgba(6, 11, 24, 0.4)" },
+  dialogOverlay: { backgroundColor: C.scrim },
   dialogCenter: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
   dialogCard: { width: "100%", maxWidth: 420, borderRadius: 24, padding: 24 },
   legalText: { fontSize: 12 },
-});
+}));

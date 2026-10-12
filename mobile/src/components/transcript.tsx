@@ -38,7 +38,7 @@ import { useStickyBottom, STICKY } from "~/hooks/use-sticky-bottom";
 import { rtlRow, useLocale, useT } from "~/i18n";
 import { isRtl } from "~/lib/lang";
 import { EASE, twEnter, TW_ENTER, TW_EXIT } from "~/lib/motion";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 
 /**
  * Row entrances matched to what the web ACTUALLY renders, not to what
@@ -523,7 +523,7 @@ export function renderTextWithLinks(text: string): ReactNode {
   return out;
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   fill: { flex: 1 },
   content: { padding: 16, paddingBottom: 48, gap: 20 },
   pair: {},
@@ -568,4 +568,4 @@ const styles = StyleSheet.create({
   pillCompact: { height: 32, paddingHorizontal: 12, gap: 4 },
   pillText: { color: "#0A0F1C", fontSize: 12, fontWeight: "700" },
   pillTextCompact: { fontSize: 11 },
-});
+}));

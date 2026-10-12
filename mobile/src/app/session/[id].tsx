@@ -65,7 +65,7 @@ import {
   Skeleton,
 } from "~/components/motion";
 import { formatDate, formatDuration, isRtl, langName } from "~/lib/lang";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { useTablet } from "~/lib/layout";
 import { useT } from "~/i18n";
@@ -527,11 +527,11 @@ export default function SessionScreen() {
 // ─── Copy button ────────────────────────────────────────────────────────────
 
 type CopyStatus = "idle" | "copied" | "failed";
-const COPY_COLOR: Record<CopyStatus, string> = {
+const COPY_COLOR = themed((): Record<CopyStatus, string> => ({
   idle: C.t2,
   copied: C.accent,
   failed: C.amber,
-};
+}));
 
 /**
  * detail    : page.tsx — colour/icon/label swap SNAP, press .98 / 150ms.
@@ -680,7 +680,7 @@ const GREEN_EDGE = "rgba(46, 204, 113, 0.4)"; // accent + "66"
 /** brightness(1.1) of #2ECC71 — the Done button's hover, mapped to press. */
 const DONE_BRIGHT = "#33E17C";
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   header: {
     borderBottomWidth: 1,
@@ -829,4 +829,4 @@ const styles = StyleSheet.create({
   iconButtonTablet: { width: 52, height: 52 },
   doneTablet: { height: 56 },
   doneTextTablet: { fontSize: 16 },
-});
+}));

@@ -23,7 +23,7 @@
  */
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { PressableScale, type PressColors, type PressableScaleProps } from "./motion/pressable-scale";
 import { Spinner } from "./motion/spinner";
 
@@ -60,7 +60,7 @@ export interface ButtonProps
   textStyle?: StyleProp<TextStyle>;
 }
 
-const V: Record<ButtonVariant, { box: ViewStyle; text: TextStyle; press?: PressColors; spinner: string; track: string }> = {
+const V = themed((): Record<ButtonVariant, { box: ViewStyle; text: TextStyle; press?: PressColors; spinner: string; track: string }> => ({
   primary: {
     box: { backgroundColor: C.accent },
     text: { color: "#0A0F1C", fontWeight: "700" },
@@ -109,7 +109,7 @@ const V: Record<ButtonVariant, { box: ViewStyle; text: TextStyle; press?: PressC
     spinner: C.accent,
     track: "rgba(255,255,255,0.1)",
   },
-};
+}));
 
 const S: Record<ButtonSize, { box: ViewStyle; text: TextStyle; spinner: number }> = {
   sm: { box: { height: 40, paddingHorizontal: 16, borderRadius: 8 }, text: { fontSize: 13 }, spinner: 14 },

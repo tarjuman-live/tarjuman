@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { SymbolView } from "expo-symbols";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useLocale } from "~/i18n";
 import { PressableScale } from "./motion/pressable-scale";
 import { PositioningTipsSheet } from "./positioning-tips-sheet";
@@ -72,7 +72,7 @@ export function PositioningTips({ showCard = true, large }: { showCard?: boolean
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   card: {
     alignItems: "center",
     gap: 12,
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   title: { color: C.w, fontSize: 14, fontWeight: "600", marginBottom: 2 },
   body: { color: C.t3, fontSize: 12, lineHeight: 17 },
   rtl: { textAlign: "right", writingDirection: "rtl" },
-});
+}));
 
 /** iPad overrides (`large`), layered on `styles`. */
 const lg = StyleSheet.create({

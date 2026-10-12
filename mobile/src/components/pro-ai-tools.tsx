@@ -32,7 +32,7 @@ import { SymbolView } from "expo-symbols";
 import * as WebBrowser from "expo-web-browser";
 import { useQuery } from "convex/react";
 import { api } from "@convex/api";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { API_URL } from "~/lib/config";
 import { rtlRow, rtlText, useLocale, type TKey } from "~/i18n";
@@ -180,7 +180,7 @@ function UpgradeCard({ title, message }: { title: string; message: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // px-4 py-4 rounded-2xl mb-5, surface, 1px accent@30
   card: {
     paddingHorizontal: 16,
@@ -247,4 +247,4 @@ const styles = StyleSheet.create({
   },
   upgradeFill: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: 12, overflow: "hidden" },
   upgradeBtnText: { color: INK, fontSize: 13, fontWeight: "700" },
-});
+}));

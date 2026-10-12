@@ -76,7 +76,7 @@ import { PromptDialog } from "~/components/prompt-dialog";
 import { ConfirmDialog } from "~/components/confirm-dialog";
 import { PressableScale, Skeleton } from "~/components/motion";
 import { langName } from "~/lib/lang";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useTablet } from "~/lib/layout";
 import { EASE, EASE_FN, TW_ENTER, TW_EXIT, twEnter, twExit, useReduceMotion } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
@@ -525,7 +525,7 @@ function ShrinkSpacer({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: { paddingHorizontal: 20, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: C.border },
   sectionLabel: {
@@ -586,4 +586,4 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
     marginTop: 8,
   },
-});
+}));

@@ -39,7 +39,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Line, Path, Rect } from "react-native-svg";
 import { SITE_NAME } from "@shared/site";
 import type { MessageKey } from "@shared/i18n/messages";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 import { useT } from "~/i18n";
 import { LocaleSwitcher } from "~/components/locale-switcher";
@@ -101,7 +101,7 @@ export function WelcomeNav() {
         <Animated.View pointerEvents="none" style={[styles.shadowLayer, { boxShadow: "0 12px 34px rgba(0, 0, 0, 0.4)" }, frostLayer]} />
         {/* Glass: blur + tint + inset top catch-light. */}
         <View pointerEvents="none" style={styles.clip}>
-          <BlurView tint="dark" intensity={40} style={StyleSheet.absoluteFill} />
+          <BlurView tint={C.blurTint} intensity={40} style={StyleSheet.absoluteFill} />
           <Animated.View style={[StyleSheet.absoluteFill, tint]} />
           <Animated.View style={[StyleSheet.absoluteFill, styles.inset5, restLayer]} />
           <Animated.View style={[StyleSheet.absoluteFill, styles.inset6, frostLayer]} />
@@ -211,7 +211,7 @@ function GetStarted({ label, onPress }: { label: string; onPress: () => void }) 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // sticky top-0 px-3 pt-3 — floated over the ScrollView natively.
   header: { position: "absolute", left: 0, right: 0, paddingHorizontal: 12, alignItems: "center", zIndex: 50 },
   // max-w-5xl rounded-2xl h-14 border
@@ -261,4 +261,4 @@ const styles = StyleSheet.create({
   cta: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
   ctaGlow: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: 12 },
   ctaText: { color: INK, fontSize: 14, lineHeight: 20, fontWeight: "700" },
-});
+}));

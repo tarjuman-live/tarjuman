@@ -44,7 +44,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { SymbolView, type SFSymbol } from "expo-symbols";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
 
 // ─── Nav visibility (web: components/layout/nav-visibility) ──────────────────
@@ -141,10 +141,8 @@ export function IdleRecordButton({
 
 export type RecCtlVariant = "pause" | "resume" | "stop";
 
-const CTL: Record<
-  RecCtlVariant,
-  { bg: [string, string]; border: [string, string]; icon: SFSymbol; tint: string }
-> = {
+type CtlSpec = { bg: [string, string]; border: [string, string]; icon: SFSymbol; tint: string };
+const CTL = themed((): Record<RecCtlVariant, CtlSpec> => ({
   pause: {
     bg: ["rgba(245,158,11,0.1)", "rgba(245,158,11,0.22)"],
     border: ["rgba(245,158,11,0.4)", C.amber],
@@ -163,7 +161,7 @@ const CTL: Record<
     icon: "stop.fill",
     tint: C.red,
   },
-};
+}));
 
 const CTL_T = { duration: 150, easing: EASE.css, reduceMotion: ReduceMotion.Never };
 
@@ -187,6 +185,9 @@ export function RecCtl({
   large?: boolean;
 }) {
   const v = CTL[variant];
+  // Plain per-render snapshot for the worklet below (a themed() proxy can't
+  // cross into the UI runtime).
+  const ctl = { pause: CTL.pause, resume: CTL.resume, stop: CTL.stop };
   const p = useSharedValue(0);
   // Pause ⇄ resume is ONE persistent control, like the web's unkeyed <button>
   // that only swaps .rec-ctl-pause → .rec-ctl-resume: its background/border
@@ -206,16 +207,16 @@ export function RecCtl({
     let bdRest: string;
     let bdHot: string;
     if (isStop) {
-      bgRest = CTL.stop.bg[0];
-      bgHot = CTL.stop.bg[1];
-      bdRest = CTL.stop.border[0];
-      bdHot = CTL.stop.border[1];
+      bgRest = ctl.stop.bg[0];
+      bgHot = ctl.stop.bg[1];
+      bdRest = ctl.stop.border[0];
+      bdHot = ctl.stop.border[1];
     } else {
       const m = mix.value;
-      bgRest = interpolateColor(m, [0, 1], [CTL.pause.bg[0], CTL.resume.bg[0]]);
-      bgHot = interpolateColor(m, [0, 1], [CTL.pause.bg[1], CTL.resume.bg[1]]);
-      bdRest = interpolateColor(m, [0, 1], [CTL.pause.border[0], CTL.resume.border[0]]);
-      bdHot = interpolateColor(m, [0, 1], [CTL.pause.border[1], CTL.resume.border[1]]);
+      bgRest = interpolateColor(m, [0, 1], [ctl.pause.bg[0], ctl.resume.bg[0]]);
+      bgHot = interpolateColor(m, [0, 1], [ctl.pause.bg[1], ctl.resume.bg[1]]);
+      bdRest = interpolateColor(m, [0, 1], [ctl.pause.border[0], ctl.resume.border[0]]);
+      bdHot = interpolateColor(m, [0, 1], [ctl.pause.border[1], ctl.resume.border[1]]);
     }
     return {
       backgroundColor: interpolateColor(p.value, [0, 1], [bgRest, bgHot]),

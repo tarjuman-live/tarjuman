@@ -30,7 +30,7 @@ import { useCallback, type ReactNode } from "react";
 import { StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { useT } from "~/i18n";
 import { Reveal, RevealScrollView, useRevealScroll } from "~/components/motion/reveal";
 import { HeroGlow } from "~/components/welcome/hero-glow";
@@ -209,7 +209,7 @@ function Hero({ sm }: { sm: boolean }) {
 const FINE = 12;
 const FINE_ROW = FINE * 1.35;
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
 
   hero: { overflow: "hidden", paddingHorizontal: 24, paddingTop: 96, paddingBottom: 64 },
@@ -255,4 +255,4 @@ const styles = StyleSheet.create({
 
   // w-full flex justify-center
   demo: { width: "100%", alignItems: "center" },
-});
+}));

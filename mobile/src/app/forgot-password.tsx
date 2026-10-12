@@ -24,7 +24,7 @@ import { useConvex } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { SymbolView } from "expo-symbols";
 import { api } from "@convex/api";
-import { C } from "~/lib/theme";
+import { C, themed } from "~/lib/theme";
 import { rtlRow, rtlText, useLocale, type TFunction } from "~/i18n";
 import { PressableScale } from "~/components/motion";
 import { AuthInput, FadeMessage, authStyles } from "./sign-in";
@@ -385,7 +385,7 @@ function Field({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   wrap: { paddingHorizontal: 24, paddingTop: 48, paddingBottom: 32, gap: 24 },
   back: { alignSelf: "flex-start", alignItems: "center", gap: 8 },
@@ -417,4 +417,4 @@ const styles = StyleSheet.create({
   },
   doneTitle: { color: C.w, fontSize: 20, fontWeight: "700" },
   doneSub: { color: C.t3, fontSize: 13, marginTop: 4 },
-});
+}));
