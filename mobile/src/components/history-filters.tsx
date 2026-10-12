@@ -1,4 +1,10 @@
 /**
+ * History filters, two presentations of the same rules:
+ *   - iPad: HistoryFilterBar — chips under the search (below);
+ *   - phone: HistoryFilterMenuButton — one filter ("hamburger") button beside
+ *     the search that opens a panel with every filter (user direction
+ *     2026-10-12), so the phone header stays a single compact row.
+ *
  * HistoryFilterBar — the filter chips under the History search.
  *
  *   [Date ▾] [Language ▾] [Length ▾] [✦ Summarized]      (one row, scrolls sideways)
@@ -21,7 +27,7 @@
  *   - "Clear filters" fades + scales in/out.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated, {
   interpolateColor,
   LinearTransition,
@@ -43,6 +49,7 @@ import { C } from "~/lib/theme";
 import { EASE, TW_ENTER, TW_EXIT, useReduceMotion } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale, type TKey } from "~/i18n";
 import { AnchoredPopover, PressableScale } from "~/components/motion";
+import { Toggle } from "~/components/toggle";
 
 const COLOR_T = { duration: 200, easing: EASE.tw, reduceMotion: ReduceMotion.Never };
 const REFLOW = LinearTransition.duration(220).easing(EASE.smooth);
@@ -190,6 +197,179 @@ export function HistoryFilterBar({
         ))}
       </AnchoredPopover>
     </View>
+  );
+}
+
+/** How many filters are on (the button's badge). */
+const activeCount = (f: HistoryFilters) =>
+  (f.date !== "any" ? 1 : 0) + (f.pair !== null ? 1 : 0) + (f.length !== "any" ? 1 : 0) + (f.summarized ? 1 : 0);
+
+/**
+ * Phone: a 44pt filter button (iOS "line.3.horizontal.decrease" glyph) beside
+ * the search. Off → surface; any filter on → accentSoft + accent border, the
+ * glyph crossfades to accent and a count badge zooms in (all 200ms). It opens
+ * a panel (AnchoredPopover: fade + 4px slide in AND out) that stays open while
+ * you pick, so several filters can be combined in one visit.
+ */
+export function HistoryFilterMenuButton({
+  value,
+  onChange,
+  sessions,
+}: {
+  value: HistoryFilters;
+  onChange: (next: HistoryFilters) => void;
+  sessions: readonly FilterableSession[];
+}) {
+  const { t, dir } = useLocale();
+  const reduce = useReduceMotion();
+  const { width } = useWindowDimensions();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<View>(null);
+  const n = activeCount(value);
+  const pairs = languagePairs(sessions);
+  const rtl = dir === "rtl";
+
+  const p = useSharedValue(n > 0 || open ? 1 : 0);
+  useEffect(() => {
+    p.value = withTiming(n > 0 || open ? 1 : 0, COLOR_T);
+  }, [n, open, p]);
+  const face = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(p.value, [0, 1], [C.surface, C.accentSoft]) as string,
+    borderColor: interpolateColor(p.value, [0, 1], [C.borderLight, C.accent]) as string,
+  }));
+
+  const set = (patch: Partial<HistoryFilters>) => onChange({ ...value, ...patch });
+
+  return (
+    <>
+      <PressableScale
+        ref={ref}
+        scaleTo={0.94}
+        onPress={() => setOpen((o) => !o)}
+        accessibilityRole="button"
+        accessibilityLabel={t("session.filterMenuA11y")}
+        accessibilityState={{ expanded: open }}
+        accessibilityValue={n > 0 ? { now: n } : undefined}
+      >
+        <Animated.View style={[styles.menuBtn, face]}>
+          <TintIcon name="line.3.horizontal.decrease" size={18} p={p} />
+          {n > 0 ? (
+            <Animated.View
+              entering={reduce ? undefined : TW_ENTER.dialog}
+              exiting={reduce ? undefined : TW_EXIT.dialog}
+              style={[styles.badge, rtl ? { left: -6 } : { right: -6 }]}
+            >
+              <Text style={styles.badgeText}>{n}</Text>
+            </Animated.View>
+          ) : null}
+        </Animated.View>
+      </PressableScale>
+
+      <AnchoredPopover
+        open={open}
+        onClose={() => setOpen(false)}
+        anchorRef={ref}
+        placement={rtl ? "bottom-start" : "bottom-end"}
+        gap={8}
+        margin={16}
+        width={Math.min(width - 32, 420)}
+        style={styles.menu}
+      >
+        <View style={styles.panel}>
+          <Section label={t("session.filterDate")}>
+            {DATE_OPTIONS.map((o) => (
+              <OptionPill
+                key={o.value}
+                label={t(o.key)}
+                selected={value.date === o.value}
+                onPress={() => set({ date: o.value })}
+              />
+            ))}
+          </Section>
+          <Section label={t("session.filterLanguage")}>
+            {[{ key: null as string | null, count: sessions.length }, ...pairs].map((o) => (
+              <OptionPill
+                key={o.key ?? "all"}
+                label={o.key ? pairLabel(o.key) : t("session.filterAllLanguages")}
+                trailing={String(o.count)}
+                selected={value.pair === o.key}
+                onPress={() => set({ pair: o.key })}
+              />
+            ))}
+          </Section>
+          <Section label={t("session.filterLength")}>
+            {LENGTH_OPTIONS.map((o) => (
+              <OptionPill
+                key={o.value}
+                label={t(o.key)}
+                selected={value.length === o.value}
+                onPress={() => set({ length: o.value })}
+              />
+            ))}
+          </Section>
+        </View>
+        <View style={styles.panelDivider} />
+        <View style={styles.toggleWrap}>
+          <Toggle
+            label={t("session.filterSummarized")}
+            checked={value.summarized}
+            onChange={() => set({ summarized: !value.summarized })}
+          />
+        </View>
+      </AnchoredPopover>
+    </>
+  );
+}
+
+function Section({ label, children }: { label: string; children: ReactNode }) {
+  const { dir } = useLocale();
+  return (
+    <View>
+      <Text style={[styles.sectionLabel, rtlText(dir)]}>{label}</Text>
+      <View style={[styles.pills, rtlRow(dir)]}>{children}</View>
+    </View>
+  );
+}
+
+/** A selectable option in the phone panel — Chip's on/off crossfade, no icon. */
+function OptionPill({
+  label,
+  trailing,
+  selected,
+  onPress,
+}: {
+  label: string;
+  trailing?: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const { dir } = useLocale();
+  const p = useSharedValue(selected ? 1 : 0);
+  useEffect(() => {
+    p.value = withTiming(selected ? 1 : 0, COLOR_T);
+  }, [selected, p]);
+  const face = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(p.value, [0, 1], [C.surfaceLight, C.accentSoft]) as string,
+    borderColor: interpolateColor(p.value, [0, 1], [C.borderLight, C.accent]) as string,
+  }));
+  const text = useAnimatedStyle(() => ({
+    color: interpolateColor(p.value, [0, 1], [C.t2, C.accent]) as string,
+  }));
+  return (
+    <PressableScale
+      scaleTo={0.96}
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={trailing ? `${label}, ${trailing}` : label}
+    >
+      <Animated.View style={[styles.pill, rtlRow(dir), face]}>
+        <Animated.Text numberOfLines={1} style={[styles.pillText, text]}>
+          {label}
+        </Animated.Text>
+        {trailing ? <Text style={styles.pillCount}>{trailing}</Text> : null}
+      </Animated.View>
+    </PressableScale>
   );
 }
 
@@ -404,4 +584,49 @@ const styles = StyleSheet.create({
   trailing: { color: C.t4, fontSize: 12, fontVariant: ["tabular-nums"] },
   trailingLarge: { fontSize: 14 },
   check: { width: 16, alignItems: "center" },
+
+  // Phone filter button + panel
+  menuBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badge: {
+    position: "absolute",
+    top: -6,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 5,
+    borderRadius: 9,
+    backgroundColor: C.accent,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: { color: "#0A0F1C", fontSize: 11, fontWeight: "800", fontVariant: ["tabular-nums"] },
+  panel: { padding: 16, gap: 16 },
+  sectionLabel: {
+    color: C.t3,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.88,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  pills: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 34,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  pillText: { fontSize: 13, fontWeight: "600" },
+  pillCount: { color: C.t4, fontSize: 12, fontVariant: ["tabular-nums"] },
+  panelDivider: { borderTopWidth: 1, borderTopColor: C.border },
+  toggleWrap: { borderBottomLeftRadius: 11, borderBottomRightRadius: 11, overflow: "hidden" },
 });

@@ -27,6 +27,10 @@ export const SESSION_STRINGS = {
   "session.filterSummarized": { en: "Summarized" },
   "session.filterClear": { en: "Clear filters" },
   "session.filterNoMatch": { en: "No sessions match these filters." },
+  "session.filterDate": { en: "Date" },
+  "session.filterLanguage": { en: "Language" },
+  "session.filterLength": { en: "Length" },
+  "session.filterMenuA11y": { en: "Filters" },
 
   // Session card (session-card.tsx)
   "session.untitled": { en: "Untitled session" },

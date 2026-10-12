@@ -70,7 +70,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/api";
 import type { Id } from "@convex/dataModel";
 import { SessionRow, type SessionListItem } from "~/components/session-row";
-import { ClearFiltersLink, HistoryFilterBar } from "~/components/history-filters";
+import { ClearFiltersLink, HistoryFilterBar, HistoryFilterMenuButton } from "~/components/history-filters";
 import { NO_FILTERS, applyHistoryFilters, filtersActive, type HistoryFilters } from "@shared/history-filters";
 import { PromptDialog } from "~/components/prompt-dialog";
 import { ConfirmDialog } from "~/components/confirm-dialog";
@@ -342,8 +342,9 @@ export default function HistoryScreen() {
               <Animated.View
                 entering={TW_ENTER.fade}
                 exiting={TW_EXIT.fade}
-                style={[styles.search, tablet && styles.searchTablet, rtlRow(dir)]}
+                style={[styles.searchRow, rtlRow(dir)]}
               >
+              <View style={[styles.search, styles.searchFlex, tablet && styles.searchTablet, rtlRow(dir)]}>
                 <SymbolView name="globe" tintColor={C.t4} size={tablet ? 17 : 14} />
                 <TextInput
                   value={query}
@@ -369,12 +370,17 @@ export default function HistoryScreen() {
                     </PressableScale>
                   </Animated.View>
                 ) : null}
+              </View>
+              {/* Phone: every filter behind one button (iPad shows chips). */}
+              {!tablet && sessions ? (
+                <HistoryFilterMenuButton value={filters} onChange={setFilters} sessions={sessions} />
+              ) : null}
               </Animated.View>
             ) : null}
 
-            {total > 0 && sessions ? (
+            {tablet && total > 0 && sessions ? (
               <Animated.View entering={TW_ENTER.fade} exiting={TW_EXIT.fade}>
-                <HistoryFilterBar value={filters} onChange={setFilters} sessions={sessions} large={tablet} />
+                <HistoryFilterBar value={filters} onChange={setFilters} sessions={sessions} large />
               </Animated.View>
             ) : null}
           </View>
@@ -545,6 +551,8 @@ const styles = StyleSheet.create({
     borderColor: C.borderLight,
   },
   searchInput: { flex: 1, color: C.w, fontSize: 13, paddingVertical: 0 },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  searchFlex: { flex: 1 },
   clear: {
     width: 20,
     height: 20,
