@@ -64,10 +64,10 @@ import {
   SegmentSkeleton,
   Skeleton,
 } from "~/components/motion";
-import { formatDate, formatDuration, isRtl, langName } from "~/lib/lang";
+import { formatDate, formatDuration, isRtl, langName, textDirection } from "~/lib/lang";
 import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
-import { TABLET_TOP, useTablet } from "~/lib/layout";
+import { TABLET_GUTTER, TABLET_TOP, useTablet } from "~/lib/layout";
 import { useT } from "~/i18n";
 import { useStaticStickyBottom } from "~/hooks/use-sticky-bottom";
 
@@ -169,6 +169,8 @@ export function SessionDetail({ embedded = false }: { embedded?: boolean }) {
   }, [segments]);
 
   const topPad = embedded ? insets.top + TABLET_TOP : insets.top;
+  // Embedded: the action bar ends level with the sidebar island's bottom.
+  const footerGap = embedded ? TABLET_GUTTER : 12;
 
   // ScreenEnter is the root of every branch so the route enter plays ONCE on
   // mount (with the skeleton, as on the web) and the skeleton → content swap
@@ -291,7 +293,14 @@ export function SessionDetail({ embedded = false }: { embedded?: boolean }) {
           ) : (
             <View style={styles.headerRow}>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={[styles.title, tablet && styles.titleTablet]} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.title,
+                    tablet && styles.titleTablet,
+                    { writingDirection: textDirection(title), textAlign: "left" },
+                  ]}
+                  numberOfLines={1}
+                >
                   {title}
                 </Text>
                 <Text style={[styles.duration, tablet && styles.durationTablet]}>
@@ -427,7 +436,7 @@ export function SessionDetail({ embedded = false }: { embedded?: boolean }) {
             style={[
               styles.footer,
               column,
-              { paddingBottom: insets.bottom + 12, gap: tablet ? 10 : 8 },
+              { paddingBottom: insets.bottom + footerGap, gap: tablet ? 10 : 8 },
             ]}
           >
             <View style={styles.footerRow}>
@@ -491,7 +500,7 @@ export function SessionDetail({ embedded = false }: { embedded?: boolean }) {
               styles.footer,
               styles.footerRow,
               column,
-              { paddingBottom: insets.bottom + 12 },
+              { paddingBottom: insets.bottom + footerGap },
             ]}
           >
             <CopyButton variant="detail" getText={copyText} />

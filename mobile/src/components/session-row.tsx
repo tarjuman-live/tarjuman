@@ -28,7 +28,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { SymbolView } from "expo-symbols";
-import { formatDate, formatDuration, langName } from "~/lib/lang";
+import { formatDate, formatDuration, langName, textDirection } from "~/lib/lang";
 import { C, themed } from "~/lib/theme";
 import { TW } from "~/lib/motion";
 import { useTablet } from "~/lib/layout";
@@ -131,7 +131,16 @@ function HistoryCard({
         <DocTile style={{ marginTop: 2 }} large={large} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <View style={[styles.titleRow, rtlRow(dir)]}>
-            <Text style={[styles.title, large && lg.title, { flexShrink: 1 }, rtlText(dir)]} numberOfLines={1}>
+            <Text
+              style={[
+                styles.title,
+                large && lg.title,
+                { flexShrink: 1 },
+                rtlText(dir),
+                { writingDirection: textDirection(title), textAlign: dir === "rtl" ? "right" : "left" },
+              ]}
+              numberOfLines={1}
+            >
               {title}
             </Text>
             {s.summary ? <Text style={[styles.badge, large && lg.badge]}>✦ {t("session.summaryBadge")}</Text> : null}

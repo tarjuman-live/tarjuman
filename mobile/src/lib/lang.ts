@@ -22,3 +22,19 @@ export function formatDate(ms: number): string {
     year: new Date(ms).getFullYear() === new Date().getFullYear() ? undefined : "numeric",
   });
 }
+
+/**
+ * Direction of free text (a session title), from its FIRST strong letter —
+ * Hebrew / Arabic-script blocks are RTL. "حول سحب." must render as
+ * ".حول سحب" (the period ends the sentence on the LEFT), which only happens
+ * with writingDirection "rtl"; textAlign stays the caller's choice so a list
+ * keeps one clean edge.
+ */
+export function textDirection(text: string): "rtl" | "ltr" {
+  for (const ch of text) {
+    const c = ch.codePointAt(0)!;
+    if ((c >= 0x0590 && c <= 0x08ff) || (c >= 0xfb1d && c <= 0xfdff) || (c >= 0xfe70 && c <= 0xfeff)) return "rtl";
+    if (/\p{L}/u.test(ch)) return "ltr";
+  }
+  return "ltr";
+}

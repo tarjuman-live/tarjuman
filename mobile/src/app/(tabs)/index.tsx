@@ -75,7 +75,7 @@ import { UpgradeCard } from "~/components/upgrade-card";
 import { RecentSessions } from "~/components/recent-sessions";
 import { PositioningTips } from "~/components/positioning-tips";
 import { LocaleSwitcher, useRailLayout } from "~/components/locale-switcher";
-import { TABLET_TOP, useTablet } from "~/lib/layout";
+import { TABLET_GUTTER, TABLET_TOP, useTablet } from "~/lib/layout";
 import { AccountMenu } from "~/components/account-card";
 import { SplitTranscript } from "~/components/split-transcript";
 import { Transcript, type TranscriptRow } from "~/components/transcript";
@@ -495,8 +495,8 @@ export default function RecordScreen() {
                     styles.idle,
                     railActive && styles.idleWide,
                     tablet && styles.idleTablet,
-                    // Ends level with the sidebar island (insets.bottom + 12).
-                    railActive && { paddingBottom: insets.bottom + 12 },
+                    // Ends level with the sidebar island's bottom edge.
+                    railActive && { paddingBottom: insets.bottom + TABLET_GUTTER },
                   ]}
                   showsVerticalScrollIndicator={false}
                   contentInsetAdjustmentBehavior="never"

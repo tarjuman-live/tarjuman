@@ -11,7 +11,7 @@ import { useRouter } from "expo-router";
 import { useQuery } from "convex/react";
 import { SymbolView } from "expo-symbols";
 import { api } from "@convex/api";
-import { formatDate, formatDuration, langName } from "~/lib/lang";
+import { formatDate, formatDuration, langName, textDirection } from "~/lib/lang";
 import { C, themed } from "~/lib/theme";
 import { useLocale } from "~/i18n";
 
@@ -39,7 +39,14 @@ export function RecentSessions({ large, limit = 3 }: { large?: boolean; limit?: 
               <SymbolView name="doc.text" tintColor={C.t3} size={large ? 20 : 16} />
             </View>
             <View style={styles.body}>
-              <Text style={[styles.title, large && lg.title]} numberOfLines={1}>
+              <Text
+                style={[
+                  styles.title,
+                  large && lg.title,
+                  { writingDirection: textDirection(title), textAlign: dir === "rtl" ? "right" : "left" },
+                ]}
+                numberOfLines={1}
+              >
                 {title}
               </Text>
               <Text style={[styles.meta, large && lg.meta]} numberOfLines={1}>

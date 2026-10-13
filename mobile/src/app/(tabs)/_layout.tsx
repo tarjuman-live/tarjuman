@@ -99,11 +99,11 @@ import { liveElapsed, useLiveSession, useRecordNavHidden, type LiveSessionInfo }
 import { usePulse } from "~/components/motion/pulse";
 import { useQuery } from "convex/react";
 import { api } from "@convex/api";
-import { formatDate, formatDuration, langName } from "~/lib/lang";
+import { formatDate, formatDuration, langName, textDirection } from "~/lib/lang";
 import { LocaleSwitcher, RailLayoutProvider, RailSlot } from "~/components/locale-switcher";
 import { AccountMenu, FADE_GLASS_FRAME, FadeGlass } from "~/components/account-card";
 import { PressableScale } from "~/components/motion";
-import { TABLET_TOP } from "~/lib/layout";
+import { TABLET_GUTTER } from "~/lib/layout";
 
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[0];
 
@@ -408,9 +408,11 @@ function SidebarRail(props: TabBarProps) {
         ? "all"
         : "history"
       : openId
-        ? shown.some((s) => s._id === openId)
+        ? // An open session that isn't listed (older than the rows that fit,
+          // or an empty recording) → no item is "current": the pill fades out.
+          shown.some((s) => s._id === openId)
           ? `s:${openId}`
-          : "history"
+          : "none"
         : tapKey === "live" && live
           ? "live"
           : "record";
@@ -478,14 +480,16 @@ function SidebarRail(props: TabBarProps) {
       style={[
         styles.railHost,
         {
-          // Shares the content's top line (TABLET_TOP) instead of hugging the
-          // status bar, so the island and the page start at the same height.
-          paddingTop: insets.top + TABLET_TOP,
-          paddingBottom: insets.bottom + 12,
+          // One gutter on every edge (TABLET_GUTTER, inside the safe area);
+          // the page's top line (TABLET_TOP) is the island's top edge.
+          paddingTop: insets.top + TABLET_GUTTER,
+          paddingBottom: insets.bottom + TABLET_GUTTER,
           // `lg:p-3` gutter: the outer (screen) edge also clears the safe
           // area, and it mirrors with the rail's side in an RTL UI language.
-          paddingLeft: isRtl ? 12 : insets.left + 12,
-          paddingRight: isRtl ? insets.right + 12 : 12,
+          // Outer (screen) side: the gutter. Inner side: none — the page's own
+          // 40pt padding is the gap, so it equals the page's far margin.
+          paddingLeft: isRtl ? 0 : insets.left + TABLET_GUTTER,
+          paddingRight: isRtl ? insets.right + TABLET_GUTTER : 0,
         },
       ]}
     >
@@ -703,7 +707,18 @@ function RailItem({
         <View style={styles.railTwoLine}>
           <View style={[styles.railTitleRow, rtlRow(dir)]}>
             {leading}
-            <Animated.Text numberOfLines={1} style={[styles.railTitle, rtlText(dir), labelStyle]}>
+            <Animated.Text
+              numberOfLines={1}
+              style={[
+                styles.railTitle,
+                rtlText(dir),
+                // Arabic titles read RTL (".حول سحب") but keep the list's edge.
+                title
+                  ? { writingDirection: textDirection(title), textAlign: dir === "rtl" ? "right" : "left" }
+                  : null,
+                labelStyle,
+              ]}
+            >
               {title}
             </Animated.Text>
             {trailing ? <Text style={styles.railTrailing}>{trailing}</Text> : null}
@@ -778,7 +793,9 @@ const styles = themed(() => StyleSheet.create({
   },
   // The rail's single column: every item (and the pill) is a direct child, so
   // each onLayout y is in the same coordinate space as the pill.
-  railCol: { flex: 1, marginTop: RAIL_INSET, marginHorizontal: RAIL_INSET, overflow: "hidden" },
+  // No overflow clip: it cut the pill's (and press) glow into a hard-edged
+  // band. Rows never overflow anyway — `fit` only renders what fits.
+  railCol: { flex: 1, marginTop: RAIL_INSET, marginHorizontal: RAIL_INSET },
   railLabelWrap: { height: LABEL_H, justifyContent: "flex-end", paddingHorizontal: 14, paddingBottom: 10 },
   railSection: { color: C.t3, fontSize: 12, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" },
   railTwoLine: { flex: 1, minWidth: 0, gap: 3 },

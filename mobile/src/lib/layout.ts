@@ -12,7 +12,15 @@ export function useTablet(): boolean {
 }
 
 /**
- * iPad top line: the sidebar island and every tab's first content block start
- * this far below the safe area, so they share one horizontal edge.
+ * iPad sidebar gutter: the island sits exactly this far inside the safe area
+ * on EVERY edge (top under the status bar, side, bottom above the home
+ * indicator) — one number, so the margins match (user: "make sure the
+ * dimensions are right and accurate", 2026-10-13).
  */
-export const TABLET_TOP = 56;
+export const TABLET_GUTTER = 16;
+
+/**
+ * iPad top line: every tab's first content block starts level with the
+ * sidebar island's top edge.
+ */
+export const TABLET_TOP = TABLET_GUTTER;
