@@ -166,6 +166,7 @@ export const HE = {
   "session.filterLanguage": "שפה",
   "session.filterLength": "אורך",
   "session.filterMenuA11y": "מסננים",
+  "session.viewAllHistory": "הצגת הכול בהיסטוריה",
   "session.untitled": "מפגש ללא שם",
   "session.summaryBadge": "סיכום",
   "session.options": "אפשרויות המפגש",

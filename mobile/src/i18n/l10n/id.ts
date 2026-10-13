@@ -174,6 +174,7 @@ export const ID = {
   "session.filterLanguage": "Bahasa",
   "session.filterLength": "Durasi",
   "session.filterMenuA11y": "Filter",
+  "session.viewAllHistory": "Lihat semua di riwayat",
   "session.untitled": "Sesi tanpa judul",
   "session.summaryBadge": "Ringkasan",
   "session.options": "Opsi sesi",

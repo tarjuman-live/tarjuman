@@ -172,6 +172,7 @@ export const HU = {
   "session.filterLanguage": "Nyelv",
   "session.filterLength": "Hossz",
   "session.filterMenuA11y": "Szűrők",
+  "session.viewAllHistory": "Összes megtekintése az előzményekben",
   "session.untitled": "Névtelen munkamenet",
   "session.summaryBadge": "Összefoglaló",
   "session.options": "Munkamenet beállításai",

@@ -31,6 +31,7 @@ export const SESSION_STRINGS = {
   "session.filterLanguage": { en: "Language" },
   "session.filterLength": { en: "Length" },
   "session.filterMenuA11y": { en: "Filters" },
+  "session.viewAllHistory": { en: "View all in History" },
 
   // Session card (session-card.tsx)
   "session.untitled": { en: "Untitled session" },

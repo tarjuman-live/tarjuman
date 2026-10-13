@@ -174,6 +174,7 @@ export const MS = {
   "session.filterLanguage": "Bahasa",
   "session.filterLength": "Tempoh",
   "session.filterMenuA11y": "Penapis",
+  "session.viewAllHistory": "Lihat semua dalam sejarah",
   "session.untitled": "Sesi tanpa tajuk",
   "session.summaryBadge": "Ringkasan",
   "session.options": "Pilihan sesi",

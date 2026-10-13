@@ -73,6 +73,44 @@ export function useRecordNavHidden(): boolean {
   );
 }
 
+// ─── Live session (read by the iPad sidebar's "Recording" row) ───────────────
+
+/** What the Record screen is doing right now, for UI outside it. */
+export interface LiveSessionInfo {
+  /** Seconds banked before the current run (pause-aware). */
+  accumulated: number;
+  /** Date.now() when the current run started; null while paused. */
+  since: number | null;
+  source: string;
+  target: string;
+}
+
+let liveSession: LiveSessionInfo | null = null;
+const liveListeners = new Set<() => void>();
+
+/** Set by the Record screen whenever capture starts, pauses, resumes or ends (null). */
+export function setLiveSession(next: LiveSessionInfo | null) {
+  liveSession = next;
+  liveListeners.forEach((l) => l());
+}
+
+export function useLiveSession(): LiveSessionInfo | null {
+  return useSyncExternalStore(
+    (cb) => {
+      liveListeners.add(cb);
+      return () => {
+        liveListeners.delete(cb);
+      };
+    },
+    () => liveSession,
+    () => null,
+  );
+}
+
+/** Elapsed seconds of a live session at `now` (pass it in: render must stay pure). */
+export const liveElapsed = (s: LiveSessionInfo, now: number): number =>
+  s.accumulated + (s.since !== null ? (now - s.since) / 1000 : 0);
+
 // ─── Idle record button ───────────────────────────────────────────────────────
 
 const REC_T = { duration: 200, easing: EASE.tw, reduceMotion: ReduceMotion.Never };

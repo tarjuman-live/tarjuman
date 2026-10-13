@@ -172,6 +172,7 @@ export const CS = {
   "session.filterLanguage": "Jazyk",
   "session.filterLength": "Délka",
   "session.filterMenuA11y": "Filtry",
+  "session.viewAllHistory": "Zobrazit vše v historii",
   "session.untitled": "Relace bez názvu",
   "session.summaryBadge": "Shrnutí",
   "session.options": "Možnosti relace",

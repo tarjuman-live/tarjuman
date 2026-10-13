@@ -172,6 +172,7 @@ export const NO = {
   "session.filterLanguage": "Språk",
   "session.filterLength": "Lengde",
   "session.filterMenuA11y": "Filtre",
+  "session.viewAllHistory": "Se alle i historikken",
   "session.untitled": "Økt uten navn",
   "session.summaryBadge": "Sammendrag",
   "session.options": "Øktvalg",

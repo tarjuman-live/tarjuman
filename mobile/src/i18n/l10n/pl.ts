@@ -172,6 +172,7 @@ export const PL = {
   "session.filterLanguage": "Język",
   "session.filterLength": "Długość",
   "session.filterMenuA11y": "Filtry",
+  "session.viewAllHistory": "Zobacz wszystko w historii",
   "session.untitled": "Sesja bez tytułu",
   "session.summaryBadge": "Podsumowanie",
   "session.options": "Opcje sesji",

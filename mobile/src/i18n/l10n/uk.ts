@@ -172,6 +172,7 @@ export const UK = {
   "session.filterLanguage": "Мова",
   "session.filterLength": "Тривалість",
   "session.filterMenuA11y": "Фільтри",
+  "session.viewAllHistory": "Переглянути все в історії",
   "session.untitled": "Сесія без назви",
   "session.summaryBadge": "Підсумок",
   "session.options": "Параметри сесії",

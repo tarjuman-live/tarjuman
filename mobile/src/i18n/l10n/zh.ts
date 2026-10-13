@@ -164,6 +164,7 @@ export const ZH = {
   "session.filterLanguage": "语言",
   "session.filterLength": "时长",
   "session.filterMenuA11y": "筛选",
+  "session.viewAllHistory": "在历史中查看全部",
   "session.untitled": "未命名会话",
   "session.summaryBadge": "摘要",
   "session.options": "会话选项",

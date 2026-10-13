@@ -172,6 +172,7 @@ export const SV = {
   "session.filterLanguage": "Språk",
   "session.filterLength": "Längd",
   "session.filterMenuA11y": "Filter",
+  "session.viewAllHistory": "Visa alla i historiken",
   "session.untitled": "Namnlös session",
   "session.summaryBadge": "Sammanfattning",
   "session.options": "Sessionsalternativ",

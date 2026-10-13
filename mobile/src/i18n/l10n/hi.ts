@@ -172,6 +172,7 @@ export const HI = {
   "session.filterLanguage": "भाषा",
   "session.filterLength": "अवधि",
   "session.filterMenuA11y": "फ़िल्टर",
+  "session.viewAllHistory": "इतिहास में सब देखें",
   "session.untitled": "बिना नाम का सत्र",
   "session.summaryBadge": "सारांश",
   "session.options": "सत्र विकल्प",

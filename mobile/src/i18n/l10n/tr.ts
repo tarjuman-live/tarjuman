@@ -174,6 +174,7 @@ export const TR = {
   "session.filterLanguage": "Dil",
   "session.filterLength": "Süre",
   "session.filterMenuA11y": "Filtreler",
+  "session.viewAllHistory": "Tümünü geçmişte gör",
   "session.untitled": "Adsız oturum",
   "session.summaryBadge": "Özet",
   "session.options": "Oturum seçenekleri",

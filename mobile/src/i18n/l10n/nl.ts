@@ -174,6 +174,7 @@ export const NL = {
   "session.filterLanguage": "Taal",
   "session.filterLength": "Duur",
   "session.filterMenuA11y": "Filters",
+  "session.viewAllHistory": "Alles bekijken in geschiedenis",
   "session.untitled": "Naamloze sessie",
   "session.summaryBadge": "Samenvatting",
   "session.options": "Sessieopties",

@@ -172,6 +172,7 @@ export const RO = {
   "session.filterLanguage": "Limbă",
   "session.filterLength": "Durată",
   "session.filterMenuA11y": "Filtre",
+  "session.viewAllHistory": "Vezi tot în istoric",
   "session.untitled": "Sesiune fără titlu",
   "session.summaryBadge": "Rezumat",
   "session.options": "Opțiunile sesiunii",

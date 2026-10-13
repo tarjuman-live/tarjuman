@@ -34,6 +34,7 @@ import { TW } from "~/lib/motion";
 import { useTablet } from "~/lib/layout";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
 import { AnchoredPopover, PressableScale } from "~/components/motion";
+import { useRailLayout } from "~/components/locale-switcher";
 
 export interface SessionListItem {
   _id: string;
@@ -92,6 +93,7 @@ function HistoryCard({
   const { t, dir } = useLocale();
   const title = useTitle(s);
   const large = useTablet();
+  const { railActive } = useRailLayout();
   const [menuOpen, setMenuOpen] = useState(false);
   const kebabRef = useRef<View>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -116,7 +118,12 @@ function HistoryCard({
     <View style={[styles.card, rtlRow(dir)]}>
       <PressableScale
         scaleTo={1}
-        onPress={() => router.push({ pathname: "/session/[id]", params: { id: s._id } })}
+        onPress={() =>
+          // iPad (sidebar up): open beside the sidebar; phones: full-screen push.
+          railActive
+            ? router.navigate({ pathname: "/s/[id]", params: { id: s._id } })
+            : router.push({ pathname: "/session/[id]", params: { id: s._id } })
+        }
         accessibilityRole="link"
         accessibilityLabel={title}
         style={[styles.link, large && lg.link, rtlRow(dir)]}

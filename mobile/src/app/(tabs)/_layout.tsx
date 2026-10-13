@@ -46,7 +46,8 @@
  * SIDEBAR RAIL (sidebar.tsx / globals.css `.sidebar-nav-pill`)
  *   - Island tile: w256, radius 20 (web w240 / 16, scaled for iPad), surface, a borderLight border and a soft
  *     shadow, in a 12pt gutter.
- *   - Pill: translateY(index × NAV_ITEM_PITCH), 320ms bezier(.3,.9,.4,1). It is instant
+ *   - Pill: ONE pill glides to whichever item is active (nav, session rows,
+ *     live row, View all) — y AND height, 320ms bezier(.3,.9,.4,1). It is instant
  *     under Reduce Motion, which the web gates with its own media query. It
  *     carries accentSoft, a 1px accent border and a 0 0 16px accent@25 glow.
  *   - Inactive items: `transition-all duration-200` hover → press. Border goes
@@ -70,12 +71,14 @@
  * RTL (UI language): the tab order mirrors and the lens slot index mirrors
  * with it, so the lens always sits under the active tab.
  */
-import { useCallback, useEffect, useState, type ComponentProps } from "react";
-import { Pressable, StyleSheet, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { Pressable, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
   interpolateColor,
+  LayoutAnimationConfig,
+  LinearTransition,
   ReduceMotion,
   useAnimatedProps,
   useAnimatedStyle,
@@ -90,9 +93,13 @@ import { Tabs } from "expo-router";
 import { BlurView } from "expo-blur";
 import { SymbolView, type SFSymbol } from "expo-symbols";
 import { C, themed, themedShadow, getThemeMode } from "~/lib/theme";
-import { EASE, SPRING, useReduceMotion } from "~/lib/motion";
-import { rtlRow, useLocale, type MessageKey } from "~/i18n";
-import { useRecordNavHidden } from "~/components/record-button";
+import { EASE, SPRING, TW_ENTER, TW_EXIT, useReduceMotion } from "~/lib/motion";
+import { rtlRow, rtlText, useLocale, type MessageKey } from "~/i18n";
+import { liveElapsed, useLiveSession, useRecordNavHidden, type LiveSessionInfo } from "~/components/record-button";
+import { usePulse } from "~/components/motion/pulse";
+import { useQuery } from "convex/react";
+import { api } from "@convex/api";
+import { formatDate, formatDuration, langName } from "~/lib/lang";
 import { LocaleSwitcher, RailLayoutProvider, RailSlot } from "~/components/locale-switcher";
 import { AccountMenu, FADE_GLASS_FRAME, FadeGlass } from "~/components/account-card";
 import { PressableScale } from "~/components/motion";
@@ -126,7 +133,6 @@ const RAIL_ITEM_H = 52;
 const RAIL_RADIUS = 26;
 const RAIL_INSET = 14;
 const RAIL_ITEM_RADIUS = RAIL_RADIUS - RAIL_INSET;
-const NAV_ITEM_PITCH = RAIL_ITEM_H + 4;
 const PILL_EASE = Easing.bezier(0.3, 0.9, 0.4, 1);
 /** lg breakpoint. At or above it the web swaps the bottom nav for the sidebar. */
 const LG = 1024;
@@ -156,6 +162,9 @@ export default function TabsLayout() {
       >
         <Tabs.Screen name="index" />
         <Tabs.Screen name="history" />
+        {/* iPad: a session opened from the sidebar / History, shown BESIDE
+            the sidebar (not in the tab bar; phones push session/[id]). */}
+        <Tabs.Screen name="s/[id]" />
       </Tabs>
     </RailLayoutProvider>
   );
@@ -211,7 +220,8 @@ function BottomNav(props: TabBarProps) {
   const reduce = useReduceMotion();
   const hidden = useRecordNavHidden();
   const onTab = useTabPress(props);
-  const n = state.routes.length;
+  // Only real tabs count (the hidden iPad "s/[id]" route is never a slot).
+  const n = state.routes.filter((r) => TABS[r.name]).length;
   const slotX = (i: number) => (isRtl ? n - 1 - i : i) * TAB_WIDTH;
 
   // ── Lens spring + velocity tracking ──
@@ -346,23 +356,122 @@ function BottomTab({
 
 // ─── Sidebar rail (≥ lg windows) ────────────────────────────────────────────
 
+/**
+ * iPad sidebar (design approved 2026-10-11 from the interactive preview):
+ *
+ *   Record · History            ← nav buttons
+ *   RECENT
+ *   ● Recording   12:04         ← only while a session is live
+ *   <session> … <session>       ← as many recent sessions as fit
+ *   View all in History         ← a nav button, same look as Record/History
+ *   EN · avatar                 ← footer
+ *
+ * ONE green pill glides between EVERY item — nav buttons, session rows, the
+ * live row, View all — resizing to each item's height (320ms bezier(.3,.9,
+ * .4,1)), never snapping. A session opens BESIDE the sidebar (the hidden
+ * "s/[id]" tab route), so the sidebar stays put. Rows that join or leave
+ * (the live row, a new session) slide the rest with a layout transition and
+ * the pill follows them.
+ */
+type RailKey = string; // "record" | "history" | "all" | "live" | `s:${id}`
+
+const ROW_H = 60;
+const ITEM_GAP = 4;
+const LABEL_H = 44;
+const VIEW_ALL_GAP = 8;
+const RAIL_ROW_MOVE = LinearTransition.duration(300).easing(EASE.smooth);
+
 function SidebarRail(props: TabBarProps) {
-  const { state, insets } = props;
+  const { state, insets, navigation } = props;
   const { t, dir, isRtl } = useLocale();
   const reduce = useReduceMotion();
   const onTab = useTabPress(props);
+  const live = useLiveSession();
+  const sessions = useQuery(api.sessions.getRecentSessions, { limit: 24 });
+  const [tapKey, setTapKey] = useState<RailKey | null>(null);
+  const [colH, setColH] = useState(0);
+  const [layouts, setLayouts] = useState<Record<RailKey, { y: number; h: number }>>({});
 
-  const pillY = useSharedValue(state.index * NAV_ITEM_PITCH);
+  // How many recent sessions fit between the nav and View all — no scrolling
+  // list inside the sidebar; the rest is one tap away in History.
+  const total = sessions?.length ?? 0;
+  const fixed =
+    2 * RAIL_ITEM_H + ITEM_GAP + LABEL_H + (live ? ROW_H + ITEM_GAP : 0) + VIEW_ALL_GAP + RAIL_ITEM_H + RAIL_INSET;
+  const fit = colH > 0 ? Math.max(0, Math.floor((colH - fixed) / (ROW_H + ITEM_GAP))) : 0;
+  const shown = (sessions ?? []).slice(0, fit);
+
+  const focused = state.routes[state.index];
+  const openId = focused?.name === "s/[id]" ? (focused.params as { id?: string } | undefined)?.id : undefined;
+  const selKey: RailKey =
+    focused?.name === "history"
+      ? tapKey === "all"
+        ? "all"
+        : "history"
+      : openId
+        ? shown.some((s) => s._id === openId)
+          ? `s:${openId}`
+          : "history"
+        : tapKey === "live" && live
+          ? "live"
+          : "record";
+
+  const setLayout = useCallback((key: RailKey, e: LayoutChangeEvent) => {
+    const { y, height } = e.nativeEvent.layout;
+    setLayouts((prev) => {
+      const old = prev[key];
+      if (old && old.y === y && old.h === height) return prev;
+      return { ...prev, [key]: { y, h: height } };
+    });
+  }, []);
+
+  // ── The pill ──
+  const pillY = useSharedValue(0);
+  const pillH = useSharedValue(RAIL_ITEM_H);
+  const pillO = useSharedValue(0);
+  const placed = useRef(false);
+  const target = layouts[selKey];
   useEffect(() => {
-    const to = state.index * NAV_ITEM_PITCH;
-    if (reduce) {
-      cancelAnimation(pillY);
-      pillY.value = to;
-    } else {
-      pillY.value = withTiming(to, { duration: 320, easing: PILL_EASE, reduceMotion: ReduceMotion.Never });
+    if (!target) {
+      pillO.value = withTiming(0, { duration: 150, easing: EASE.tw, reduceMotion: ReduceMotion.Never });
+      return;
     }
-  }, [state.index, reduce, pillY]);
-  const pillStyle = useAnimatedStyle(() => ({ transform: [{ translateY: pillY.value }] }));
+    if (reduce || !placed.current) {
+      cancelAnimation(pillY);
+      cancelAnimation(pillH);
+      pillY.value = target.y;
+      pillH.value = target.h;
+    } else {
+      const cfg = { duration: 320, easing: PILL_EASE, reduceMotion: ReduceMotion.Never };
+      pillY.value = withTiming(target.y, cfg);
+      pillH.value = withTiming(target.h, cfg);
+    }
+    placed.current = true;
+    pillO.value = withTiming(1, { duration: 150, easing: EASE.tw, reduceMotion: ReduceMotion.Never });
+  }, [target?.y, target?.h, reduce, pillY, pillH, pillO, target]);
+  const pillStyle = useAnimatedStyle(() => ({
+    opacity: pillO.value,
+    height: pillH.value,
+    transform: [{ translateY: pillY.value }],
+  }));
+
+  const go = {
+    record: () => {
+      setTapKey("record");
+      onTab(state.routes.findIndex((r) => r.name === "index"));
+    },
+    history: (key: "history" | "all") => {
+      setTapKey(key);
+      onTab(state.routes.findIndex((r) => r.name === "history"));
+    },
+    live: () => {
+      setTapKey("live");
+      onTab(state.routes.findIndex((r) => r.name === "index"));
+    },
+    session: (id: string) => {
+      setTapKey(`s:${id}`);
+      if (openId !== id) navigation.navigate("s/[id]", { id });
+    },
+  };
 
   return (
     <View
@@ -381,28 +490,99 @@ function SidebarRail(props: TabBarProps) {
       ]}
     >
       <View style={styles.rail}>
-        {/* No brand row (user direction 2026-10-11): the nav starts the rail. */}
-        <View style={styles.railNav} accessibilityRole="tablist">
+        <View
+          style={styles.railCol}
+          accessibilityRole="tablist"
+          onLayout={(e) => setColH(e.nativeEvent.layout.height)}
+        >
           <Animated.View pointerEvents="none" style={[styles.pill, pillStyle]} />
-          <View style={styles.railItems}>
-            {state.routes.map((route, i) => {
-              const meta = TABS[route.name];
-              if (!meta) return null;
-              return (
-                <RailItem
-                  key={route.key}
-                  icon={meta.icon}
-                  label={t(meta.labelKey)}
-                  active={state.index === i}
-                  rowStyle={rtlRow(dir)}
-                  onPress={() => onTab(i)}
-                />
-              );
-            })}
-          </View>
-        </View>
+          <LayoutAnimationConfig skipEntering>
+            <Animated.View layout={reduce ? undefined : RAIL_ROW_MOVE} onLayout={(e) => setLayout("record", e)}>
+              <RailItem
+                icon="mic"
+                label={t("nav.record")}
+                active={selKey === "record"}
+                rowStyle={rtlRow(dir)}
+                onPress={go.record}
+              />
+            </Animated.View>
+            <Animated.View
+              layout={reduce ? undefined : RAIL_ROW_MOVE}
+              style={{ marginTop: ITEM_GAP }}
+              onLayout={(e) => setLayout("history", e)}
+            >
+              <RailItem
+                icon="clock.arrow.circlepath"
+                label={t("nav.history")}
+                active={selKey === "history"}
+                rowStyle={rtlRow(dir)}
+                onPress={() => go.history("history")}
+              />
+            </Animated.View>
 
-        <View style={{ flex: 1 }} />
+            {shown.length > 0 || live ? (
+              <Animated.View
+                entering={TW_ENTER.fade}
+                exiting={TW_EXIT.fade}
+                layout={reduce ? undefined : RAIL_ROW_MOVE}
+                style={styles.railLabelWrap}
+              >
+                <Text style={[styles.railSection, rtlText(dir)]}>{t("record.recent")}</Text>
+              </Animated.View>
+            ) : null}
+
+            {live ? (
+              <Animated.View
+                key="live"
+                entering={TW_ENTER.fade}
+                exiting={TW_EXIT.fade}
+                layout={reduce ? undefined : RAIL_ROW_MOVE}
+                style={{ marginBottom: ITEM_GAP }}
+                onLayout={(e) => setLayout("live", e)}
+              >
+                <LiveRailRow info={live} active={selKey === "live"} onPress={go.live} />
+              </Animated.View>
+            ) : null}
+
+            {shown.map((s, i) => (
+              <Animated.View
+                key={s._id}
+                entering={TW_ENTER.fade}
+                exiting={TW_EXIT.fade}
+                layout={reduce ? undefined : RAIL_ROW_MOVE}
+                style={i > 0 ? { marginTop: ITEM_GAP } : undefined}
+                onLayout={(e) => setLayout(`s:${s._id}`, e)}
+              >
+                <RailItem
+                  title={s.title || s.firstSegmentText || t("record.untitled")}
+                  subtitle={`${formatDate(s.createdAt)} · ${formatDuration(s.duration)}`}
+                  height={ROW_H}
+                  active={selKey === `s:${s._id}`}
+                  rowStyle={rtlRow(dir)}
+                  onPress={() => go.session(s._id)}
+                />
+              </Animated.View>
+            ))}
+
+            {total > 0 ? (
+              <Animated.View
+                entering={TW_ENTER.fade}
+                exiting={TW_EXIT.fade}
+                layout={reduce ? undefined : RAIL_ROW_MOVE}
+                style={{ marginTop: VIEW_ALL_GAP }}
+                onLayout={(e) => setLayout("all", e)}
+              >
+                <RailItem
+                  icon="list.bullet"
+                  label={t("session.viewAllHistory")}
+                  active={selKey === "all"}
+                  rowStyle={rtlRow(dir)}
+                  onPress={() => go.history("all")}
+                />
+              </Animated.View>
+            ) : null}
+          </LayoutAnimationConfig>
+        </View>
 
         <View style={[styles.railFooter, rtlRow(dir)]}>
           <RailSlot>
@@ -415,6 +595,34 @@ function SidebarRail(props: TabBarProps) {
   );
 }
 
+/** The live session's row: pulsing red dot, "Recording", running timer, pair. */
+function LiveRailRow({ info, active, onPress }: { info: LiveSessionInfo; active: boolean; onPress: () => void }) {
+  const { t, dir } = useLocale();
+  // The clock lives in state (not Date.now() during render): the React
+  // Compiler memoises render output, so an impure read would freeze at 0:00.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    setNow(Date.now());
+    if (info.since === null) return; // paused: the clock is frozen
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [info.since, info.accumulated]);
+  const pulse = usePulse();
+  return (
+    <RailItem
+      title={t("record.recording")}
+      titleColor={C.red}
+      subtitle={`${langName(info.source)} → ${langName(info.target)}`}
+      trailing={formatDuration(liveElapsed(info, now))}
+      leading={<Animated.View style={[styles.liveDot, pulse]} />}
+      height={ROW_H}
+      active={active}
+      rowStyle={rtlRow(dir)}
+      onPress={onPress}
+    />
+  );
+}
+
 /** Rail item `transition-all duration-200` (Tailwind curve) hover → press. */
 const RAIL_HOVER_T = { duration: 200, easing: EASE.tw, reduceMotion: ReduceMotion.Never };
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -422,20 +630,36 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 function RailItem({
   icon,
   label,
+  title,
+  titleColor,
+  subtitle,
+  trailing,
+  leading,
+  height = RAIL_ITEM_H,
   active,
   rowStyle,
   onPress,
 }: {
-  icon: SFSymbol;
-  label: string;
+  icon?: SFSymbol;
+  /** One-line nav label (Record / History / View all). */
+  label?: string;
+  /** Two-line row title (sessions, live row). */
+  title?: string;
+  titleColor?: string;
+  subtitle?: string;
+  trailing?: string;
+  leading?: ReactNode;
+  height?: number;
   active: boolean;
   rowStyle: ReturnType<typeof rtlRow>;
   onPress: () => void;
 }) {
+  const { dir } = useLocale();
   const text = useSelection(active, COLOR_T);
   const iconSel = useSelection(active, ICON_T);
+  const rest = titleColor ?? (label ? C.t2 : C.w);
   const labelStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(text.value, [0, 1], [C.t2, C.accent]) as string,
+    color: interpolateColor(text.value, [0, 1], [rest, titleColor ?? C.accent]) as string,
   }));
 
   // Hover → press. The glow / bg / border layers stay MOUNTED on every item:
@@ -453,6 +677,7 @@ function RailItem({
     borderColor: interpolateColor(hov.value, [0, 1], ["rgba(46, 204, 113, 0)", C.accent]) as string,
   }));
   const glowStyle = useAnimatedStyle(() => ({ opacity: hov.value }));
+  const a11y = label ?? [title, subtitle, trailing].filter(Boolean).join(", ");
 
   return (
     <AnimatedPressable
@@ -464,15 +689,32 @@ function RailItem({
         hov.value = withTiming(0, RAIL_HOVER_T);
       }}
       accessibilityRole="tab"
-      accessibilityLabel={label}
+      accessibilityLabel={a11y}
       accessibilityState={{ selected: active }}
-      style={[styles.railItem, rowStyle, itemStyle]}
+      style={[styles.railItem, { height }, rowStyle, itemStyle]}
     >
       <Animated.View pointerEvents="none" style={[styles.railGlow, glowStyle]} />
-      <CrossfadeIcon name={icon} size={22} sel={iconSel} />
-      <Animated.Text numberOfLines={1} style={[styles.railLabel, labelStyle]}>
-        {label}
-      </Animated.Text>
+      {icon ? <CrossfadeIcon name={icon} size={22} sel={iconSel} /> : null}
+      {label ? (
+        <Animated.Text numberOfLines={1} style={[styles.railLabel, labelStyle]}>
+          {label}
+        </Animated.Text>
+      ) : (
+        <View style={styles.railTwoLine}>
+          <View style={[styles.railTitleRow, rtlRow(dir)]}>
+            {leading}
+            <Animated.Text numberOfLines={1} style={[styles.railTitle, rtlText(dir), labelStyle]}>
+              {title}
+            </Animated.Text>
+            {trailing ? <Text style={styles.railTrailing}>{trailing}</Text> : null}
+          </View>
+          {subtitle ? (
+            <Text numberOfLines={1} style={[styles.railSubtitle, rtlText(dir)]}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+      )}
     </AnimatedPressable>
   );
 }
@@ -534,7 +776,17 @@ const styles = themed(() => StyleSheet.create({
     borderColor: C.borderLight,
     boxShadow: "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
   },
-  railNav: { marginTop: RAIL_INSET, marginHorizontal: RAIL_INSET },
+  // The rail's single column: every item (and the pill) is a direct child, so
+  // each onLayout y is in the same coordinate space as the pill.
+  railCol: { flex: 1, marginTop: RAIL_INSET, marginHorizontal: RAIL_INSET, overflow: "hidden" },
+  railLabelWrap: { height: LABEL_H, justifyContent: "flex-end", paddingHorizontal: 14, paddingBottom: 10 },
+  railSection: { color: C.t3, fontSize: 12, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" },
+  railTwoLine: { flex: 1, minWidth: 0, gap: 3 },
+  railTitleRow: { alignItems: "center", gap: 8 },
+  railTitle: { flex: 1, fontSize: 15, fontWeight: "600" },
+  railTrailing: { color: C.red, fontSize: 13, fontWeight: "700", fontVariant: ["tabular-nums"] },
+  railSubtitle: { color: C.t4, fontSize: 13 },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.red },
   pill: {
     position: "absolute",
     left: 0,
@@ -547,7 +799,6 @@ const styles = themed(() => StyleSheet.create({
     borderColor: C.accent,
     boxShadow: `0 0 16px ${C.accent}40`,
   },
-  railItems: { gap: 4 },
   railItem: {
     flexDirection: "row",
     alignItems: "center",

@@ -172,6 +172,7 @@ export const EL = {
   "session.filterLanguage": "Γλώσσα",
   "session.filterLength": "Διάρκεια",
   "session.filterMenuA11y": "Φίλτρα",
+  "session.viewAllHistory": "Προβολή όλων στο ιστορικό",
   "session.untitled": "Συνεδρία χωρίς τίτλο",
   "session.summaryBadge": "Περίληψη",
   "session.options": "Επιλογές συνεδρίας",

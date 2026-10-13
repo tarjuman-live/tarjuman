@@ -174,6 +174,7 @@ export const RU = {
   "session.filterLanguage": "Язык",
   "session.filterLength": "Длительность",
   "session.filterMenuA11y": "Фильтры",
+  "session.viewAllHistory": "Все в истории",
   "session.untitled": "Сессия без названия",
   "session.summaryBadge": "Конспект",
   "session.options": "Параметры сессии",

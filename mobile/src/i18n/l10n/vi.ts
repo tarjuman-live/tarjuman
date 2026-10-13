@@ -172,6 +172,7 @@ export const VI = {
   "session.filterLanguage": "Ngôn ngữ",
   "session.filterLength": "Độ dài",
   "session.filterMenuA11y": "Bộ lọc",
+  "session.viewAllHistory": "Xem tất cả trong lịch sử",
   "session.untitled": "Phiên chưa đặt tên",
   "session.summaryBadge": "Tóm tắt",
   "session.options": "Tùy chọn phiên",

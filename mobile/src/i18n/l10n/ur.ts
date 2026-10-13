@@ -174,6 +174,7 @@ export const UR = {
   "session.filterLanguage": "زبان",
   "session.filterLength": "دورانیہ",
   "session.filterMenuA11y": "فلٹرز",
+  "session.viewAllHistory": "تاریخ میں سب دیکھیں",
   "session.untitled": "بے عنوان سیشن",
   "session.summaryBadge": "خلاصہ",
   "session.options": "سیشن کے اختیارات",

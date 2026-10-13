@@ -172,6 +172,7 @@ export const CA = {
   "session.filterLanguage": "Idioma",
   "session.filterLength": "Durada",
   "session.filterMenuA11y": "Filtres",
+  "session.viewAllHistory": "Mostra-ho tot a l'historial",
   "session.untitled": "Sessió sense títol",
   "session.summaryBadge": "Resum",
   "session.options": "Opcions de la sessió",

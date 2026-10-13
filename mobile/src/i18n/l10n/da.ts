@@ -172,6 +172,7 @@ export const DA = {
   "session.filterLanguage": "Sprog",
   "session.filterLength": "Længde",
   "session.filterMenuA11y": "Filtre",
+  "session.viewAllHistory": "Se alle i historikken",
   "session.untitled": "Unavngivet session",
   "session.summaryBadge": "Resumé",
   "session.options": "Sessionsindstillinger",

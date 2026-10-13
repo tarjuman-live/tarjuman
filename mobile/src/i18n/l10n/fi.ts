@@ -172,6 +172,7 @@ export const FI = {
   "session.filterLanguage": "Kieli",
   "session.filterLength": "Kesto",
   "session.filterMenuA11y": "Suodattimet",
+  "session.viewAllHistory": "Näytä kaikki historiassa",
   "session.untitled": "Nimetön istunto",
   "session.summaryBadge": "Tiivistelmä",
   "session.options": "Istunnon asetukset",

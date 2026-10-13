@@ -174,6 +174,7 @@ export const BN = {
   "session.filterLanguage": "ভাষা",
   "session.filterLength": "দৈর্ঘ্য",
   "session.filterMenuA11y": "ফিল্টার",
+  "session.viewAllHistory": "ইতিহাসে সব দেখুন",
   "session.untitled": "শিরোনামহীন সেশন",
   "session.summaryBadge": "সারসংক্ষেপ",
   "session.options": "সেশনের বিকল্প",

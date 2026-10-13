@@ -47,7 +47,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { AudioManager } from "react-native-audio-api";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
@@ -69,7 +69,7 @@ import { SEGMENT_FLUSH_INTERVAL_MS } from "@shared/constants";
 import { stopTailSegment, takeFlushableSegments } from "@shared/recording-persistence";
 import { LanguagePicker } from "~/components/language-picker";
 import { AudioVisualizer } from "~/components/audio-visualizer";
-import { IdleRecordButton, RecCtl, setRecordNavHidden } from "~/components/record-button";
+import { IdleRecordButton, RecCtl, setLiveSession, setRecordNavHidden } from "~/components/record-button";
 import { MicErrorState } from "~/components/mic-error-state";
 import { UpgradeCard } from "~/components/upgrade-card";
 import { RecentSessions } from "~/components/recent-sessions";
@@ -124,6 +124,7 @@ export default function RecordScreen() {
   // web's lg: layout (max-w-2xl centred, px-8, pt-12, no bottom-nav padding).
   const { railActive } = useRailLayout();
   const tablet = useTablet();
+  const insets = useSafeAreaInsets();
   const prefs = useQuery(api.preferences.get);
   const usage = useQuery(api.subscriptions.getMyUsageThisMonth);
   const updatePrefs = useMutation(api.preferences.update);
@@ -350,7 +351,10 @@ export default function RecordScreen() {
       completedPendingRef.current = true;
       skipEnterRef.current = true;
       setCompletedPending(true);
-      router.push({ pathname: "/session/[id]", params: { id: sessionId, completed: "1" } });
+      // iPad: the finished session opens BESIDE the sidebar (its Recent list
+      // highlights it); phones push it full-screen.
+      if (railActive) router.navigate({ pathname: "/s/[id]", params: { id: sessionId, completed: "1" } });
+      else router.push({ pathname: "/session/[id]", params: { id: sessionId, completed: "1" } });
     } else {
       setElapsed(0);
     }
@@ -378,6 +382,24 @@ export default function RecordScreen() {
     setRecordNavHidden(live);
   }, [live]);
   useEffect(() => () => setRecordNavHidden(false), []);
+
+  // Publish the live session for the iPad sidebar's "Recording" row (timer +
+  // pair). Re-published on every phase change so pause/resume freeze/resume
+  // its clock; cleared when capture ends.
+  useEffect(() => {
+    if (!active) {
+      setLiveSession(null);
+      return;
+    }
+    const t = timerRef.current;
+    // On Start the phase can flip before handleRecord stamps `since` (it runs
+    // after `await recorder.start()`), so a running clock falls back to now.
+    const since = recorder.phase === "recording" ? (t.since ?? Date.now()) : null;
+    setLiveSession({ accumulated: t.accumulated, since, source, target });
+    // timerRef is mutated by the handlers just before the phase flips.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, recorder.phase, source, target]);
+  useEffect(() => () => setLiveSession(null), []);
 
   // ── OS interruption (web: recorder.interrupted / recorder.recover) ───────
   // A call, Siri or another app takes the audio session mid-recording. The
@@ -473,6 +495,8 @@ export default function RecordScreen() {
                     styles.idle,
                     railActive && styles.idleWide,
                     tablet && styles.idleTablet,
+                    // Ends level with the sidebar island (insets.bottom + 12).
+                    railActive && { paddingBottom: insets.bottom + 12 },
                   ]}
                   showsVerticalScrollIndicator={false}
                   contentInsetAdjustmentBehavior="never"
@@ -519,7 +543,8 @@ export default function RecordScreen() {
                   <PositioningTips large={tablet} />
                   {/* The record area flexes, so a 4th row fills the iPad's
                       height instead of leaving dead space under the hero. */}
-                  <RecentSessions large={tablet} limit={tablet ? 4 : 3} />
+                  {/* iPad: the sidebar lists recent sessions, so the page doesn't. */}
+                  {railActive ? null : <RecentSessions large={tablet} limit={tablet ? 4 : 3} />}
                 </ScrollView>
               </Animated.View>
             ) : view === "error" ? (
@@ -955,7 +980,9 @@ const styles = themed(() => StyleSheet.create({
 
   // Live shell on iPad (useTablet): status, timer and controls sized for a
   // 13" screen read from a seat, not a phone held in the hand.
-  statusHeaderTablet: { paddingHorizontal: 32, paddingVertical: 20 },
+  // Top padding = the shared iPad top line, so the live header starts level
+  // with the sidebar island (TABLET_TOP).
+  statusHeaderTablet: { paddingHorizontal: 32, paddingTop: TABLET_TOP, paddingBottom: 20 },
   dotTablet: { width: 12, height: 12, borderRadius: 6 },
   statusLabelTablet: { fontSize: 16 },
   timerTablet: { fontSize: 30 },

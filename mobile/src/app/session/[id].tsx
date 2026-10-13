@@ -29,7 +29,7 @@
  *     Alert; the dialog finishes its exit before the screen pops.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Share, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Share, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent, type ViewStyle } from "react-native";
 import {
   useLocalSearchParams,
   useRouter,
@@ -67,7 +67,7 @@ import {
 import { formatDate, formatDuration, isRtl, langName } from "~/lib/lang";
 import { C, themed } from "~/lib/theme";
 import { EASE } from "~/lib/motion";
-import { useTablet } from "~/lib/layout";
+import { TABLET_TOP, useTablet } from "~/lib/layout";
 import { useT } from "~/i18n";
 import { useStaticStickyBottom } from "~/hooks/use-sticky-bottom";
 
@@ -93,7 +93,18 @@ interface NormalizedSegment {
   combinedTranslatedText?: string;
 }
 
+/** The route: a full-screen push with the native back button (phones; iPad after Stop). */
 export default function SessionScreen() {
+  return <SessionDetail />;
+}
+
+/**
+ * `embedded` (iPad, app/(tabs)/s/[id].tsx): shown BESIDE the sidebar — no
+ * back button (the sidebar is the navigation), the header starts on the
+ * sidebar's top line (TABLET_TOP), the reading column is centred in the
+ * space beside the sidebar, and Delete returns to History.
+ */
+export function SessionDetail({ embedded = false }: { embedded?: boolean }) {
   const { id, completed } = useLocalSearchParams<{
     id: string;
     completed?: string;
@@ -105,7 +116,15 @@ export default function SessionScreen() {
   // instead of 20pt gutters across a 13" screen, and a larger type scale.
   const tablet = useTablet();
   const { width: winW } = useWindowDimensions();
-  const column = { paddingHorizontal: tablet ? Math.max(40, (winW - 760) / 2) : 20 };
+  // Measured, not the window: embedded, the screen is the space beside the
+  // sidebar. Starts from the window width so the first frame is close.
+  const [screenW, setScreenW] = useState(winW);
+  const onScreenLayout = (e: LayoutChangeEvent) => setScreenW(e.nativeEvent.layout.width);
+  const column = { paddingHorizontal: tablet ? Math.max(40, (screenW - 760) / 2) : 20 };
+  // Header gutters: room for the native back button, or (embedded) the column.
+  const headerPad = embedded
+    ? { paddingLeft: column.paddingHorizontal, paddingRight: column.paddingHorizontal }
+    : null;
   const live = useQuery(api.sessions.getSession, { sessionId: id });
   const saveSummary = useMutation(api.sessions.saveSummary);
   // Plan usage (web usePlan) — gates Generate behind the summary cap.
@@ -149,7 +168,7 @@ export default function SessionScreen() {
       }));
   }, [segments]);
 
-  const topPad = insets.top;
+  const topPad = embedded ? insets.top + TABLET_TOP : insets.top;
 
   // ScreenEnter is the root of every branch so the route enter plays ONCE on
   // mount (with the skeleton, as on the web) and the skeleton → content swap
@@ -157,15 +176,15 @@ export default function SessionScreen() {
   if (session === undefined) {
     return (
       <ScreenEnter replayOnFocus={false}>
-        <LoadingSkeleton topPad={topPad} />
+        <LoadingSkeleton topPad={topPad} headerPad={headerPad} />
       </ScreenEnter>
     );
   }
   if (session === null) {
     return (
       <ScreenEnter replayOnFocus={false}>
-        <View style={styles.screen}>
-          <View style={[styles.header, { paddingTop: topPad }]}>
+        <View style={styles.screen} onLayout={onScreenLayout}>
+          <View style={[styles.header, headerPad, { paddingTop: topPad }]}>
             <View style={styles.headerRow}>
               <Text style={styles.notFoundTitle}>
                 {t("session.notFoundTitle")}
@@ -245,9 +264,9 @@ export default function SessionScreen() {
 
   return (
     <ScreenEnter replayOnFocus={false}>
-      <View style={styles.screen}>
+      <View style={styles.screen} onLayout={onScreenLayout}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: topPad }]}>
+        <View style={[styles.header, headerPad, { paddingTop: topPad }]}>
           {isCompleted ? (
             <View
               style={[styles.headerRow, { justifyContent: "space-between" }]}
@@ -422,10 +441,13 @@ export default function SessionScreen() {
                   duration: 200,
                 }}
                 onPress={() =>
-                  router.dismissTo({
-                    pathname: "/",
-                    params: { autostart: "1" },
-                  })
+                  // Embedded (iPad): Record is a sibling tab, not below us.
+                  embedded
+                    ? router.navigate({ pathname: "/", params: { autostart: "1" } })
+                    : router.dismissTo({
+                        pathname: "/",
+                        params: { autostart: "1" },
+                      })
                 }
                 accessibilityRole="button"
                 style={[styles.secondary, tablet && styles.secondaryTablet, styles.radius16]}
@@ -445,7 +467,11 @@ export default function SessionScreen() {
                 duration: 200,
               }}
               onPress={() =>
-                router.canGoBack() ? router.back() : router.dismissTo("/")
+                embedded
+                  ? router.navigate("/")
+                  : router.canGoBack()
+                    ? router.back()
+                    : router.dismissTo("/")
               }
               accessibilityRole="button"
               style={[styles.done, tablet && styles.doneTablet]}
@@ -503,7 +529,8 @@ export default function SessionScreen() {
             setDeleteOpen(o);
             // Let the dialog finish its 150ms exit, then pop back to History
             // (where the row plays its own exit).
-            if (!o && deletedRef.current) setTimeout(() => router.back(), 160);
+            if (!o && deletedRef.current)
+              setTimeout(() => (embedded ? router.navigate("/history") : router.back()), 160);
           }}
           title={t("session.deleteTitle")}
           message={t("session.deleteMessage")}
@@ -641,10 +668,10 @@ function CopyButton({
 
 // ─── Loading skeleton (page.tsx session === undefined) ──────────────────────
 
-function LoadingSkeleton({ topPad }: { topPad: number }) {
+function LoadingSkeleton({ topPad, headerPad }: { topPad: number; headerPad: ViewStyle | null }) {
   return (
     <View style={styles.screen}>
-      <View style={[styles.header, { paddingTop: topPad }]}>
+      <View style={[styles.header, headerPad, { paddingTop: topPad }]}>
         <View
           style={[
             styles.headerRow,

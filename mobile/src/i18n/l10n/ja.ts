@@ -173,6 +173,7 @@ export const JA = {
   "session.filterLanguage": "言語",
   "session.filterLength": "長さ",
   "session.filterMenuA11y": "フィルター",
+  "session.viewAllHistory": "履歴ですべて表示",
   "session.untitled": "無題のセッション",
   "session.summaryBadge": "要約",
   "session.options": "セッションのオプション",

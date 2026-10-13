@@ -174,6 +174,7 @@ export const AR = {
   "session.filterLanguage": "اللغة",
   "session.filterLength": "المدة",
   "session.filterMenuA11y": "عوامل التصفية",
+  "session.viewAllHistory": "عرض الكل في السجل",
   "session.untitled": "جلسة بلا عنوان",
   "session.summaryBadge": "ملخص",
   "session.options": "خيارات الجلسة",

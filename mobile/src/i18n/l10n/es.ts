@@ -174,6 +174,7 @@ export const ES = {
   "session.filterLanguage": "Idioma",
   "session.filterLength": "Duración",
   "session.filterMenuA11y": "Filtros",
+  "session.viewAllHistory": "Ver todo en el historial",
   "session.untitled": "Sesión sin título",
   "session.summaryBadge": "Resumen",
   "session.options": "Opciones de la sesión",

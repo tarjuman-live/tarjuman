@@ -172,6 +172,7 @@ export const KO = {
   "session.filterLanguage": "언어",
   "session.filterLength": "길이",
   "session.filterMenuA11y": "필터",
+  "session.viewAllHistory": "기록에서 모두 보기",
   "session.untitled": "제목 없는 세션",
   "session.summaryBadge": "요약",
   "session.options": "세션 옵션",
