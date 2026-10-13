@@ -96,6 +96,7 @@ import { useRecordNavHidden } from "~/components/record-button";
 import { LocaleSwitcher, RailLayoutProvider, RailSlot } from "~/components/locale-switcher";
 import { AccountMenu, FADE_GLASS_FRAME, FadeGlass } from "~/components/account-card";
 import { PressableScale } from "~/components/motion";
+import { TABLET_TOP } from "~/lib/layout";
 
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[0];
 
@@ -116,6 +117,15 @@ const FLYING_BLUR = 13;
 // sidebar.tsx constants, scaled up for the iPad (the rail only exists at
 // ≥1024pt, i.e. a full-screen iPad): 52pt items, 16pt labels, 22pt icons.
 const RAIL_ITEM_H = 52;
+/**
+ * Concentric corners: the nav sits RAIL_INSET from the island's top and
+ * sides, and the pill / item radius is the island's radius minus that inset,
+ * so the selected pill's curve runs parallel to the island's instead of
+ * looking jammed into its corner (user: "not good at the top", 2026-10-13).
+ */
+const RAIL_RADIUS = 26;
+const RAIL_INSET = 14;
+const RAIL_ITEM_RADIUS = RAIL_RADIUS - RAIL_INSET;
 const NAV_ITEM_PITCH = RAIL_ITEM_H + 4;
 const PILL_EASE = Easing.bezier(0.3, 0.9, 0.4, 1);
 /** lg breakpoint. At or above it the web swaps the bottom nav for the sidebar. */
@@ -359,7 +369,9 @@ function SidebarRail(props: TabBarProps) {
       style={[
         styles.railHost,
         {
-          paddingTop: insets.top + 12,
+          // Shares the content's top line (TABLET_TOP) instead of hugging the
+          // status bar, so the island and the page start at the same height.
+          paddingTop: insets.top + TABLET_TOP,
           paddingBottom: insets.bottom + 12,
           // `lg:p-3` gutter: the outer (screen) edge also clears the safe
           // area, and it mirrors with the rail's side in an RTL UI language.
@@ -516,20 +528,20 @@ const styles = themed(() => StyleSheet.create({
   rail: {
     flex: 1,
     width: 256,
-    borderRadius: 20,
+    borderRadius: RAIL_RADIUS,
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.borderLight,
     boxShadow: "0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
   },
-  railNav: { marginTop: 12, marginHorizontal: 12 },
+  railNav: { marginTop: RAIL_INSET, marginHorizontal: RAIL_INSET },
   pill: {
     position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     height: RAIL_ITEM_H,
-    borderRadius: 14,
+    borderRadius: RAIL_ITEM_RADIUS,
     backgroundColor: C.accentSoft,
     borderWidth: 1,
     borderColor: C.accent,
@@ -542,7 +554,7 @@ const styles = themed(() => StyleSheet.create({
     gap: 14,
     height: RAIL_ITEM_H,
     paddingHorizontal: 14,
-    borderRadius: 14,
+    borderRadius: RAIL_ITEM_RADIUS,
     borderWidth: 1,
     borderColor: "transparent",
   },
@@ -554,15 +566,16 @@ const styles = themed(() => StyleSheet.create({
     left: -1,
     right: -1,
     bottom: -1,
-    borderRadius: 14,
+    borderRadius: RAIL_ITEM_RADIUS + 1,
     boxShadow: "0 0 16px rgba(46, 204, 113, 0.35)",
   },
   railFooter: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    // Same inset as the nav (top) so both ends of the island match.
+    paddingHorizontal: RAIL_INSET,
+    paddingVertical: RAIL_INSET,
     borderTopWidth: 1,
     borderTopColor: C.border,
   },

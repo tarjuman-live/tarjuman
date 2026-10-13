@@ -77,7 +77,7 @@ import { ConfirmDialog } from "~/components/confirm-dialog";
 import { PressableScale, Skeleton } from "~/components/motion";
 import { langName } from "~/lib/lang";
 import { C, themed } from "~/lib/theme";
-import { useTablet } from "~/lib/layout";
+import { TABLET_TOP, useTablet } from "~/lib/layout";
 import { EASE, EASE_FN, TW_ENTER, TW_EXIT, twEnter, twExit, useReduceMotion } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale } from "~/i18n";
 
@@ -571,7 +571,7 @@ const styles = themed(() => StyleSheet.create({
   messageTitle: { color: C.t3, fontSize: 14, lineHeight: 20, textAlign: "center" },
   messageSub: { color: C.t4, fontSize: 12, lineHeight: 16, marginTop: 4, textAlign: "center" },
   // iPad (useTablet): the Record screen's column (760 max, 40 gutters) and type scale.
-  headerTablet: { paddingHorizontal: 40, paddingTop: 32, paddingBottom: 24 },
+  headerTablet: { paddingHorizontal: 40, paddingTop: TABLET_TOP, paddingBottom: 24 },
   column: { width: "100%", maxWidth: 680, alignSelf: "center" },
   sectionLabelTablet: { fontSize: 12.5, letterSpacing: 1, marginBottom: 6 },
   titleTablet: { fontSize: 34 },

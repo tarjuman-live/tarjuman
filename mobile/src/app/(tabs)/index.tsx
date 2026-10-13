@@ -75,7 +75,7 @@ import { UpgradeCard } from "~/components/upgrade-card";
 import { RecentSessions } from "~/components/recent-sessions";
 import { PositioningTips } from "~/components/positioning-tips";
 import { LocaleSwitcher, useRailLayout } from "~/components/locale-switcher";
-import { useTablet } from "~/lib/layout";
+import { TABLET_TOP, useTablet } from "~/lib/layout";
 import { AccountMenu } from "~/components/account-card";
 import { SplitTranscript } from "~/components/split-transcript";
 import { Transcript, type TranscriptRow } from "~/components/transcript";
@@ -858,7 +858,7 @@ const styles = themed(() => StyleSheet.create({
   recordArea: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingVertical: 28, minHeight: 220 },
   recordHint: { color: C.t3, fontSize: 14 },
   // iPad (useTablet): a wider column, more air, the hero sized for a 13" screen.
-  idleTablet: { maxWidth: 760, paddingHorizontal: 40, paddingTop: 56, gap: 24 },
+  idleTablet: { maxWidth: 760, paddingHorizontal: 40, paddingTop: TABLET_TOP, gap: 24 },
   recordAreaTablet: { gap: 22 },
   recordHintTablet: { fontSize: 17 },
   usage: { color: C.t3, fontSize: 12, textAlign: "center" },

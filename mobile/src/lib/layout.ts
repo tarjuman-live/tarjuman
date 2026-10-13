@@ -10,3 +10,9 @@ export function useTablet(): boolean {
   const { width, height } = useWindowDimensions();
   return Math.min(width, height) >= 700;
 }
+
+/**
+ * iPad top line: the sidebar island and every tab's first content block start
+ * this far below the safe area, so they share one horizontal edge.
+ */
+export const TABLET_TOP = 56;
