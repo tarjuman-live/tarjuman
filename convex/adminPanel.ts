@@ -22,10 +22,13 @@ import { BILLING_ENABLED } from "./billingLimits";
  * server-side gate (ADMIN_USER_IDS allowlist, see adminAuth.ts). The web
  * page's notFound() for non-admins is cosmetic; this is the real lock.
  *
- * Reads that touch other users' data never return transcript text except via
- * `openSessionForAdmin`, which is a MUTATION precisely so the access is written
- * to adminAuditLog in the same transaction — the "operator access is logged"
- * promise in the privacy policy can't be skipped by a UI that forgets to log.
+ * List views return session METADATA only — title, languages, duration,
+ * counts. (A title is often auto-derived from the first transcript line, up to
+ * ~60 chars; the privacy policy says operators can see session metadata.) The
+ * transcript body and summary are returned ONLY by `openSessionForAdmin`,
+ * which is a MUTATION precisely so the access is written to adminAuditLog in
+ * the same transaction — "opening a transcript is logged" can't be skipped by
+ * a UI that forgets to log.
  */
 
 /** Byte budget for paginated session lists (legacy docs carry inline text). */
@@ -382,7 +385,7 @@ export const getUserDetail = query({
       .take(24);
     const recentUsage = await ctx.db
       .query("usageEvents")
-      .withIndex("by_user_and_kind", (q) => q.eq("userId", userId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
       .take(15);
     const auditRows = await ctx.db
@@ -538,7 +541,17 @@ export const getSystemInfo = query({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const lastEvent = await ctx.db.query("usageEvents").order("desc").first();
+    // Last SERVER-side event (ingest health): skip client-reported STT
+    // errors, which can be fresh while the API routes' ingest is broken.
+    let lastServerEventAt: number | null = null;
+    let scanned = 0;
+    for await (const e of ctx.db.query("usageEvents").order("desc")) {
+      if (e.kind !== "stt_error") {
+        lastServerEventAt = e._creationTime;
+        break;
+      }
+      if (++scanned >= 200) break;
+    }
     const recentErrors = await ctx.db
       .query("usageEvents")
       .withIndex("by_ok", (q) => q.eq("ok", false))
@@ -571,7 +584,7 @@ export const getSystemInfo = query({
       },
       deploymentUrl: process.env.CONVEX_CLOUD_URL ?? null,
       billingEnabled: BILLING_ENABLED,
-      lastUsageEventAt: lastEvent?._creationTime ?? null,
+      lastUsageEventAt: lastServerEventAt,
       recentErrors: await Promise.all(
         recentErrors.map(async (e) => ({
           id: e._id,

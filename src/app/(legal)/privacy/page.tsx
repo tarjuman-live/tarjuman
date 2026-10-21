@@ -51,9 +51,11 @@ export default function PrivacyPage() {
           <strong>Transcripts, translations &amp; summaries:</strong> the
           source-language text from your recordings, the translations, and any
           AI summaries you generate. These are stored in our database and are
-          visible to your authenticated account — and to a small number of
-          authorized Tarjuman operators only when needed to provide support,
-          investigate abuse, or fix a problem. Every such access is logged.
+          visible to your authenticated account. A small number of authorized
+          Tarjuman operators can see account and session details (such as
+          session titles, languages and length) and, only when needed to
+          provide support, investigate abuse, or fix a problem, open a
+          transcript — every transcript they open is logged.
         </li>
         <li>
           <strong>Preferences:</strong> your default languages and display
@@ -184,8 +186,8 @@ export default function PrivacyPage() {
         Data is encrypted in transit (HTTPS/WSS). Your transcripts are
         accessible through your authenticated account; operator access is
         limited to named administrators, used only for support, abuse
-        investigation, or fixing problems, and every access is recorded in an
-        audit log. No system is perfectly secure, but we use reputable
+        investigation, or fixing problems, and every transcript an operator
+        opens is recorded in an audit log. No system is perfectly secure, but we use reputable
         infrastructure providers and limit access to your data.
       </p>
 

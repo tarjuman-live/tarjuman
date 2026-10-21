@@ -139,7 +139,9 @@ export async function recordEvent(
     });
   }
 
-  if (userId) {
+  // Per-user monthly rollup = AI calls + spend only (STT credential mints and
+  // client STT errors would otherwise inflate the "calls" figure).
+  if (userId && isAiKind(e.kind)) {
     const month = monthKey(now);
     const monthly = await ctx.db
       .query("usageUserMonthly")

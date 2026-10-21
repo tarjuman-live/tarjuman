@@ -165,7 +165,7 @@ export const purgeUserData = internalMutation({
 
     const events = await ctx.db
       .query("usageEvents")
-      .withIndex("by_user_and_kind", (q) => q.eq("userId", userId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .take(EVENT_BATCH);
     for (const e of events) await ctx.db.delete("usageEvents", e._id);
     if (events.length === EVENT_BATCH) {

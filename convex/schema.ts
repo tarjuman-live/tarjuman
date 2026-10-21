@@ -235,6 +235,9 @@ export default defineSchema({
     error: v.optional(v.string()),
     latencyMs: v.optional(v.number()),
   })
+    // Newest-first per user (user detail page, account purge).
+    .index("by_user", ["userId"])
+    // Per-user per-kind (client STT-error rate limit).
     .index("by_user_and_kind", ["userId", "kind"])
     .index("by_ok", ["ok"]),
 

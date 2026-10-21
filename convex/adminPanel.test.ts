@@ -309,3 +309,56 @@ describe("admin transcript access is audited", () => {
     expect(audit[0]).toMatchObject({ action: "view_session", targetSessionId: sessionId });
   });
 });
+
+describe("review fixes", () => {
+  it("user detail lists recent usage newest-first across kinds", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-21T10:00:00Z"));
+    for (let i = 0; i < 20; i++) {
+      await t.mutation(api.usage.ingest, {
+        secret: SECRET,
+        events: [{ userId, kind: "translate", model: "claude-haiku-4-5-20251001", ok: true }],
+      });
+      vi.advanceTimersByTime(1000);
+    }
+    await as(t, userId).mutation(api.usage.reportClientEvent, {
+      provider: "speechmatics",
+      code: "quota_exceeded",
+    });
+    const d = await as(t, adminId).query(api.adminPanel.getUserDetail, { userId });
+    expect(d?.recentUsage[0].kind).toBe("stt_error");
+    expect(d?.recentUsage).toHaveLength(15);
+  });
+
+  it("per-user monthly calls count AI calls only (not STT credential mints)", async () => {
+    await t.mutation(api.usage.ingest, {
+      secret: SECRET,
+      events: [
+        { userId, kind: "stt_token", provider: "speechmatics", ok: true },
+        { userId, kind: "translate", model: "claude-haiku-4-5-20251001", costMicroUsd: 10, ok: true },
+      ],
+    });
+    const monthly = await t.run((ctx) => ctx.db.query("usageUserMonthly").collect());
+    expect(monthly).toHaveLength(1);
+    expect(monthly[0]).toMatchObject({ calls: 1, costMicroUsd: 10 });
+  });
+
+  it("a forged client quota report alone never raises the quota alert", async () => {
+    await as(t, userId).mutation(api.usage.reportClientEvent, {
+      provider: "speechmatics",
+      code: "quota_exceeded",
+    });
+    const alone = await t.query(internal.alerts.evaluate, {});
+    expect(alone.conditions.map((c) => c.kind)).not.toContain("stt_quota");
+
+    // Corroborated: two OTHER users' sessions saving segments right now.
+    const a = await makeUser(t, "a@example.org");
+    const b = await makeUser(t, "b@example.org");
+    for (const owner of [a, b]) {
+      const sid = await makeSession(t, owner, 2);
+      await t.run((ctx) => ctx.db.patch(sid, { status: "recording", updatedAt: Date.now() }));
+    }
+    const real = await t.query(internal.alerts.evaluate, {});
+    expect(real.conditions.map((c) => c.kind)).toContain("stt_quota");
+  });
+});

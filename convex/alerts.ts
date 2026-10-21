@@ -23,6 +23,8 @@ import { segmentCountOf } from "./sessions";
  */
 
 const WINDOW_MS = 15 * 60 * 1000;
+/** Speechmatics free tier: concurrent realtime sessions allowed app-wide. */
+const SPEECHMATICS_CONCURRENCY = 2;
 const HOUR_MS = 60 * 60 * 1000;
 const STATE_KEY = "alerts";
 
@@ -73,14 +75,40 @@ export const evaluate = internalQuery({
       });
     }
 
+    // Quota refusals are reported by the BROWSER (usage.reportClientEvent),
+    // so they're untrusted: any signed-in user could forge one. Only alert
+    // when the server corroborates it — a real Speechmatics quota refusal
+    // means at least SPEECHMATICS_CONCURRENCY *other* sessions were saving
+    // segments in the same window.
     const quota = recent.filter(
       (e) => e.kind === "stt_error" && /quota/i.test(e.error ?? ""),
     );
     if (quota.length > 0) {
-      conditions.push({
-        kind: "stt_quota",
-        message: `Speechmatics refused ${quota.length} recording(s) for quota in the last 15 min — the free tier allows only 2 concurrent sessions app-wide.`,
-      });
+      const reporters = new Set(quota.map((e) => e.userId).filter(Boolean));
+      let otherActive = 0;
+      for (const status of ["recording", "paused", "completed"] as const) {
+        const rows = await ctx.db
+          .query("sessions")
+          .withIndex("by_status_updated", (q) =>
+            q.eq("status", status).gte("updatedAt", now - WINDOW_MS),
+          )
+          .take(50);
+        for (const sess of rows) {
+          if (
+            sess.userId &&
+            !reporters.has(sess.userId) &&
+            segmentCountOf(sess) > 0
+          ) {
+            otherActive++;
+          }
+        }
+      }
+      if (otherActive >= SPEECHMATICS_CONCURRENCY) {
+        conditions.push({
+          kind: "stt_quota",
+          message: `Speechmatics refused ${quota.length} recording(s) for quota in the last 15 min while ${otherActive} other sessions were live — the free tier allows only ${SPEECHMATICS_CONCURRENCY} concurrent sessions app-wide.`,
+        });
+      }
     }
 
     // Ingest silence: real recordings in the last 24h but no server-side usage
