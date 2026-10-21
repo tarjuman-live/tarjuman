@@ -24,7 +24,7 @@ export default function PrivacyPage() {
   return (
     <>
       <h1 style={styles.h1}>Privacy Policy</h1>
-      <div style={styles.meta}>Last updated: 2026-08-29</div>
+      <div style={styles.meta}>Last updated: 2026-10-21</div>
 
       <p style={styles.p}>
         This Privacy Policy explains how Tarjuman (&quot;Tarjuman&quot;,
@@ -51,17 +51,22 @@ export default function PrivacyPage() {
           <strong>Transcripts, translations &amp; summaries:</strong> the
           source-language text from your recordings, the translations, and any
           AI summaries you generate. These are stored in our database and are
-          visible only to your authenticated account.
+          visible to your authenticated account — and to a small number of
+          authorized Tarjuman operators only when needed to provide support,
+          investigate abuse, or fix a problem. Every such access is logged.
         </li>
         <li>
           <strong>Preferences:</strong> your default languages and display
           settings.
         </li>
         <li>
-          <strong>Diagnostics &amp; usage:</strong> aggregate, non-identifying
-          metrics (page views, error reports, counts of API calls) used to keep
-          the Service running and catch bugs. These do not include your
-          transcript content.
+          <strong>Diagnostics &amp; usage:</strong> page views, error reports,
+          and a record of each AI and transcription call linked to your
+          account (which feature, which model, token counts, estimated cost,
+          success or failure). We use these to keep the Service running,
+          control costs, catch bugs, and prevent abuse. Per-call records are
+          deleted after 35 days (only daily totals are kept), and none of them
+          include your transcript content.
         </li>
       </ul>
 
@@ -177,9 +182,11 @@ export default function PrivacyPage() {
       <h2 style={styles.h2}>Security</h2>
       <p style={styles.p}>
         Data is encrypted in transit (HTTPS/WSS). Your transcripts are
-        accessible only through your authenticated account. No system is
-        perfectly secure, but we use reputable infrastructure providers and
-        limit access to your data.
+        accessible through your authenticated account; operator access is
+        limited to named administrators, used only for support, abuse
+        investigation, or fixing problems, and every access is recorded in an
+        audit log. No system is perfectly secure, but we use reputable
+        infrastructure providers and limit access to your data.
       </p>
 
       <h2 style={styles.h2}>International transfers</h2>

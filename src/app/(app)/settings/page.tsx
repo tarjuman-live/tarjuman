@@ -343,6 +343,31 @@ export default function SettingsPage() {
               Loading…
             </span>
           </div>
+        ) : isPro && subscription?.comped ? (
+          // Operator-granted Pro: no Stripe subscription to manage.
+          <div
+            className="w-full rounded-2xl px-4 py-3.5 flex items-center justify-between gap-2"
+            style={cardStyle}
+          >
+            <span>
+              <span className="flex items-center gap-2">
+                <span className="text-[14px] font-semibold" style={{ color: COLORS.w }}>
+                  Tarjuman Pro
+                </span>
+                <span
+                  className="text-[9px] font-bold uppercase tracking-wider px-[6px] py-[2px] rounded-md"
+                  style={{ background: COLORS.accentSoft, color: COLORS.accent }}
+                >
+                  ✦ Pro
+                </span>
+              </span>
+              <span className="block text-[12px] mt-0.5" style={{ color: COLORS.t3 }}>
+                {subscription.compExpiresAt
+                  ? `Complimentary · until ${formatDate(subscription.compExpiresAt)}`
+                  : "Complimentary"}
+              </span>
+            </span>
+          </div>
         ) : isPro ? (
           <button
             type="button"

@@ -39,6 +39,9 @@ export const SETTINGS_AUTH_NAV_STRINGS = {
   "settingsAuthNav.renewsOn": { en: "Renews {date}" },
   "settingsAuthNav.activeSubscription": { en: "Active subscription" },
   "settingsAuthNav.manageBilling": { en: "{status} · Manage billing" },
+  // Pro granted by an operator from /admin — no Stripe subscription behind it.
+  "settingsAuthNav.complimentary": { en: "Complimentary" },
+  "settingsAuthNav.complimentaryUntil": { en: "Complimentary · until {date}" },
   "settingsAuthNav.upgrade": { en: "Upgrade" },
   "settingsAuthNav.upgradeSub": { en: "{price} · see all plans" },
   "settingsAuthNav.usageLine": {

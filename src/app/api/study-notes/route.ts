@@ -88,5 +88,6 @@ ${transcript}`;
     model: "claude-sonnet-5",
     maxTokens: 2000,
     logTag: "study-notes",
+    usage: { kind: "study_notes", userId: auth.userId },
   });
 }

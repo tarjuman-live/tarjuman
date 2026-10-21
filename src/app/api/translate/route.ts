@@ -12,6 +12,7 @@ import { requireAuthFromHeader, checkRateLimit } from "@/lib/api-auth";
 import { verifyAndEnrich } from "@/lib/sunnah";
 import { verifyAndEnrichQuran } from "@/lib/quran";
 import { looksLikeMetaCommentary } from "@/lib/translation-guard";
+import { trackAnthropicCall, upstreamErrorMessage } from "@/lib/usage/ingest";
 
 interface TranslateRequest {
   text: string;
@@ -167,6 +168,16 @@ export async function POST(req: NextRequest) {
   // nothing on the ~99% of segments that are ordinary prose.
   const maxTokens = 1500;
 
+  // Usage/cost report for the admin dashboard (sent after the response; never
+  // blocks or throws). Every exit below this point settles it.
+  const usage = trackAnthropicCall({
+    kind: "translate",
+    model,
+    userId: auth.userId,
+    // 2 × 15s attempts + citation enrichment headroom.
+    timeoutMs: 45_000,
+  });
+
   const requestBody = JSON.stringify({
     model,
     max_tokens: maxTokens,
@@ -226,6 +237,7 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (/timed out|abort/i.test(msg)) {
+        usage.settle({ ok: false, status: 504, error: "upstream timeout" });
         return NextResponse.json(
           { error: "Translation timed out. Try again." },
           { status: 504 },
@@ -237,6 +249,7 @@ export async function POST(req: NextRequest) {
         await new Promise((res) => setTimeout(res, RETRY_BACKOFF_MS));
         continue;
       }
+      usage.settle({ ok: false, error: msg });
       return NextResponse.json(
         { error: `Translation failed: ${msg}` },
         { status: 502 },
@@ -245,6 +258,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!response) {
+    usage.settle({ ok: false, error: lastTransientDetail || "upstream error" });
     return NextResponse.json(
       {
         error: `Translation failed: ${lastTransientDetail || "upstream error"}`,
@@ -264,6 +278,12 @@ export async function POST(req: NextRequest) {
     console.error(
       `[translate] upstream HTTP ${response.status}: ${errText.slice(0, 300)}`,
     );
+    // Includes the "credit balance is too low" 400 — the alert cron keys on it.
+    usage.settle({
+      ok: false,
+      status: response.status,
+      error: upstreamErrorMessage(errText),
+    });
     return NextResponse.json(
       { error: "Translation temporarily unavailable." },
       { status: 502 },
@@ -277,15 +297,24 @@ export async function POST(req: NextRequest) {
   );
 
   const upstream = response;
+  const reader = upstream.body!.getReader();
   const stream = new ReadableStream<Uint8Array>({
+    // The client went away mid-stream: stop reading (and paying for) the
+    // upstream response and report what was consumed as a partial call.
+    cancel() {
+      usage.settle({ partial: true });
+      reader.cancel().catch(() => {});
+    },
     async start(controller) {
-      const reader = upstream.body!.getReader();
       const decoder = new TextDecoder();
       const encoder = new TextEncoder();
       let buffer = ""; // SSE line buffer
       let rawText = ""; // full accumulated model output (incl. any MERGE block)
       let emitted = 0; // chars of pre-MERGE text already streamed to the client
       let mergeSeen = false;
+      // Set when Anthropic itself reports an error mid-stream (vs. the client
+      // disconnecting), so the usage report can tell the two apart.
+      let upstreamStreamError: string | null = null;
 
       const emitMeta = (meta: Record<string, unknown>) => {
         controller.enqueue(
@@ -314,9 +343,11 @@ export async function POST(req: NextRequest) {
             } catch {
               continue; // ignore malformed SSE line
             }
+            usage.observe(evt);
             // Anthropic emits an `error` event mid-stream on upstream trouble.
             if (evt.type === "error") {
-              throw new Error(evt.error?.message ?? "stream-error");
+              upstreamStreamError = evt.error?.message ?? "stream-error";
+              throw new Error(upstreamStreamError);
             }
             if (
               evt.type === "content_block_delta" &&
@@ -375,6 +406,7 @@ export async function POST(req: NextRequest) {
           // (shouldFilterAsNoise above) is the ONLY path that sets filtered=true
           // and removes a segment; a translation-model verdict must never delete
           // valid source speech — off-language gating must fail-open.
+          usage.settle();
           emitMeta({ translatedText: "" });
           controller.close();
           return;
@@ -396,12 +428,18 @@ export async function POST(req: NextRequest) {
               return { ...parsed.merge!, combinedTranslatedText: q.text };
             })()
           : undefined;
+        usage.settle();
         emitMeta({
           translatedText: quranEnriched.text,
           ...(enrichedMerge ? { merge: enrichedMerge } : {}),
         });
         controller.close();
       } catch {
+        usage.settle(
+          upstreamStreamError
+            ? { ok: false, error: upstreamStreamError }
+            : { partial: true },
+        );
         // Upstream read failed mid-stream. The HTTP 200 + partial body is
         // already committed, so we can't change status — signal failure in the
         // trailer and let the client treat it as a retryable error.

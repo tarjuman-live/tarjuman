@@ -2,6 +2,7 @@ import { query, internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { auth } from "./auth";
 import { planFromStatus } from "./stripeClient";
+import { getEffectivePlan } from "./entitlements";
 import {
   PLAN_LIMITS,
   monthStartMs,
@@ -36,16 +37,25 @@ export const getMySubscription = query({
   handler: async (ctx) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) return null; // gentle: page may render before auth settles
-    const row = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .unique();
-    if (!row) return { plan: "free" as const, status: null };
+    // Effective plan = Stripe Pro OR an operator-granted comp (planGrants).
+    // `comped` tells the billing UI not to send a comped user into Stripe
+    // manage/cancel flows they have no subscription for.
+    const { plan, source, sub: row, grant } = await getEffectivePlan(
+      ctx,
+      userId,
+    );
+    const comped = source === "grant";
+    const compExpiresAt = comped ? (grant?.expiresAt ?? null) : null;
+    if (!row) {
+      return { plan, status: null, comped, compExpiresAt };
+    }
     return {
-      plan: row.plan,
+      plan,
       status: row.status,
       currentPeriodEnd: row.currentPeriodEnd ?? null,
       cancelAtPeriodEnd: row.cancelAtPeriodEnd ?? false,
+      comped,
+      compExpiresAt,
     };
   },
 });
@@ -53,8 +63,8 @@ export const getMySubscription = query({
 /**
  * This-month usage + entitlements for the current user — the reactive source of
  * truth behind the record/summary gates and the Settings usage line. Plan is
- * read from the subscription row (default "free"); limits come from
- * billingLimits.ts.
+ * the EFFECTIVE plan (Stripe Pro or an active comp grant — entitlements.ts);
+ * limits come from billingLimits.ts.
  *
  * Pro/Scholar are unlimited, so we SHORT-CIRCUIT without counting (cheap for the
  * paying majority). Only free users pay for the count, and they have ≤ a handful
@@ -69,11 +79,8 @@ export const getMyUsageThisMonth = query({
     const userId = await auth.getUserId(ctx);
     if (!userId) return null;
 
-    const sub = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .unique();
-    const plan = sub?.plan ?? "free";
+    // Stripe Pro OR an active complimentary grant — see entitlements.ts.
+    const { plan } = await getEffectivePlan(ctx, userId);
     const limits = PLAN_LIMITS[plan];
 
     // Unlimited path — skip the session scan entirely. This covers BOTH:
@@ -107,8 +114,14 @@ export const getMyUsageThisMonth = query({
       )
       .collect();
 
+    // segmentCount, not segments.length: since segments moved to the
+    // transcriptSegments table, new sessions keep the inline array EMPTY, so
+    // `segments.length` is 0 for every modern session and the free cap would
+    // never meter. Legacy rows (no segmentCount) fall back to the inline length.
     const sessionsUsed = thisMonth.filter(
-      (s) => s.status === "completed" && s.segments.length > 0
+      (s) =>
+        s.status === "completed" &&
+        (s.segmentCount ?? s.segments.length) > 0
     ).length;
     const summariesUsed = thisMonth.filter(
       (s) => (s.summaryGeneratedAt ?? 0) >= monthStart

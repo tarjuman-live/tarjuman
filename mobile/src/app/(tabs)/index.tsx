@@ -38,6 +38,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -289,6 +290,8 @@ export default function RecordScreen() {
       sessionIdRef.current = await createSession({
         sourceLanguage: source,
         targetLanguage: target,
+        // Admin dashboard's web-vs-iOS split (schema accepts web | ios only).
+        ...(Platform.OS === "ios" ? { platform: "ios" as const } : {}),
       });
     } catch {
       // Transcription still works; it just won't be saved. Say so now rather

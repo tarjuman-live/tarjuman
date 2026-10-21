@@ -63,6 +63,11 @@ export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
     router.replace("/");
   };
 
+  const goToAdmin = () => {
+    setOpen(false);
+    router.push("/admin");
+  };
+
   const goToSettings = () => {
     setOpen(false);
     router.push("/settings");
@@ -175,6 +180,21 @@ export function AccountMenu({ dropUp = false }: { dropUp?: boolean } = {}) {
               </span>
               <Icon name="chevron" size={14} color={COLORS.t4} />
             </button>
+            {/* Operator-only — the /admin functions re-check on the server. */}
+            {me?.isAdmin && (
+              <button
+                type="button"
+                onClick={goToAdmin}
+                className="w-full px-4 py-3 flex items-center justify-between gap-2 text-left text-[13px] font-semibold cursor-pointer hover:bg-black/20 transition-colors"
+                style={{ color: COLORS.t2, borderTop: `1px solid ${COLORS.border}` }}
+              >
+                <span className="flex items-center gap-2">
+                  <Icon name="shield" size={14} color={COLORS.t3} />
+                  Admin
+                </span>
+                <Icon name="chevron" size={14} color={COLORS.t4} />
+              </button>
+            )}
             <div style={{ borderTop: `1px solid ${COLORS.border}` }} />
             <button
               type="button"

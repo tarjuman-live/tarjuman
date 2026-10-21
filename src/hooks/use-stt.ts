@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { STT_PROVIDER } from "@/lib/constants";
 import { useDeepgram } from "./use-deepgram";
 import { useSpeechmatics } from "./use-speechmatics";
@@ -55,5 +58,32 @@ export function useStt(options: UseSttOptions): UseSttReturn {
     enabled: options.enabled && !useSpeechmaticsEngine,
   });
 
-  return useSpeechmaticsEngine ? speechmatics : deepgram;
+  const active = useSpeechmaticsEngine ? speechmatics : deepgram;
+
+  // Report engine errors to the admin usage log (e.g. Speechmatics
+  // quota_exceeded — the free tier allows 2 concurrent sessions app-wide, and
+  // only the browser ever sees the refusal). Fire-and-forget telemetry: never
+  // awaited, failures swallowed, each distinct error reported once, so the
+  // recording path is untouched. Server side caps it per user per hour.
+  const reportClientEvent = useMutation(api.usage.reportClientEvent);
+  const lastReported = useRef<string | null>(null);
+  useEffect(() => {
+    const err = active.error;
+    if (!err) {
+      lastReported.current = null;
+      return;
+    }
+    if (err === lastReported.current) return;
+    lastReported.current = err;
+    const code = /concurrent-session limit|quota/i.test(err)
+      ? "quota_exceeded"
+      : undefined;
+    reportClientEvent({
+      provider: STT_PROVIDER,
+      ...(code ? { code } : {}),
+      message: err.slice(0, 180),
+    }).catch(() => {});
+  }, [active.error, reportClientEvent]);
+
+  return active;
 }

@@ -419,6 +419,7 @@ export default function RecordPage() {
       const promise = createSession({
         sourceLanguage: sourceLang,
         targetLanguage: targetLang,
+        platform: "web",
       });
       createSessionPromiseRef.current = promise;
       void promise.then((id) => {

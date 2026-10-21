@@ -13,4 +13,23 @@ crons.interval(
   {}
 );
 
+// Operator alerts: AI failure spikes, Anthropic credits exhausted,
+// Speechmatics quota refusals, usage-logging silence. Cheap — reads only the
+// last 15 minutes of usageEvents. See convex/alerts.ts.
+crons.interval(
+  "check admin alerts",
+  { minutes: 10 },
+  internal.alerts.check,
+  {}
+);
+
+// Raw usage events are kept 35 days (the daily/monthly rollups are kept
+// forever). Batched + self-rescheduling. See convex/usage.ts.
+crons.interval(
+  "prune old usage events",
+  { hours: 24 },
+  internal.usage.pruneOldEvents,
+  {}
+);
+
 export default crons;

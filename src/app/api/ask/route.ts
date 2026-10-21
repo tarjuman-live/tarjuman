@@ -89,5 +89,6 @@ ${question.trim()}`;
     model: "claude-sonnet-5",
     maxTokens: 1200,
     logTag: "ask",
+    usage: { kind: "ask", userId: auth.userId },
   });
 }

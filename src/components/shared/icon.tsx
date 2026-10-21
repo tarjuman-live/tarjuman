@@ -21,7 +21,8 @@ export type IconName =
   | "speakerOff"
   | "search"
   | "settings"
-  | "more";
+  | "more"
+  | "shield";
 
 interface IconProps {
   name: IconName;
@@ -134,6 +135,12 @@ export function Icon({
       <svg {...common} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 20h9" />
         <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+      </svg>
+    ),
+    shield: (
+      <svg {...common} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5l8-3z" />
+        <path d="M9 12l2 2 4-4" />
       </svg>
     ),
     more: (

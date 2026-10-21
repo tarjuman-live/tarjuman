@@ -191,6 +191,9 @@ export default function SettingsScreen() {
     const isPro = subscription?.plan === "pro";
     const periodEnd = subscription && "currentPeriodEnd" in subscription ? subscription.currentPeriodEnd : null;
     const cancelAtEnd = subscription && "cancelAtPeriodEnd" in subscription ? subscription.cancelAtPeriodEnd : false;
+    // Operator-granted Pro: nothing to manage in Stripe.
+    const comped = subscription?.comped ?? false;
+    const compExpiresAt = subscription?.compExpiresAt ?? null;
     const proStatusLine = cancelAtEnd
       ? periodEnd
         ? t("settingsAuthNav.cancelsOn", { date: formatDate(periodEnd) })
@@ -266,7 +269,10 @@ export default function SettingsScreen() {
                     // Web row carries inline style={cardStyle}; its background
                     // beats `hover:bg-black/10`, so no press overlay (dim 0).
                     dim={0}
-                    onPress={() => void WebBrowser.openBrowserAsync(`${API_URL}/plans/manage`).catch(() => {})}
+                    onPress={() => {
+                      if (comped) return;
+                      void WebBrowser.openBrowserAsync(`${API_URL}/plans/manage`).catch(() => {});
+                    }}
                     style={[styles.card, styles.cardPad, styles.cardRow, row]}
                   >
                     <View style={{ flexShrink: 1 }}>
@@ -277,10 +283,14 @@ export default function SettingsScreen() {
                         </View>
                       </View>
                       <Text style={[styles.rowSub, text]}>
-                        {t("settingsAuthNav.manageBilling", { status: proStatusLine })}
+                        {comped
+                          ? compExpiresAt
+                            ? t("settingsAuthNav.complimentaryUntil", { date: formatDate(compExpiresAt) })
+                            : t("settingsAuthNav.complimentary")
+                          : t("settingsAuthNav.manageBilling", { status: proStatusLine })}
                       </Text>
                     </View>
-                    <Chevron dir={dir} />
+                    {!comped && <Chevron dir={dir} />}
                   </PressRow>
                 </Animated.View>
               ) : (
