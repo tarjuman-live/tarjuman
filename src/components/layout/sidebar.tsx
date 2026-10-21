@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { Icon, IconName } from "@/components/shared/icon";
 import { COLORS } from "@/lib/constants";
 import { SITE_NAME } from "@/lib/site";
@@ -19,12 +21,14 @@ import { AccountMenu } from "@/components/auth/account-menu";
  * at the top, the nav items in the middle, language + account pinned at the
  * bottom — the standard Mac-app shell.
  */
-const NAV: {
+type NavItem = {
   icon: IconName;
   labelKey: MessageKey;
   href: string;
   matches: (p: string) => boolean;
-}[] = [
+};
+
+const NAV: NavItem[] = [
   { icon: "mic", labelKey: "nav.record", href: "/record", matches: (p) => p === "/record" },
   {
     icon: "history",
@@ -40,6 +44,14 @@ const NAV: {
   },
 ];
 
+/** Operator-only item — appended for users.me.isAdmin (server re-checks). */
+const ADMIN_ITEM: NavItem = {
+  icon: "shield",
+  labelKey: "nav.admin",
+  href: "/admin",
+  matches: (p) => p === "/admin" || p.startsWith("/admin/"),
+};
+
 // Item height (h-11 = 44px) + gap (gap-1 = 4px) → the sliding pill's per-item
 // vertical offset.
 const NAV_ITEM_PITCH = 48;
@@ -47,7 +59,11 @@ const NAV_ITEM_PITCH = 48;
 export function Sidebar() {
   const pathname = usePathname();
   const { t } = useLocale();
-  const activeIndex = NAV.findIndex((n) => n.matches(pathname));
+  const me = useQuery(api.users.me);
+  // Build the visible list FIRST and index into it, so the sliding pill's
+  // translateY stays aligned when the Admin item is present.
+  const items = me?.isAdmin ? [...NAV, ADMIN_ITEM] : NAV;
+  const activeIndex = items.findIndex((n) => n.matches(pathname));
 
   return (
     <aside
@@ -105,7 +121,7 @@ export function Sidebar() {
             />
           )}
           <div className="relative flex flex-col gap-1">
-            {NAV.map((item) => {
+            {items.map((item) => {
               const active = item.matches(pathname);
               return (
                 <Link

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackAnthropicCall, upstreamErrorMessage } from "@/lib/usage/ingest";
 import { ISLAMIC_TERMINOLOGY_RULES } from "@/lib/islamic-terminology";
 import { LANGUAGES } from "@/lib/constants";
 
@@ -126,6 +127,12 @@ export async function POST(req: NextRequest) {
 
   const system = `You translate short spoken-transcript segments from ${sourceName} into ${targetName}. Output ONLY the translation — no preamble, no quotation marks, no notes. If the input is filler or untranslatable noise, output an empty string.\n\n${ISLAMIC_TERMINOLOGY_RULES}`;
 
+  // Anonymous usage report (no user) for the admin AI-spend panel.
+  const tracker = trackAnthropicCall({
+    kind: "trial_translate",
+    model: MODEL,
+    timeoutMs: 15_000,
+  });
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -149,14 +156,26 @@ export async function POST(req: NextRequest) {
     });
     if (!resp.ok) {
       console.error("trial translate upstream error", resp.status);
+      const errText = await resp.text().catch(() => "");
+      tracker.settle({
+        ok: false,
+        status: resp.status,
+        error: upstreamErrorMessage(errText),
+      });
       return NextResponse.json({ error: "Translation hiccup — try again." }, { status: 502 });
     }
     const data = await resp.json();
+    tracker.observe(data);
+    tracker.settle();
     const translatedText =
       typeof data?.content?.[0]?.text === "string" ? data.content[0].text.trim() : "";
     return NextResponse.json({ translatedText });
   } catch (e) {
     console.error("trial translate error", e);
+    tracker.settle({
+      ok: false,
+      error: e instanceof Error ? e.message : String(e),
+    });
     return NextResponse.json({ error: "Translation hiccup — try again." }, { status: 502 });
   }
 }

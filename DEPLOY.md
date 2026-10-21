@@ -96,6 +96,10 @@ DEEPGRAM_API_KEY       your Deepgram key   (optional — fallback engine only,
 DEEPGRAM_PROJECT_ID    Deepgram project id (optional)
 SUNNAH_API_KEY         sunnah.com key      (optional)
 NEXT_PUBLIC_SENTRY_DSN your Sentry DSN     (optional; empty = Sentry off)
+USAGE_INGEST_SECRET    same value as the Convex env var of the same name —
+                        lets the API routes log AI/STT usage + cost for
+                        /admin (optional; unset = no usage logging, nothing
+                        breaks)
 ```
 
 > `SPEECHMATICS_API_KEY` **is already set** in the live project — verified
@@ -135,6 +139,9 @@ bunx convex env set --prod KEY value
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth — required for Google sign-in |
 | `RESEND_API_KEY` | Password-reset email sender (`convex/passwordReset.ts`) |
 | `RESEND_FROM` | "From" address — set to `Tarjuman <no-reply@tarjuman.live>` |
+| `ADMIN_USER_IDS` | Comma-separated `users._id`s allowed into `/admin` (see `convex/adminAuth.ts`). **By id, never email** — a password signup can claim any email. Find your id with `bunx convex run --prod admin:getUserByEmail '{"email":"you@…"}'`. Unset = nobody is admin |
+| `ADMIN_ALERT_EMAIL` | Where operator alerts go (AI failure spikes, Anthropic credits exhausted, Speechmatics quota, usage-logging silence) — sent via Resend, at most once per alert type per 6–24h (`convex/alerts.ts`) |
+| `USAGE_INGEST_SECRET` | Shared secret (≥ 32 chars) the Next.js API routes present to `usage.ingest`. Must match the Vercel env var of the same name |
 
 > **Resend:** `tarjuman.live` is verified in Resend and `RESEND_FROM` is set,
 > so password-reset emails deliver to any user. If `RESEND_FROM` is ever
@@ -232,6 +239,7 @@ Logs.
 | `SUNNAH_API_KEY` | Vercel (optional) | Hadith citation enrichment in translate/verify-citations. Unset → silently skipped |
 | `NEXT_PUBLIC_APP_URL` | Vercel | sitemap.ts / robots.ts canonical URL (`https://tarjuman.live`) |
 | `NEXT_PUBLIC_SENTRY_DSN` | Vercel (optional) | Empty = Sentry off; non-empty = enabled |
+| `USAGE_INGEST_SECRET` | Vercel + Convex (same value) | API routes → `usage.ingest` for the `/admin` AI-spend panel. Unset = usage logging off |
 | `NEXT_PUBLIC_CONVEX_URL` | — (auto) | Injected by `convex deploy --cmd` during the Vercel build; do not set manually |
 | `NEXT_PUBLIC_VERCEL_ENV` | — (auto) | Vercel system var (needs "expose system env vars" on); Sentry environment tag |
 

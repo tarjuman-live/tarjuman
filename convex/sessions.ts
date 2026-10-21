@@ -50,12 +50,13 @@ const sessionListItemValidator = v.object({
   summaryGeneratedAt: v.optional(v.number()),
   segmentCount: v.optional(v.number()),
   firstSegmentText: v.optional(v.string()),
+  platform: v.optional(v.union(v.literal("web"), v.literal("ios"))),
   createdAt: v.number(),
   updatedAt: v.number(),
 });
 
 /** A stored segment's shape as the client consumes it (segId → id). */
-type StoredSegment = {
+export type StoredSegment = {
   id: string;
   sourceText: string;
   translatedText: string;
@@ -83,12 +84,12 @@ function rowToSegment(r: Doc<"transcriptSegments">): StoredSegment {
 }
 
 /** How many segments a session has, without loading them (legacy fallback). */
-function segmentCountOf(s: Doc<"sessions">): number {
+export function segmentCountOf(s: Doc<"sessions">): number {
   return s.segmentCount ?? s.segments.length;
 }
 
 /** All segments for a session: from the table, or legacy inline as fallback. */
-async function loadSegments(
+export async function loadSegments(
   ctx: QueryCtx,
   session: Doc<"sessions">,
 ): Promise<StoredSegment[]> {
@@ -124,6 +125,8 @@ export const createSession = mutation({
     sourceLanguage: v.string(),
     targetLanguage: v.string(),
     title: v.optional(v.string()),
+    // Optional so older clients (shipped iOS builds) keep working unchanged.
+    platform: v.optional(v.union(v.literal("web"), v.literal("ios"))),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -133,6 +136,7 @@ export const createSession = mutation({
       sourceLanguage: args.sourceLanguage,
       targetLanguage: args.targetLanguage,
       title: args.title,
+      ...(args.platform ? { platform: args.platform } : {}),
       status: "recording",
       segments: [],
       duration: 0,
@@ -557,7 +561,7 @@ async function collectRecentListItems(
 }
 
 /** Metadata-only session for list/card views — drops the heavy segments array. */
-function toListItem(s: Doc<"sessions">): Omit<Doc<"sessions">, "segments"> {
+export function toListItem(s: Doc<"sessions">): Omit<Doc<"sessions">, "segments"> {
   const copy: Record<string, unknown> = { ...s };
   delete copy.segments;
   return copy as Omit<Doc<"sessions">, "segments">;

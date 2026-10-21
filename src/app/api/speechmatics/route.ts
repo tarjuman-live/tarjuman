@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { recordUsageAfter } from "@/lib/usage/ingest";
 import {
   requireAuthFromHeader,
   checkRateLimit,
@@ -101,6 +102,14 @@ export async function POST(req: NextRequest) {
         res.status,
         detail.slice(0, 300),
       );
+      recordUsageAfter({
+        userId: auth.userId,
+        kind: "stt_token",
+        provider: "speechmatics",
+        ok: false,
+        status: res.status,
+        error: detail.slice(0, 200),
+      });
       return NextResponse.json(
         {
           error:
@@ -120,10 +129,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Credential mint (prewarm + every reconnect) — NOT a recording count.
+    recordUsageAfter({
+      userId: auth.userId,
+      kind: "stt_token",
+      provider: "speechmatics",
+      ok: true,
+    });
     return NextResponse.json({ jwt: data.key_value, url: RT_URL });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[speechmatics] could not issue session credentials:", msg);
+    recordUsageAfter({
+      userId: auth.userId,
+      kind: "stt_token",
+      provider: "speechmatics",
+      ok: false,
+      error: msg,
+    });
     return NextResponse.json(
       { error: "Could not reach Speechmatics to start a session." },
       { status: 502 },

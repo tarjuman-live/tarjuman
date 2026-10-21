@@ -76,5 +76,6 @@ ${transcript}`;
     maxTokens: 8000,
     timeoutMs: 120_000,
     logTag: "translate-transcript",
+    usage: { kind: "translate_transcript", userId: auth.userId },
   });
 }

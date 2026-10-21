@@ -13,6 +13,9 @@ export const MESSAGES = {
   // ── Nav ──
   "nav.record": { en: "Record", ar: "تسجيل", ur: "ریکارڈ", fr: "Enregistrer", es: "Grabar", id: "Rekam", tr: "Kaydet", bn: "রেকর্ড", ms: "Rakam", de: "Aufnehmen" },
   "nav.history": { en: "History", ar: "السجل", ur: "تاریخ", fr: "Historique", es: "Historial", id: "Riwayat", tr: "Geçmiş", bn: "ইতিহাস", ms: "Sejarah", de: "Verlauf" },
+  // Operator-only entry (shown when users.me.isAdmin). English everywhere —
+  // the /admin area itself is an English-only operator tool.
+  "nav.admin": { en: "Admin" },
 
   // ── Record ──
   "record.tapToStart": { en: "Tap to start transcribing", ar: "اضغط لبدء التفريغ", ur: "ٹرانسکرپشن شروع کرنے کے لیے ٹیپ کریں", fr: "Touchez pour transcrire", es: "Toca para empezar a transcribir", id: "Ketuk untuk mulai mentranskripsi", tr: "Yazıya dökmek için dokunun", bn: "ট্রান্সক্রিপশন শুরু করতে ট্যাপ করুন", ms: "Ketik untuk mula menyalin", de: "Zum Transkribieren tippen" },

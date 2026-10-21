@@ -1,6 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { auth } from "./auth";
+import { isAdminId } from "./adminAuth";
+import { deleteUserIdentity } from "./userData";
 
 /**
  * Whether an email/password account exists for the given email.
@@ -42,6 +44,11 @@ export const me = query({
       email: user.email,
       name: user.name,
       image: user.image,
+      // Operator flag (ADMIN_USER_IDS allowlist — see adminAuth.ts). Only
+      // shows/hides the /admin entry points; every admin function re-checks
+      // on the server. isAdminId never throws (this query sits on every AI
+      // route's auth path).
+      isAdmin: isAdminId(user._id),
     };
   },
 });
@@ -94,90 +101,25 @@ export const setProfileImage = mutation({
 });
 
 /**
- * Deletes the signed-in user's account and all their session data.
+ * Deletes the signed-in user's account and all their data (GDPR Art. 17).
  *
- * GDPR Art. 17 (right to erasure) requires this. Cascade-deletes:
- *  - Every row in `sessions` owned by this user
- *  - The Convex Auth identity rows (auth tokens, account links, etc. —
- *    Convex Auth's `authTables` includes these; we delete the user row
- *    and Convex Auth's internal cleanup handles credential rows on
- *    next login attempt; for absolute cleanup the user can also email
- *    support to wipe orphaned auth rows).
- *  - The user row itself.
+ * Delegates to the shared cascade in userData.ts: identity, billing,
+ * preference and grant rows plus the user row go now (this transaction);
+ * every session AND its transcriptSegments rows, and the user's raw usage
+ * events, are purged by a scheduled job that starts the moment this commits.
+ * (Previously the transcript rows were left behind.)
  *
- * This mutation is final — there is no soft-delete or undo.
+ * NOTE: this does not cancel a live Stripe subscription — a mutation can't call
+ * Stripe. Once billing is live, cancel via Stripe in an action first.
+ *
+ * Final — there is no soft-delete or undo.
  */
 export const deleteAccount = mutation({
   args: {},
   handler: async (ctx) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-
-    // Delete every session belonging to this user.
-    const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-    for (const session of sessions) {
-      await ctx.db.delete(session._id);
-    }
-
-    // Delete account-link rows so the email/Google identity can be re-used
-    // on a fresh signup. authTables's `authAccounts` is keyed by the user.
-    const accounts = await ctx.db
-      .query("authAccounts")
-      .withIndex("userIdAndProvider", (q) => q.eq("userId", userId))
-      .collect();
-    for (const acc of accounts) {
-      await ctx.db.delete(acc._id);
-    }
-
-    // Auth sessions (authTables) + the refresh tokens that hang off them — so a
-    // surviving refresh token can't keep minting access tokens for the now-deleted
-    // identity (closing the "dead-identity window"). Mirrors admin.ts cleanup.
-    const authSessions = await ctx.db
-      .query("authSessions")
-      .withIndex("userId", (q) => q.eq("userId", userId))
-      .collect();
-    for (const s of authSessions) {
-      // Delete this session's refresh tokens via the sessionId index — NOT a
-      // whole-table scan. authRefreshTokens grows with global auth activity
-      // across ALL users, so `.collect()` over the entire table would read
-      // every user's tokens and eventually blow Convex's per-transaction read
-      // cap, making account deletion (GDPR erasure) impossible at scale.
-      const tokens = await ctx.db
-        .query("authRefreshTokens")
-        .withIndex("sessionId", (q) => q.eq("sessionId", s._id))
-        .collect();
-      for (const rt of tokens) {
-        await ctx.db.delete(rt._id);
-      }
-      await ctx.db.delete(s._id);
-    }
-
-    // Per-user preferences row (one or none).
-    const prefs = await ctx.db
-      .query("userPreferences")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-    for (const p of prefs) {
-      await ctx.db.delete(p._id);
-    }
-
-    // Billing row — delete so we don't leave an orphan `subscriptions` row that
-    // holds the Stripe customer id and points at a now-deleted user (GDPR
-    // erasure; also avoids a stale paid row lingering / re-attaching on
-    // re-signup). NOTE: this does NOT cancel the Stripe subscription itself — a
-    // mutation can't call Stripe. Once billing is live, cancel via Stripe using
-    // the stripeCustomerId from an action BEFORE this delete runs.
-    const subs = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-    for (const s of subs) {
-      await ctx.db.delete(s._id);
-    }
-
-    await ctx.db.delete(userId);
+    await deleteUserIdentity(ctx, userId);
   },
 });
+

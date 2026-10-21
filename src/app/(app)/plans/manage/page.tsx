@@ -135,17 +135,20 @@ export default function ManagePage() {
   const [setupSecret, setSetupSecret] = useState<string | null>(null);
 
   const isPro = sub?.plan === "pro";
+  // Pro granted by an operator (no Stripe subscription behind it): nothing to
+  // bill, cancel, or update — show a notice instead of the Stripe controls.
+  const comped = sub?.comped ?? false;
   const canceling = sub?.cancelAtPeriodEnd ?? false;
   const periodEnd = sub?.currentPeriodEnd ?? null;
 
   const fetchedRef = useRef(false);
   useEffect(() => {
-    if (!isPro || fetchedRef.current) return;
+    if (!isPro || comped || fetchedRef.current) return;
     fetchedRef.current = true;
     getBillingDetails()
       .then(setDetails)
       .catch(() => {});
-  }, [isPro, getBillingDetails]);
+  }, [isPro, comped, getBillingDetails]);
 
   const priceStr = `$${
     details?.amount != null
@@ -230,6 +233,28 @@ export default function ManagePage() {
 
         {sub === undefined ? (
           <Spinner />
+        ) : comped ? (
+          <div
+            className="rounded-2xl p-5 text-center"
+            style={{ background: COLORS.surface, border: `1px solid ${COLORS.accent}30` }}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-[15px] font-bold" style={{ color: COLORS.w }}>
+                {SITE_NAME} Pro
+              </span>
+              <span
+                className="text-[9px] font-bold uppercase tracking-wider px-[6px] py-[2px] rounded-md"
+                style={{ background: COLORS.accentSoft, color: COLORS.accent }}
+              >
+                ✦ Pro
+              </span>
+            </div>
+            <p className="text-[12.5px] mt-1" style={{ color: COLORS.t3 }}>
+              {sub?.compExpiresAt
+                ? `Complimentary — included until ${formatDate(sub.compExpiresAt)}. No billing.`
+                : "Complimentary — no billing, nothing to manage."}
+            </p>
+          </div>
         ) : !isPro ? (
           <div
             className="rounded-2xl p-5 text-center"

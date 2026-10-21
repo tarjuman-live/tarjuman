@@ -35,7 +35,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // desktop (it stays a stacked single column on mobile).
   // /dev/stt-compare puts two transcript columns side by side — the phone
   // column would stack them and defeat the comparison.
-  const wide = pathname === "/plans" || pathname.startsWith("/dev/");
+  // /admin is a dashboard (stat grids, charts, tables) — same treatment.
+  const wide =
+    pathname === "/plans" ||
+    pathname.startsWith("/dev/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/");
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

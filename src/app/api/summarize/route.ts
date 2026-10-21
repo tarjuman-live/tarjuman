@@ -8,6 +8,7 @@ import {
   checkRateLimit,
   getUsageFromHeader,
 } from "@/lib/api-auth";
+import { trackAnthropicCall, upstreamErrorMessage } from "@/lib/usage/ingest";
 
 interface SummarizeRequest {
   transcript: string;
@@ -60,6 +61,9 @@ When summarizing:
 ${ISLAMIC_TERMINOLOGY_RULES}
 
 ${ISLAMIC_FEW_SHOT_EXAMPLES}`;
+
+/** Model for session summaries — see the model note in the request below. */
+const SUMMARY_MODEL = "claude-sonnet-5";
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -153,6 +157,15 @@ Keep it concise but comprehensive.
 TRANSCRIPT:
 ${transcript}`;
 
+  // Usage/cost report for the admin dashboard (after the response; never
+  // blocks or throws). Every exit below settles it.
+  const tracker = trackAnthropicCall({
+    kind: "summarize",
+    model: SUMMARY_MODEL,
+    userId: auth.userId,
+    timeoutMs: 45_000,
+  });
+
   // Open a streaming connection to Anthropic.
   let upstream: Response;
   try {
@@ -176,7 +189,7 @@ ${transcript}`;
         // "claude-haiku-4-5-20251001" (TTFT ~1.3s). The Islamic-quality bar is
         // still held by (a) the shared terminology system prompt and (b) the
         // sunnah.com /api/verify-citations pass that repairs hallucinated refs.
-        model: "claude-sonnet-5",
+        model: SUMMARY_MODEL,
         max_tokens: 2000,
         stream: true,
         system: [
@@ -193,6 +206,7 @@ ${transcript}`;
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    tracker.settle({ ok: false, error: msg });
     return NextResponse.json(
       { error: `Summary failed: ${msg}` },
       { status: 502 }
@@ -206,6 +220,11 @@ ${transcript}`;
     console.error(
       `[summarize] upstream HTTP ${upstream.status}: ${errText.slice(0, 300)}`
     );
+    tracker.settle({
+      ok: false,
+      status: upstream.status,
+      error: upstreamErrorMessage(errText),
+    });
     return NextResponse.json(
       { error: "Summary temporarily unavailable." },
       { status: 502 }
@@ -214,9 +233,14 @@ ${transcript}`;
 
   // Parse Anthropic's SSE stream and re-emit just the text deltas
   // as plain UTF-8 chunks the browser can read directly.
+  const reader = upstream.body.getReader();
   const stream = new ReadableStream({
+    // Client went away: stop the upstream read and report a partial call.
+    cancel() {
+      tracker.settle({ partial: true });
+      reader.cancel().catch(() => {});
+    },
     async start(controller) {
-      const reader = upstream.body!.getReader();
       const decoder = new TextDecoder();
       const encoder = new TextEncoder();
       let buffer = "";
@@ -234,7 +258,12 @@ ${transcript}`;
             if (!json || json === "[DONE]") continue;
             try {
               const evt = JSON.parse(json);
+              tracker.observe(evt);
               if (evt.type === "error") {
+                tracker.settle({
+                  ok: false,
+                  error: evt.error?.message ?? "AI stream error",
+                });
                 controller.error(
                   new Error(evt.error?.message ?? "AI stream error")
                 );
@@ -259,9 +288,11 @@ ${transcript}`;
           }
         }
       } catch (e) {
+        tracker.settle({ partial: true });
         controller.error(e);
         return;
       }
+      tracker.settle();
       // Truncated by the token cap — mark it so a long-lecture summary that
       // hit the ceiling isn't mistaken for the complete summary.
       if (stopReason === "max_tokens") {

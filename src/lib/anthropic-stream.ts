@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import type { Id } from "../../convex/_generated/dataModel";
+import type { UsageKind } from "../../convex/usageShared";
+import { trackAnthropicCall, upstreamErrorMessage } from "@/lib/usage/ingest";
 
 /**
  * Shared Anthropic streaming helper for the AI API routes (study-notes, ask,
@@ -20,7 +23,19 @@ export async function streamAnthropicText(opts: {
   timeoutMs?: number;
   /** Label for server-side error logs. */
   logTag: string;
+  /** Who/what to attribute this call to in the admin usage log. */
+  usage: { kind: UsageKind; userId: Id<"users"> };
 }): Promise<Response> {
+  const model = opts.model ?? "claude-sonnet-5";
+  const timeoutMs = opts.timeoutMs ?? 60_000;
+  // Usage/cost report for the admin dashboard (after the response; never
+  // blocks or throws). Every exit below settles it.
+  const tracker = trackAnthropicCall({
+    kind: opts.usage.kind,
+    model,
+    userId: opts.usage.userId,
+    timeoutMs,
+  });
   let upstream: Response;
   try {
     upstream = await fetch("https://api.anthropic.com/v1/messages", {
@@ -31,7 +46,7 @@ export async function streamAnthropicText(opts: {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: opts.model ?? "claude-sonnet-5",
+        model,
         max_tokens: opts.maxTokens ?? 2000,
         stream: true,
         system: [
@@ -44,10 +59,11 @@ export async function streamAnthropicText(opts: {
         messages: [{ role: "user", content: opts.userMessage }],
       }),
       cache: "no-store",
-      signal: AbortSignal.timeout(opts.timeoutMs ?? 60_000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    tracker.settle({ ok: false, error: msg });
     return NextResponse.json({ error: `AI failed: ${msg}` }, { status: 502 });
   }
 
@@ -56,15 +72,25 @@ export async function streamAnthropicText(opts: {
     console.error(
       `[${opts.logTag}] upstream HTTP ${upstream.status}: ${errText.slice(0, 300)}`
     );
+    tracker.settle({
+      ok: false,
+      status: upstream.status,
+      error: upstreamErrorMessage(errText),
+    });
     return NextResponse.json(
       { error: "AI temporarily unavailable." },
       { status: 502 }
     );
   }
 
+  const reader = upstream.body!.getReader();
   const stream = new ReadableStream({
+    // Client went away: stop the upstream read and report a partial call.
+    cancel() {
+      tracker.settle({ partial: true });
+      reader.cancel().catch(() => {});
+    },
     async start(controller) {
-      const reader = upstream.body!.getReader();
       const decoder = new TextDecoder();
       const encoder = new TextEncoder();
       let buffer = "";
@@ -86,9 +112,14 @@ export async function streamAnthropicText(opts: {
             if (!json || json === "[DONE]") continue;
             try {
               const evt = JSON.parse(json);
+              tracker.observe(evt);
               // Anthropic can emit an `error` event mid-stream on upstream
               // trouble — propagate it instead of silently ending the output.
               if (evt.type === "error") {
+                tracker.settle({
+                  ok: false,
+                  error: evt.error?.message ?? "AI stream error",
+                });
                 controller.error(
                   new Error(evt.error?.message ?? "AI stream error")
                 );
@@ -113,9 +144,11 @@ export async function streamAnthropicText(opts: {
           }
         }
       } catch (e) {
+        tracker.settle({ partial: true });
         controller.error(e);
         return;
       }
+      tracker.settle();
       // Truncated by the token cap — append a visible marker so the user knows
       // it's incomplete and can regenerate in smaller parts.
       if (stopReason === "max_tokens") {

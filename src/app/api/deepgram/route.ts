@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordUsageAfter } from "@/lib/usage/ingest";
 import { isValidLangCode } from "@/lib/utils";
 import { keytermsFor } from "@/lib/stt/keyterms";
 import {
@@ -275,10 +276,24 @@ export async function GET(req: Request) {
   if (!proxyAvailable) {
     try {
       const tempKey = await mintDeepgramTempKey(process.env.DEEPGRAM_API_KEY);
+      // Credential mint (prewarm + reconnects) — NOT a recording count.
+      recordUsageAfter({
+        userId: auth.userId,
+        kind: "stt_token",
+        provider: "deepgram",
+        ok: true,
+      });
       return NextResponse.json({ key: tempKey, url: deepgramUrl });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[deepgram] could not issue session credentials:", msg);
+      recordUsageAfter({
+        userId: auth.userId,
+        kind: "stt_token",
+        provider: "deepgram",
+        ok: false,
+        error: msg,
+      });
       return NextResponse.json(
         { error: "Could not start a transcription session. Please try again." },
         { status: 502 },
@@ -293,6 +308,12 @@ export async function GET(req: Request) {
   const token = makeToken();
   const proxyUrl = `${proto}://${host}/api/deepgram-ws?token=${encodeURIComponent(token)}`;
 
+  recordUsageAfter({
+    userId: auth.userId,
+    kind: "stt_token",
+    provider: "deepgram",
+    ok: true,
+  });
   const sessions = getSessions();
   sessions.set(token, {
     deepgramUrl,
