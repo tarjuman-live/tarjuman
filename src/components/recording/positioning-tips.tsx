@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import * as Dialog from "@radix-ui/react-dialog";
 import { COLORS } from "@/lib/constants";
 import { useLocale } from "@/lib/i18n/locale-context";
 import { Icon } from "@/components/shared/icon";
@@ -61,14 +56,22 @@ export function PositioningTips({
   };
 
   return (
-    // A bottom DRAWER rather than a centered dialog: this is read-and-dismiss
-    // onboarding with no inputs and no destructive action, so swipe-to-dismiss
-    // is exactly the right gesture. Vaul wraps Radix's Dialog primitives, so
-    // focus trap / aria-modal / Esc / onOpenChange are unchanged. Overlay and
-    // the glass material live in ui/drawer.tsx.
-    <Drawer open={open} onOpenChange={handleClose}>
-      <DrawerContent className="overflow-auto pb-2 outline-none">
-          <div className="px-6 pt-4 pb-6">
+    // A CENTERED dialog, not a bottom drawer. As a drawer it sat pinned to the
+    // bottom edge — off to one side of the content and cut off on desktop —
+    // and its glass didn't frost, so the record button showed through it.
+    // Same overlay / z-stack / glass material as ConfirmDialog + PromptDialog.
+    <Dialog.Root open={open} onOpenChange={handleClose}>
+      <Dialog.Portal>
+        <Dialog.Overlay
+          className="fixed inset-0 z-[200] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+          style={{
+            // Light dim only — leave the heavy blur to the card so the
+            // card's backdrop-filter has interesting content to refract.
+            background: "rgba(6, 11, 24, 0.4)",
+          }}
+        />
+        <Dialog.Content className="glass-panel fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-[calc(100%-32px)] max-w-[440px] max-h-[calc(100dvh-32px)] overflow-y-auto rounded-[24px] outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200 ease-out">
+          <div className="p-6">
             <div
               className="w-12 h-12 rounded-2xl grid place-items-center mb-4"
               style={{
@@ -78,19 +81,19 @@ export function PositioningTips({
             >
               <Icon name="mic" size={22} color={COLORS.accent} />
             </div>
-            <DrawerTitle
+            <Dialog.Title
               className="text-lg font-bold mb-1"
               style={{ color: COLORS.w }}
             >
               {t("record.tipsTitle")}
-            </DrawerTitle>
-            <DrawerDescription
+            </Dialog.Title>
+            <Dialog.Description
               className="text-[13px] leading-relaxed mb-4"
               style={{ color: COLORS.t3 }}
             >
               Tarjuman captures audio from speakers in halls and masjids
               — a few seconds of setup makes a big difference.
-            </DrawerDescription>
+            </Dialog.Description>
 
             <ul className="flex flex-col gap-3 mb-5">
               {TIPS.map((tip) => (
@@ -157,8 +160,9 @@ export function PositioningTips({
               {t("record.gotIt")}
             </button>
           </div>
-      </DrawerContent>
-    </Drawer>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
