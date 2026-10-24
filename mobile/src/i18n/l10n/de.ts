@@ -76,7 +76,6 @@ export const DE = {
   // record
   "record.starting": "Wird gestartet…",
   "record.startRecording": "Aufnahme starten",
-  "record.sessionsUsage": "{used} von {limit} Sitzungen diesen Monat",
   "record.recent": "Zuletzt",
   "record.untitled": "Unbenannte Sitzung",
   "record.notSavingTitle": "Wird nicht gespeichert",
@@ -130,9 +129,16 @@ export const DE = {
   "record.micFailedTitle": "Aufnahme konnte nicht gestartet werden",
   "record.micFailedBody": "Etwas ist schiefgelaufen. Bitte versuch es erneut.",
   "record.limitTitle": "Monatslimit erreicht",
-  "record.limitBody":
-    "Du hast alle {limit} kostenlosen Sitzungen dieses Monats genutzt. Mit Tarjuman Pro nimmst du unbegrenzt auf.",
   "record.upgrade": "Upgraden",
+  "record.hoursUsage": "{used} von {limit} Aufnahmezeit diesen Monat genutzt",
+  "record.hoursLimitUpgrade":
+    "Du hast deine {limit} Aufnahmezeit für diesen Monat aufgebraucht. Mit Tarjuman Pro bekommst du {pro} pro Monat.",
+  "record.hoursLimitReset":
+    "Du hast deine {limit} Aufnahmezeit für diesen Monat aufgebraucht. Sie wird am {date} zurückgesetzt.",
+  "record.timeLeftTitle": "Noch {min} Min. Aufnahmezeit diesen Monat",
+  "record.timeLeftBody": "Die Aufnahme stoppt und wird gespeichert, wenn deine Monatszeit aufgebraucht ist.",
+  "record.stoppedAtLimit":
+    "Gestoppt — die Aufnahmezeit für diesen Monat ist aufgebraucht. Dein Transkript ist gespeichert.",
   "record.summaryLimitTitle": "Limit für Zusammenfassungen erreicht",
   "record.summaryLimitBody":
     "Du hast alle {limit} kostenlosen Zusammenfassungen dieses Monats genutzt. Mit Tarjuman Pro bekommst du unbegrenzte KI-Zusammenfassungen.",
@@ -252,7 +258,9 @@ export const DE = {
   "settingsAuthNav.complimentaryUntil": "Kostenlos · bis {date}",
   "settingsAuthNav.upgrade": "Upgraden",
   "settingsAuthNav.upgradeSub": "{price} · alle Tarife ansehen",
-  "settingsAuthNav.usageLine": "{su} von {sl} Sitzungen · {mu} von {ml} Zusammenfassungen diesen Monat genutzt.",
+  "settingsAuthNav.hoursUsageLine":
+    "{hu} von {hl} Aufnahmezeit · {mu} von {ml} Zusammenfassungen diesen Monat genutzt.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} von {hl} Aufnahmezeit diesen Monat genutzt.",
   "settingsAuthNav.focusSpeakerDesc": "Andere Stimmen ausblenden, wenn mehrere Sprecher erkannt werden.",
   "settingsAuthNav.tipsResetDone": "Die Tipps erscheinen bei deiner nächsten Aufnahme.",
   "settingsAuthNav.tipsResetSub": "Die Anleitung zur Mikrofonposition erneut anzeigen.",

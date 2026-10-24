@@ -3,10 +3,12 @@ import {
   query,
   internalMutation,
   type QueryCtx,
+  type MutationCtx,
 } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id, Doc } from "./_generated/dataModel";
 import { auth } from "./auth";
+import { usageMonthKey } from "./billingLimits";
 
 /**
  * Sessions CRUD with ownership checks.
@@ -105,6 +107,45 @@ export async function loadSegments(
   const inlineIds = new Set(session.segments.map((s) => s.id));
   const tableExtra = rows.map(rowToSegment).filter((s) => !inlineIds.has(s.id));
   return [...session.segments, ...tableExtra];
+}
+
+/**
+ * Add a session's recording time to the owner's monthly `recordingUsage`
+ * ledger — the meter behind the plan hour allowance (billingLimits.ts).
+ *
+ * Meters only the DELTA above `session.meteredSeconds`, so the several
+ * completeSession calls one recording can produce (Stop, the unmount
+ * exit-flush, a crashed-tab mirror replay) and the stale sweep never double
+ * count, and a later call with a longer duration adds just the difference.
+ * Time is booked to the month it is metered in. Deleting a session does not
+ * touch the ledger — no refunds.
+ */
+export async function meterSession(
+  ctx: MutationCtx,
+  session: Doc<"sessions">,
+  durationSec: number,
+): Promise<void> {
+  const userId = session.userId;
+  if (!userId) return; // pre-auth legacy row — no owner to bill
+  const total = Number.isFinite(durationSec) ? Math.round(durationSec) : 0;
+  const already = session.meteredSeconds ?? 0;
+  const delta = total - already;
+  if (delta <= 0) return;
+  const month = usageMonthKey(Date.now());
+  const row = await ctx.db
+    .query("recordingUsage")
+    .withIndex("by_userId_and_month", (q) =>
+      q.eq("userId", userId).eq("month", month),
+    )
+    .unique();
+  if (row) {
+    await ctx.db.patch("recordingUsage", row._id, {
+      seconds: row.seconds + delta,
+    });
+  } else {
+    await ctx.db.insert("recordingUsage", { userId, month, seconds: delta });
+  }
+  await ctx.db.patch("sessions", session._id, { meteredSeconds: total });
 }
 
 async function requireUserId(ctx: QueryCtx): Promise<Id<"users">> {
@@ -362,6 +403,7 @@ export const completeSession = mutation({
     const session = await ctx.db.get(args.sessionId);
     if (!session) throw new Error("Session not found");
     if (session.userId !== userId) throw new Error("Not your session");
+    await meterSession(ctx, session, args.duration);
     await ctx.db.patch(args.sessionId, {
       status: "completed",
       duration: args.duration,
@@ -485,9 +527,12 @@ export const sweepStaleSessions = internalMutation({
             .first();
           if (lastRow) lastTimestamp = lastRow.timestamp;
         }
+        const duration =
+          s.duration > 0 ? s.duration : Math.round(lastTimestamp);
+        await meterSession(ctx, s, duration);
         await ctx.db.patch(s._id, {
           status: "completed",
-          duration: s.duration > 0 ? s.duration : Math.round(lastTimestamp),
+          duration,
           title:
             s.title ??
             truncateTitle(s.firstSegmentText) ??

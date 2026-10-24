@@ -34,6 +34,8 @@ interface CompletedViewProps {
   onDone: () => void;
   /** Called once the user generates a summary, so the page can persist it. */
   onSummaryGenerated?: (summary: string, language: string) => void;
+  /** One-line amber note under the header (e.g. "stopped at the monthly limit"). */
+  notice?: string;
 }
 
 export function CompletedView({
@@ -41,6 +43,7 @@ export function CompletedView({
   onNewRecording,
   onDone,
   onSummaryGenerated,
+  notice,
 }: CompletedViewProps) {
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
@@ -126,6 +129,20 @@ export function CompletedView({
           {getLangName(session.targetLang)}
         </span>
       </div>
+
+      {notice && (
+        <div
+          className="mx-5 mt-3 px-4 py-2.5 rounded-2xl text-[12px] animate-in fade-in slide-in-from-top-1 duration-300 motion-reduce:animate-none"
+          style={{
+            background: COLORS.amberSoft,
+            border: `1px solid ${COLORS.amber}55`,
+            color: COLORS.t2,
+          }}
+          role="status"
+        >
+          {notice}
+        </div>
+      )}
 
       <SessionBody
         segments={normalizedSegments}

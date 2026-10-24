@@ -56,7 +56,13 @@ interface RecordingShellProps {
   onPause: () => void;
   onResume: () => void;
   onStop: () => void;
+  /** Seconds of this month's recording allowance left (null = unlimited). At
+   *  ≤5 min an amber banner warns that the page will stop + save at zero. */
+  timeLeftSec?: number | null;
 }
+
+/** Warn this long before the monthly allowance runs out. */
+const TIME_LEFT_WARN_SEC = 5 * 60;
 
 export function RecordingShell({
   sourceLang,
@@ -85,6 +91,7 @@ export function RecordingShell({
   onPause,
   onResume,
   onStop,
+  timeLeftSec = null,
 }: RecordingShellProps) {
   const { t } = useLocale();
   const elapsed = useSessionTimer(active, paused);
@@ -282,6 +289,30 @@ export function RecordingShell({
           })}
         </div>
       </div>
+
+      {/* Monthly allowance about to run out — the page stops + saves at zero
+          (record/page.tsx), so say so before it happens, not after. */}
+      {timeLeftSec !== null &&
+        timeLeftSec > 0 &&
+        timeLeftSec <= TIME_LEFT_WARN_SEC && (
+          <div
+            className="mx-5 mt-3 px-4 py-2.5 rounded-2xl text-[12px] animate-in fade-in slide-in-from-top-1 duration-300 motion-reduce:animate-none"
+            style={{
+              background: COLORS.amberSoft,
+              border: `1px solid ${COLORS.amber}55`,
+              color: COLORS.w,
+            }}
+            role="status"
+          >
+            <span className="font-semibold" style={{ color: COLORS.amber }}>
+              {Math.ceil(timeLeftSec / 60)} min of recording time left this
+              month.
+            </span>{" "}
+            <span style={{ color: COLORS.t2 }}>
+              Recording stops and saves when it runs out.
+            </span>
+          </div>
+        )}
 
       {/* OS interruption banner — the context was suspended mid-recording
           (incoming call, Siri, another app took audio) and the worklet stopped

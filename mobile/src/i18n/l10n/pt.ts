@@ -76,7 +76,6 @@ export const PT = {
   // record
   "record.starting": "Iniciando…",
   "record.startRecording": "Iniciar gravação",
-  "record.sessionsUsage": "{used} de {limit} sessões este mês",
   "record.recent": "Recentes",
   "record.untitled": "Sessão sem título",
   "record.notSavingTitle": "Não está salvando",
@@ -130,9 +129,14 @@ export const PT = {
   "record.micFailedTitle": "Não foi possível iniciar a gravação",
   "record.micFailedBody": "Algo deu errado. Tente novamente.",
   "record.limitTitle": "Limite mensal atingido",
-  "record.limitBody":
-    "Você usou todas as {limit} sessões grátis deste mês. Assine o Tarjuman Pro para gravar sem limites.",
   "record.upgrade": "Fazer upgrade",
+  "record.hoursUsage": "{used} de {limit} de gravação usados este mês",
+  "record.hoursLimitUpgrade":
+    "Você usou suas {limit} de gravação deste mês. Assine o Tarjuman Pro para ter {pro} por mês.",
+  "record.hoursLimitReset": "Você usou suas {limit} de gravação deste mês. Renova em {date}.",
+  "record.timeLeftTitle": "Restam {min} min de gravação este mês",
+  "record.timeLeftBody": "A gravação para e é salva quando seu tempo mensal acabar.",
+  "record.stoppedAtLimit": "Parada — você atingiu o tempo de gravação deste mês. Sua transcrição foi salva.",
   "record.summaryLimitTitle": "Limite de resumos atingido",
   "record.summaryLimitBody":
     "Você usou todos os {limit} resumos grátis deste mês. Assine o Tarjuman Pro para resumos com IA ilimitados.",
@@ -252,7 +256,8 @@ export const PT = {
   "settingsAuthNav.complimentaryUntil": "Cortesia · até {date}",
   "settingsAuthNav.upgrade": "Fazer upgrade",
   "settingsAuthNav.upgradeSub": "{price} · ver todos os planos",
-  "settingsAuthNav.usageLine": "{su} de {sl} sessões · {mu} de {ml} resumos usados este mês.",
+  "settingsAuthNav.hoursUsageLine": "{hu} de {hl} de gravação · {mu} de {ml} resumos usados este mês.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} de {hl} de gravação usados este mês.",
   "settingsAuthNav.focusSpeakerDesc": "Descartar outras vozes quando vários falantes forem detectados.",
   "settingsAuthNav.tipsResetDone": "As dicas aparecerão na próxima vez que você gravar.",
   "settingsAuthNav.tipsResetSub": "Mostrar de novo o guia de posição do microfone.",

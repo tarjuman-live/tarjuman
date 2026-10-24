@@ -74,7 +74,6 @@ export const KO = {
   // record
   "record.starting": "시작하는 중…",
   "record.startRecording": "녹음 시작",
-  "record.sessionsUsage": "이번 달 {limit}개 중 {used}개 세션 사용",
   "record.recent": "최근",
   "record.untitled": "제목 없는 세션",
   "record.notSavingTitle": "저장되지 않음",
@@ -128,9 +127,13 @@ export const KO = {
   "record.micFailedTitle": "녹음을 시작할 수 없음",
   "record.micFailedBody": "문제가 발생했습니다. 다시 시도하세요.",
   "record.limitTitle": "월 한도 도달",
-  "record.limitBody":
-    "이번 달 무료 세션 {limit}개를 모두 사용했습니다. Tarjuman Pro로 업그레이드하면 무제한으로 녹음할 수 있습니다.",
   "record.upgrade": "업그레이드",
+  "record.hoursUsage": "이번 달 녹음 시간 {limit} 중 {used} 사용",
+  "record.hoursLimitUpgrade": "이번 달 녹음 시간 {limit}을(를) 모두 사용했습니다. Tarjuman Pro로 업그레이드하면 매달 {pro} 녹음할 수 있습니다.",
+  "record.hoursLimitReset": "이번 달 녹음 시간 {limit}을(를) 모두 사용했습니다. {date}에 초기화됩니다.",
+  "record.timeLeftTitle": "이번 달 녹음 시간 {min}분 남음",
+  "record.timeLeftBody": "월간 녹음 시간이 끝나면 녹음이 멈추고 저장됩니다.",
+  "record.stoppedAtLimit": "중지됨 — 이번 달 녹음 시간에 도달했습니다. 대본은 저장되었습니다.",
   "record.summaryLimitTitle": "요약 한도 도달",
   "record.summaryLimitBody":
     "이번 달 무료 요약 {limit}개를 모두 사용했습니다. Tarjuman Pro로 업그레이드하면 AI 요약을 무제한으로 사용할 수 있습니다.",
@@ -250,7 +253,8 @@ export const KO = {
   "settingsAuthNav.complimentaryUntil": "무료 제공 · {date}까지",
   "settingsAuthNav.upgrade": "업그레이드",
   "settingsAuthNav.upgradeSub": "{price} · 모든 요금제 보기",
-  "settingsAuthNav.usageLine": "이번 달 세션 {sl}개 중 {su}개 · 요약 {ml}개 중 {mu}개 사용.",
+  "settingsAuthNav.hoursUsageLine": "이번 달 녹음 {hl} 중 {hu} · 요약 {ml}개 중 {mu}개 사용.",
+  "settingsAuthNav.hoursOnlyUsageLine": "이번 달 녹음 {hl} 중 {hu} 사용.",
   "settingsAuthNav.focusSpeakerDesc": "여러 화자가 감지되면 다른 목소리를 제외합니다.",
   "settingsAuthNav.tipsResetDone": "다음 녹음 때 팁이 표시됩니다.",
   "settingsAuthNav.tipsResetSub": "마이크 위치 가이드를 다시 표시합니다.",

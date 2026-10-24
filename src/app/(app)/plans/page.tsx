@@ -19,7 +19,8 @@ const ORDER: Plan[] = ["free", "pro", "scholar"];
 
 // Annual billing is hidden until an annual Stripe price exists
 // (STRIPE_PRICE_ID_ANNUAL on Convex). Without it, annual checkout throws — so we
-// ship monthly-only and flip this to true once the $84/yr price is created.
+// ship monthly-only and flip this to true once the annual price
+// (annualTotal(PLAN_META.pro.priceMonthly)/yr) is created in Stripe.
 const ANNUAL_ENABLED: boolean = false;
 
 /**

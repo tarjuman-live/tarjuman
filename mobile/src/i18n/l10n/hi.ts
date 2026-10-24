@@ -74,7 +74,6 @@ export const HI = {
   // record
   "record.starting": "शुरू हो रहा है…",
   "record.startRecording": "रिकॉर्डिंग शुरू करें",
-  "record.sessionsUsage": "इस महीने {limit} में से {used} सत्र",
   "record.recent": "हाल के",
   "record.untitled": "बिना नाम का सत्र",
   "record.notSavingTitle": "सहेजा नहीं जा रहा",
@@ -128,9 +127,14 @@ export const HI = {
   "record.micFailedTitle": "रिकॉर्डिंग शुरू नहीं हो सकी",
   "record.micFailedBody": "कुछ गलत हो गया। कृपया फिर से कोशिश करें।",
   "record.limitTitle": "मासिक सीमा पूरी हो गई",
-  "record.limitBody":
-    "आपने इस महीने के सभी {limit} मुफ़्त सत्र इस्तेमाल कर लिए हैं। असीमित रिकॉर्डिंग के लिए Tarjuman Pro में अपग्रेड करें।",
   "record.upgrade": "अपग्रेड करें",
+  "record.hoursUsage": "इस महीने {limit} में से {used} रिकॉर्डिंग इस्तेमाल हुई",
+  "record.hoursLimitUpgrade":
+    "आपने इस महीने की {limit} रिकॉर्डिंग इस्तेमाल कर ली है। हर महीने {pro} पाने के लिए Tarjuman Pro में अपग्रेड करें।",
+  "record.hoursLimitReset": "आपने इस महीने की {limit} रिकॉर्डिंग इस्तेमाल कर ली है। यह {date} को रीसेट होगी।",
+  "record.timeLeftTitle": "इस महीने {min} मिनट रिकॉर्डिंग बाकी",
+  "record.timeLeftBody": "मासिक समय खत्म होने पर रिकॉर्डिंग रुककर सेव हो जाएगी।",
+  "record.stoppedAtLimit": "रुक गया — इस महीने का रिकॉर्डिंग समय पूरा हो गया। आपका ट्रांसक्रिप्ट सेव है।",
   "record.summaryLimitTitle": "सारांश सीमा पूरी हो गई",
   "record.summaryLimitBody":
     "आपने इस महीने के सभी {limit} मुफ़्त सारांश इस्तेमाल कर लिए हैं। असीमित AI सारांश के लिए Tarjuman Pro में अपग्रेड करें।",
@@ -250,7 +254,9 @@ export const HI = {
   "settingsAuthNav.complimentaryUntil": "निःशुल्क · {date} तक",
   "settingsAuthNav.upgrade": "अपग्रेड करें",
   "settingsAuthNav.upgradeSub": "{price} · सभी प्लान देखें",
-  "settingsAuthNav.usageLine": "इस महीने {sl} में से {su} सत्र · {ml} में से {mu} सारांश इस्तेमाल हुए।",
+  "settingsAuthNav.hoursUsageLine":
+    "इस महीने {hl} में से {hu} रिकॉर्डिंग · {ml} में से {mu} सारांश इस्तेमाल हुए।",
+  "settingsAuthNav.hoursOnlyUsageLine": "इस महीने {hl} में से {hu} रिकॉर्डिंग इस्तेमाल हुई।",
   "settingsAuthNav.focusSpeakerDesc": "कई वक्ता पहचाने जाने पर दूसरी आवाज़ें हटा दें।",
   "settingsAuthNav.tipsResetDone": "अगली बार रिकॉर्ड करने पर सुझाव दिखेंगे।",
   "settingsAuthNav.tipsResetSub": "माइक पोज़िशनिंग गाइड फिर से दिखाएँ।",

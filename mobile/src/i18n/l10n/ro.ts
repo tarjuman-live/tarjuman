@@ -74,7 +74,6 @@ export const RO = {
   // record
   "record.starting": "Se pornește…",
   "record.startRecording": "Începe înregistrarea",
-  "record.sessionsUsage": "{used} din {limit} sesiuni luna aceasta",
   "record.recent": "Recente",
   "record.untitled": "Sesiune fără titlu",
   "record.notSavingTitle": "Nu se salvează",
@@ -128,9 +127,14 @@ export const RO = {
   "record.micFailedTitle": "Înregistrarea nu a putut porni",
   "record.micFailedBody": "Ceva nu a mers bine. Încearcă din nou.",
   "record.limitTitle": "Limita lunară a fost atinsă",
-  "record.limitBody":
-    "Ai folosit toate cele {limit} sesiuni gratuite luna aceasta. Treci la Tarjuman Pro pentru înregistrare nelimitată.",
   "record.upgrade": "Treci la Pro",
+  "record.hoursUsage": "{used} din {limit} de înregistrare folosite luna aceasta",
+  "record.hoursLimitUpgrade":
+    "Ai folosit cele {limit} de înregistrare ale lunii. Treci la Tarjuman Pro pentru {pro} pe lună.",
+  "record.hoursLimitReset": "Ai folosit cele {limit} de înregistrare ale lunii. Se resetează pe {date}.",
+  "record.timeLeftTitle": "Mai ai {min} min de înregistrare luna aceasta",
+  "record.timeLeftBody": "Înregistrarea se oprește și se salvează când se termină timpul lunar.",
+  "record.stoppedAtLimit": "Oprită — ai atins timpul de înregistrare al lunii. Transcrierea este salvată.",
   "record.summaryLimitTitle": "Limita de rezumate a fost atinsă",
   "record.summaryLimitBody":
     "Ai folosit toate cele {limit} rezumate gratuite luna aceasta. Treci la Tarjuman Pro pentru rezumate AI nelimitate.",
@@ -250,7 +254,9 @@ export const RO = {
   "settingsAuthNav.complimentaryUntil": "Gratuit · până pe {date}",
   "settingsAuthNav.upgrade": "Treci la Pro",
   "settingsAuthNav.upgradeSub": "{price} · vezi toate planurile",
-  "settingsAuthNav.usageLine": "{su} din {sl} sesiuni · {mu} din {ml} rezumate folosite luna aceasta.",
+  "settingsAuthNav.hoursUsageLine":
+    "{hu} din {hl} de înregistrare · {mu} din {ml} rezumate folosite luna aceasta.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} din {hl} de înregistrare folosite luna aceasta.",
   "settingsAuthNav.focusSpeakerDesc": "Ignoră alte voci când sunt detectați mai mulți vorbitori.",
   "settingsAuthNav.tipsResetDone": "Sfaturile vor apărea la următoarea înregistrare.",
   "settingsAuthNav.tipsResetSub": "Arată din nou ghidul de poziționare a microfonului.",

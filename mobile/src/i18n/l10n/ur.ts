@@ -76,7 +76,6 @@ export const UR = {
   // record
   "record.starting": "شروع ہو رہا ہے…",
   "record.startRecording": "ریکارڈنگ شروع کریں",
-  "record.sessionsUsage": "اس مہینے {limit} میں سے {used} سیشنز",
   "record.recent": "حالیہ",
   "record.untitled": "بے عنوان سیشن",
   "record.notSavingTitle": "محفوظ نہیں ہو رہا",
@@ -130,9 +129,15 @@ export const UR = {
   "record.micFailedTitle": "ریکارڈنگ شروع نہیں ہو سکی",
   "record.micFailedBody": "کچھ غلط ہو گیا۔ براہِ کرم دوبارہ کوشش کریں۔",
   "record.limitTitle": "ماہانہ حد پوری ہو گئی",
-  "record.limitBody":
-    "آپ اس مہینے کے تمام {limit} مفت سیشنز استعمال کر چکے ہیں۔ لامحدود ریکارڈنگ کے لیے Tarjuman Pro پر اپ گریڈ کریں۔",
   "record.upgrade": "اپ گریڈ",
+  "record.hoursUsage": "اس مہینے {limit} میں سے {used} ریکارڈنگ استعمال ہوئی",
+  "record.hoursLimitUpgrade":
+    "آپ اس مہینے کی {limit} ریکارڈنگ استعمال کر چکے ہیں۔ ہر مہینے {pro} کے لیے Tarjuman Pro پر اپ گریڈ کریں۔",
+  "record.hoursLimitReset":
+    "آپ اس مہینے کی {limit} ریکارڈنگ استعمال کر چکے ہیں۔ یہ {date} کو دوبارہ شروع ہوگی۔",
+  "record.timeLeftTitle": "اس مہینے {min} منٹ ریکارڈنگ باقی",
+  "record.timeLeftBody": "ماہانہ وقت ختم ہونے پر ریکارڈنگ رک کر محفوظ ہو جائے گی۔",
+  "record.stoppedAtLimit": "رک گئی — اس مہینے کا ریکارڈنگ وقت پورا ہو گیا۔ آپ کی ٹرانسکرپٹ محفوظ ہے۔",
   "record.summaryLimitTitle": "خلاصوں کی حد پوری ہو گئی",
   "record.summaryLimitBody":
     "آپ اس مہینے کے تمام {limit} مفت خلاصے استعمال کر چکے ہیں۔ لامحدود اے آئی خلاصوں کے لیے Tarjuman Pro پر اپ گریڈ کریں۔",
@@ -252,7 +257,9 @@ export const UR = {
   "settingsAuthNav.complimentaryUntil": "مفت · {date} تک",
   "settingsAuthNav.upgrade": "اپ گریڈ",
   "settingsAuthNav.upgradeSub": "{price} · تمام پلان دیکھیں",
-  "settingsAuthNav.usageLine": "اس مہینے {sl} میں سے {su} سیشنز · {ml} میں سے {mu} خلاصے استعمال ہوئے۔",
+  "settingsAuthNav.hoursUsageLine":
+    "اس مہینے {hl} میں سے {hu} ریکارڈنگ · {ml} میں سے {mu} خلاصے استعمال ہوئے۔",
+  "settingsAuthNav.hoursOnlyUsageLine": "اس مہینے {hl} میں سے {hu} ریکارڈنگ استعمال ہوئی۔",
   "settingsAuthNav.focusSpeakerDesc": "کئی بولنے والے ملنے پر دوسری آوازیں چھوڑ دیں۔",
   "settingsAuthNav.tipsResetDone": "اگلی بار ریکارڈ کرنے پر تجاویز دکھائی جائیں گی۔",
   "settingsAuthNav.tipsResetSub": "مائیک رکھنے کی رہنمائی دوبارہ دکھائیں۔",

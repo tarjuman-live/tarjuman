@@ -74,7 +74,6 @@ export const VI = {
   // record
   "record.starting": "Đang bắt đầu…",
   "record.startRecording": "Bắt đầu ghi âm",
-  "record.sessionsUsage": "{used}/{limit} phiên trong tháng này",
   "record.recent": "Gần đây",
   "record.untitled": "Phiên chưa đặt tên",
   "record.notSavingTitle": "Không được lưu",
@@ -128,9 +127,15 @@ export const VI = {
   "record.micFailedTitle": "Không thể bắt đầu ghi âm",
   "record.micFailedBody": "Đã xảy ra lỗi. Vui lòng thử lại.",
   "record.limitTitle": "Đã đạt giới hạn tháng",
-  "record.limitBody":
-    "Bạn đã dùng hết {limit} phiên miễn phí trong tháng này. Nâng cấp lên Tarjuman Pro để ghi âm không giới hạn.",
   "record.upgrade": "Nâng cấp",
+  "record.hoursUsage": "Đã dùng {used}/{limit} thời gian ghi âm trong tháng này",
+  "record.hoursLimitUpgrade":
+    "Bạn đã dùng hết {limit} thời gian ghi âm của tháng này. Nâng cấp lên Tarjuman Pro để có {pro} mỗi tháng.",
+  "record.hoursLimitReset": "Bạn đã dùng hết {limit} thời gian ghi âm của tháng này. Sẽ đặt lại vào {date}.",
+  "record.timeLeftTitle": "Còn {min} phút ghi âm trong tháng này",
+  "record.timeLeftBody": "Bản ghi sẽ dừng và được lưu khi hết thời gian của tháng.",
+  "record.stoppedAtLimit":
+    "Đã dừng — bạn đã dùng hết thời gian ghi âm của tháng này. Bản chép lời đã được lưu.",
   "record.summaryLimitTitle": "Đã đạt giới hạn tóm tắt",
   "record.summaryLimitBody":
     "Bạn đã dùng hết {limit} bản tóm tắt miễn phí trong tháng này. Nâng cấp lên Tarjuman Pro để tóm tắt AI không giới hạn.",
@@ -250,7 +255,8 @@ export const VI = {
   "settingsAuthNav.complimentaryUntil": "Miễn phí · đến {date}",
   "settingsAuthNav.upgrade": "Nâng cấp",
   "settingsAuthNav.upgradeSub": "{price} · xem tất cả gói",
-  "settingsAuthNav.usageLine": "Đã dùng {su}/{sl} phiên · {mu}/{ml} bản tóm tắt trong tháng này.",
+  "settingsAuthNav.hoursUsageLine": "Đã dùng {hu}/{hl} ghi âm · {mu}/{ml} bản tóm tắt trong tháng này.",
+  "settingsAuthNav.hoursOnlyUsageLine": "Đã dùng {hu}/{hl} ghi âm trong tháng này.",
   "settingsAuthNav.focusSpeakerDesc": "Loại bỏ các giọng khác khi phát hiện nhiều người nói.",
   "settingsAuthNav.tipsResetDone": "Mẹo sẽ hiện vào lần ghi âm tới.",
   "settingsAuthNav.tipsResetSub": "Hiện lại hướng dẫn đặt micro.",

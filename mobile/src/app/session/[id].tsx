@@ -66,7 +66,7 @@ import {
 } from "~/components/motion";
 import { formatDate, formatDuration, isRtl, langName, textDirection } from "~/lib/lang";
 import { C, themed } from "~/lib/theme";
-import { EASE } from "~/lib/motion";
+import { EASE, TW_ENTER } from "~/lib/motion";
 import { TABLET_GUTTER, TABLET_TOP, useTablet } from "~/lib/layout";
 import { useT } from "~/i18n";
 import { useStaticStickyBottom } from "~/hooks/use-sticky-bottom";
@@ -105,9 +105,11 @@ export default function SessionScreen() {
  * space beside the sidebar, and Delete returns to History.
  */
 export function SessionDetail({ embedded = false }: { embedded?: boolean }) {
-  const { id, completed } = useLocalSearchParams<{
+  const { id, completed, limit } = useLocalSearchParams<{
     id: string;
     completed?: string;
+    /** "1" when Record stopped because the monthly allowance ran out. */
+    limit?: string;
   }>();
   const router = useRouter();
   const t = useT();
@@ -321,6 +323,16 @@ export function SessionDetail({ embedded = false }: { embedded?: boolean }) {
             {langName(session.targetLanguage)}
           </Text>
         </View>
+
+        {/* Record auto-stopped at the monthly recording allowance (web:
+            CompletedView `notice`). */}
+        {isCompleted && limit === "1" ? (
+          <Animated.View entering={TW_ENTER.fade} style={[styles.limitNotice, column]}>
+            <View style={styles.limitNoticeBox}>
+              <Text style={styles.limitNoticeText}>{t("record.stoppedAtLimit")}</Text>
+            </View>
+          </Animated.View>
+        ) : null}
 
         {/* Body (static sticky-bottom scroller) */}
         <Animated.ScrollView
@@ -773,6 +785,16 @@ const styles = themed(() => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
+  limitNotice: { paddingTop: 12 },
+  limitNoticeBox: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: C.amberSoft,
+    borderWidth: 1,
+    borderColor: `${C.amber}55`,
+  },
+  limitNoticeText: { color: C.t2, fontSize: 12 },
   langSource: { color: C.t3, fontSize: 12, fontWeight: "600" },
   langArrow: { color: C.t4, fontSize: 12 },
   langTarget: { color: C.accent, fontSize: 12, fontWeight: "600" },

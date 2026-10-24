@@ -89,6 +89,11 @@ import { formatDuration, langName } from "~/lib/lang";
 import { C, themed } from "~/lib/theme";
 import { EASE, twEnter, twExit, TW_ENTER, TW_EXIT, useReduceMotion } from "~/lib/motion";
 import { useLocale } from "~/i18n";
+import {
+  PLAN_LIMITS,
+  formatRecordingTime,
+  nextMonthStartMs,
+} from "../../../../convex/billingLimits";
 
 const DEFAULT_SOURCE = "ar";
 const DEFAULT_TARGET = "en";
@@ -96,6 +101,8 @@ const DEFAULT_TARGET = "en";
 type TranscriptLayout = "paired" | "split";
 /** Web localStorage "tarjuman:transcript-layout" (SecureStore: no colons). */
 const LAYOUT_KEY = "tarjuman.transcript-layout";
+/** Warn this long before the monthly recording allowance runs out (web parity). */
+const TIME_LEFT_WARN_SEC = 5 * 60;
 
 /** Screen-state crossfade (house fluid rule; web swaps instantly). */
 const SWAP_IN = twEnter({ opacity: 0, duration: 200 });
@@ -116,7 +123,7 @@ function readLayout(wide: boolean): TranscriptLayout {
 
 export default function RecordScreen() {
   const router = useRouter();
-  const { t, dir } = useLocale();
+  const { t, dir, locale } = useLocale();
   const rtl = dir === "rtl";
   const { width } = useWindowDimensions();
   // ≥1024pt: the SidebarRail is the tab bar and carries brand + locale pill +
@@ -160,8 +167,11 @@ export default function RecordScreen() {
     SecureStore.setItemAsync(LAYOUT_KEY, l).catch(() => {});
   };
 
-  // Free users past their monthly cap get the upgrade card instead of Record.
-  const overSessionLimit = usage ? !usage.canStartSession : false;
+  // Out of this month's recording time (Free 1h · Pro 3h) → the upgrade card
+  // instead of Record. Always false while billing is off.
+  const overLimit = usage ? !usage.canStartSession : false;
+  // Render-stable "now" for the reset date in the out-of-time message.
+  const [openedAt] = useState(() => Date.now());
 
   const recorder = useNativeRecorder();
   const active = recorder.phase === "recording" || recorder.phase === "paused";
@@ -191,6 +201,15 @@ export default function RecordScreen() {
     const id = setInterval(() => setElapsed(elapsedNow()), 250);
     return () => clearInterval(id);
   }, [recorder.phase]);
+
+  // Monthly recording allowance left for THIS recording (null = unlimited —
+  // always, while billing is off). The live session only reaches the ledger on
+  // completeSession, so it's compared straight against the timer (web parity:
+  // record/page.tsx). The ref makes the auto-stop fire once per recording and
+  // tells handleStop to show the "stopped at the limit" note.
+  const allowanceLeft = usage?.recordingSecondsRemaining ?? null;
+  const timeLeftSec = active && allowanceLeft !== null ? allowanceLeft - elapsed : null;
+  const stoppedAtLimitRef = useRef(false);
 
   // ── Persistence (batched every 5s, forced on Stop) ────────────────────────
   const sessionIdRef = useRef<Id<"sessions"> | null>(null);
@@ -285,6 +304,7 @@ export default function RecordScreen() {
     patchedMergesRef.current = new Set();
     timerRef.current = { accumulated: 0, since: null };
     setElapsed(0);
+    stoppedAtLimitRef.current = false;
     const ok = await recorder.start();
     if (completedPendingRef.current) endCompletedPending();
     if (!ok) return;
@@ -359,13 +379,29 @@ export default function RecordScreen() {
       setCompletedPending(true);
       // iPad: the finished session opens BESIDE the sidebar (its Recent list
       // highlights it); phones push it full-screen.
-      if (railActive) router.navigate({ pathname: "/s/[id]", params: { id: sessionId, completed: "1" } });
-      else router.push({ pathname: "/session/[id]", params: { id: sessionId, completed: "1" } });
+      // `limit=1` → the completed screen notes the monthly allowance ran out.
+      const params = {
+        id: sessionId,
+        completed: "1",
+        ...(stoppedAtLimitRef.current ? { limit: "1" } : {}),
+      };
+      if (railActive) router.navigate({ pathname: "/s/[id]", params });
+      else router.push({ pathname: "/session/[id]", params });
     } else {
       setElapsed(0);
     }
     setStopping(false);
   };
+
+  // ── Out of monthly recording time mid-recording → stop and save through the
+  // normal Stop path, once (the banner has been warning for 5 minutes).
+  useEffect(() => {
+    if (timeLeftSec === null || timeLeftSec > 0 || stoppedAtLimitRef.current || stopping) return;
+    stoppedAtLimitRef.current = true;
+    void handleStop();
+    // handleStop reads live state; only the countdown edge matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeftSec]);
 
   // ── "New recording" from the completed view (web completed-view.tsx
   // onNewRecording starts a fresh capture immediately). The session screen
@@ -515,10 +551,25 @@ export default function RecordScreen() {
                     large={tablet}
                   />
 
-                  {overSessionLimit ? (
+                  {overLimit && usage ? (
                     <UpgradeCard
                       title={t("record.limitTitle")}
-                      message={t("record.limitBody", { limit: String(usage?.sessionsLimit ?? "") })}
+                      message={
+                        usage.plan === "free"
+                          ? t("record.hoursLimitUpgrade", {
+                              limit: formatRecordingTime(usage.recordingSecondsLimit ?? 0),
+                              pro: formatRecordingTime(PLAN_LIMITS.pro.recordingHoursPerMonth * 3600),
+                            })
+                          : t("record.hoursLimitReset", {
+                              limit: formatRecordingTime(usage.recordingSecondsLimit ?? 0),
+                              date: new Date(nextMonthStartMs(openedAt)).toLocaleDateString(locale, {
+                                month: "short",
+                                day: "numeric",
+                                timeZone: "UTC",
+                              }),
+                            })
+                      }
+                      showUpgrade={usage.plan === "free"}
                     />
                   ) : (
                     <>
@@ -535,11 +586,11 @@ export default function RecordScreen() {
                           {recorder.phase === "starting" ? t("record.starting") : t("record.tapToStart")}
                         </Text>
                       </View>
-                      {usage && usage.plan === "free" && usage.sessionsLimit !== null ? (
+                      {usage && usage.recordingSecondsLimit !== null ? (
                         <Text style={styles.usage}>
-                          {t("record.sessionsUsage", {
-                            used: String(usage.sessionsUsed),
-                            limit: String(usage.sessionsLimit),
+                          {t("record.hoursUsage", {
+                            used: formatRecordingTime(usage.recordingSecondsUsed),
+                            limit: formatRecordingTime(usage.recordingSecondsLimit),
                           })}
                         </Text>
                       ) : null}
@@ -606,6 +657,22 @@ export default function RecordScreen() {
                   </View>
                   <LayoutToggle value={layout} onChange={setLayout} rtl={rtl} />
                 </View>
+
+                {/* Monthly allowance about to run out (web: RecordingShell
+                    timeLeftSec) — say so before the auto-stop, not after. */}
+                {timeLeftSec !== null && timeLeftSec > 0 && timeLeftSec <= TIME_LEFT_WARN_SEC ? (
+                  <Animated.View
+                    entering={TW_ENTER.fade}
+                    exiting={TW_EXIT.fade}
+                    style={styles.interruptBanner}
+                    accessibilityRole="alert"
+                  >
+                    <Text style={[styles.bannerLabel, { color: C.amber }, rtl && styles.rtlText]}>
+                      {t("record.timeLeftTitle", { min: String(Math.ceil(timeLeftSec / 60)) })}
+                    </Text>
+                    <Text style={[styles.bannerBody, rtl && styles.rtlText]}>{t("record.timeLeftBody")}</Text>
+                  </Animated.View>
+                ) : null}
 
                 {/* OS interruption banner (web: instant; faded here). Tapping
                     recovers inside the gesture, like the web. */}

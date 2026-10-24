@@ -76,7 +76,6 @@ export const NL = {
   // record
   "record.starting": "Starten…",
   "record.startRecording": "Opname starten",
-  "record.sessionsUsage": "{used} van {limit} sessies deze maand",
   "record.recent": "Recent",
   "record.untitled": "Naamloze sessie",
   "record.notSavingTitle": "Wordt niet opgeslagen",
@@ -130,9 +129,16 @@ export const NL = {
   "record.micFailedTitle": "Kon de opname niet starten",
   "record.micFailedBody": "Er ging iets mis. Probeer het opnieuw.",
   "record.limitTitle": "Maandlimiet bereikt",
-  "record.limitBody":
-    "Je hebt alle {limit} gratis sessies van deze maand gebruikt. Upgrade naar Tarjuman Pro voor onbeperkt opnemen.",
   "record.upgrade": "Upgraden",
+  "record.hoursUsage": "{used} van {limit} opnametijd gebruikt deze maand",
+  "record.hoursLimitUpgrade":
+    "Je hebt je {limit} opnametijd van deze maand gebruikt. Upgrade naar Tarjuman Pro voor {pro} per maand.",
+  "record.hoursLimitReset":
+    "Je hebt je {limit} opnametijd van deze maand gebruikt. Die wordt op {date} gereset.",
+  "record.timeLeftTitle": "Nog {min} min opnametijd deze maand",
+  "record.timeLeftBody": "De opname stopt en wordt opgeslagen zodra je maandtijd op is.",
+  "record.stoppedAtLimit":
+    "Gestopt — je hebt de opnametijd van deze maand bereikt. Je transcript is opgeslagen.",
   "record.summaryLimitTitle": "Limiet voor samenvattingen bereikt",
   "record.summaryLimitBody":
     "Je hebt alle {limit} gratis samenvattingen van deze maand gebruikt. Upgrade naar Tarjuman Pro voor onbeperkte AI-samenvattingen.",
@@ -252,7 +258,9 @@ export const NL = {
   "settingsAuthNav.complimentaryUntil": "Gratis · tot {date}",
   "settingsAuthNav.upgrade": "Upgraden",
   "settingsAuthNav.upgradeSub": "{price} · alle abonnementen bekijken",
-  "settingsAuthNav.usageLine": "{su} van {sl} sessies · {mu} van {ml} samenvattingen gebruikt deze maand.",
+  "settingsAuthNav.hoursUsageLine":
+    "{hu} van {hl} opnametijd · {mu} van {ml} samenvattingen gebruikt deze maand.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} van {hl} opnametijd gebruikt deze maand.",
   "settingsAuthNav.focusSpeakerDesc": "Andere stemmen negeren als er meerdere sprekers worden gedetecteerd.",
   "settingsAuthNav.tipsResetDone": "De tips verschijnen bij je volgende opname.",
   "settingsAuthNav.tipsResetSub": "De gids voor microfoonplaatsing opnieuw tonen.",

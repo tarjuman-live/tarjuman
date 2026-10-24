@@ -30,6 +30,10 @@ import { useSessionTimer } from "@/hooks/use-session-timer";
 import { usePlan } from "@/hooks/use-plan";
 import { UpgradeCard } from "@/components/billing/upgrade-card";
 import {
+  formatRecordingTime,
+  recordingLimitMessage,
+} from "../../../../convex/billingLimits";
+import {
   stopTailSegment,
   takeFlushableSegments,
 } from "@/lib/recording-persistence";
@@ -152,11 +156,15 @@ export default function RecordPage() {
     }
   };
 
-  // This-month plan usage. `canStartSession` is false once a free user hits
-  // their monthly session cap — we then swap the record button for an upgrade
-  // card and keep the STT WS closed (no token mint = no cost).
+  // This-month plan usage. `canStartSession` is false once the user has used
+  // their monthly recording time (Free 1h · Pro 3h) — we then swap the record
+  // button for an upgrade card and keep the STT WS closed (no token mint = no
+  // cost). Always true while billing is off.
   const plan = usePlan();
-  const overSessionLimit = plan ? !plan.canStartSession : false;
+  const overLimit = plan ? !plan.canStartSession : false;
+  // Render-stable "now" for the reset date in the out-of-time message (a page
+  // left open across a month boundary just shows last month's date).
+  const [openedAt] = useState(() => Date.now());
 
   const recorder = useRecorder();
   const isActive =
@@ -208,9 +216,9 @@ export default function RecordPage() {
     // visitor idling on /record held a paid Speechmatics session open — and
     // the free tier allows TWO concurrent sessions app-wide, so two idle tabs
     // blocked everyone else from recording. The socket stays up across pause
-    // (paused gates outbound frames). A free user over their session cap
-    // never opens it (no STT credentials minted).
-    enabled: isActive && !overSessionLimit,
+    // (paused gates outbound frames). A user out of recording time never
+    // opens it (no STT credentials minted).
+    enabled: isActive && !overLimit,
     paused: recorder.phase === "paused",
     // Drop side-speaker segments only while the main-speaker toggle is on
     // (default on, persisted in preferences). Transient-noise defenses stay
@@ -229,6 +237,18 @@ export default function RecordPage() {
   useEffect(() => {
     elapsedRef.current = elapsed;
   }, [elapsed]);
+
+  // Monthly recording allowance left for THIS recording (null = unlimited —
+  // always, while billing is off). The in-progress session only reaches the
+  // recordingUsage ledger on completeSession, so the remaining figure is
+  // compared straight against the live timer with no double counting.
+  const allowanceLeft = plan?.recordingSecondsRemaining ?? null;
+  const timeLeftSec =
+    isActive && allowanceLeft !== null ? allowanceLeft - elapsed : null;
+  // Set when the allowance ran out and the page stopped the recording itself;
+  // the ref makes the auto-stop fire exactly once per recording.
+  const [stoppedAtLimit, setStoppedAtLimit] = useState(false);
+  const limitStopRef = useRef(false);
 
   // ─── Persistence ──────────────────────────────────────────────────────
   // `createSession` resolves asynchronously (~100-300ms over the WebSocket
@@ -608,6 +628,8 @@ export default function RecordPage() {
 
   const handleStart = () => {
     setCompletedSession(null);
+    setStoppedAtLimit(false);
+    limitStopRef.current = false;
     haptics.start();
     void recorder.start();
   };
@@ -741,6 +763,18 @@ export default function RecordPage() {
     })();
   };
 
+  // Out of monthly recording time mid-recording → stop and save through the
+  // normal Stop path (same persistence as tapping Stop), once. RecordingShell
+  // has been warning for the last 5 minutes.
+  useEffect(() => {
+    if (timeLeftSec === null || timeLeftSec > 0 || limitStopRef.current) return;
+    limitStopRef.current = true;
+    setStoppedAtLimit(true);
+    handleStop();
+    // handleStop is recreated every render; the ref guard is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeftSec]);
+
   const handleSummaryGenerated = (summary: string, language: string) => {
     if (!completedSession?._id) return;
     void saveSummaryM({
@@ -766,6 +800,11 @@ export default function RecordPage() {
         onNewRecording={handleStart}
         onDone={handleDone}
         onSummaryGenerated={handleSummaryGenerated}
+        notice={
+          stoppedAtLimit
+            ? "Stopped — you've reached this month's recording time. Your transcript is saved."
+            : undefined
+        }
       />
     );
   }
@@ -804,6 +843,7 @@ export default function RecordPage() {
         onPause={handlePause}
         onResume={handleResume}
         onStop={handleStop}
+        timeLeftSec={timeLeftSec}
       />
     );
   }
@@ -875,10 +915,11 @@ export default function RecordPage() {
           }}
         />
 
-        {overSessionLimit ? (
+        {overLimit && plan ? (
           <UpgradeCard
             title="Monthly limit reached"
-            message={`You've used all ${plan?.sessionsLimit} free sessions this month. Upgrade to Tarjuman Pro for unlimited recording.`}
+            message={recordingLimitMessage(plan.plan, openedAt)}
+            showUpgrade={plan.plan === "free"}
           />
         ) : (
           <>
@@ -886,12 +927,14 @@ export default function RecordPage() {
               onStart={handleStart}
               disabled={recorder.phase === "starting"}
             />
-            {plan && plan.plan === "free" && plan.sessionsLimit !== null && (
+            {plan && plan.recordingSecondsLimit !== null && (
               <div
                 className="text-[12px] text-center"
                 style={{ color: COLORS.t3 }}
               >
-                {plan.sessionsUsed} of {plan.sessionsLimit} sessions this month
+                {formatRecordingTime(plan.recordingSecondsUsed)} of{" "}
+                {formatRecordingTime(plan.recordingSecondsLimit)} recording
+                used this month
               </div>
             )}
           </>

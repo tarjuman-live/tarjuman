@@ -76,7 +76,6 @@ export const RU = {
   // record
   "record.starting": "Запуск…",
   "record.startRecording": "Начать запись",
-  "record.sessionsUsage": "{used} из {limit} сессий в этом месяце",
   "record.recent": "Недавние",
   "record.untitled": "Сессия без названия",
   "record.notSavingTitle": "Не сохраняется",
@@ -130,9 +129,14 @@ export const RU = {
   "record.micFailedTitle": "Не удалось начать запись",
   "record.micFailedBody": "Что-то пошло не так. Попробуйте ещё раз.",
   "record.limitTitle": "Месячный лимит исчерпан",
-  "record.limitBody":
-    "Вы использовали все {limit} бесплатных сессий в этом месяце. Перейдите на Tarjuman Pro для записи без ограничений.",
   "record.upgrade": "Улучшить",
+  "record.hoursUsage": "{used} из {limit} записи использовано в этом месяце",
+  "record.hoursLimitUpgrade":
+    "Вы использовали {limit} записи в этом месяце. Перейдите на Tarjuman Pro, чтобы получать {pro} в месяц.",
+  "record.hoursLimitReset": "Вы использовали {limit} записи в этом месяце. Лимит обновится {date}.",
+  "record.timeLeftTitle": "Осталось {min} мин записи в этом месяце",
+  "record.timeLeftBody": "Запись остановится и сохранится, когда закончится месячное время.",
+  "record.stoppedAtLimit": "Остановлено — вы исчерпали время записи на этот месяц. Расшифровка сохранена.",
   "record.summaryLimitTitle": "Лимит конспектов исчерпан",
   "record.summaryLimitBody":
     "Вы использовали все {limit} бесплатных конспектов в этом месяце. Перейдите на Tarjuman Pro для неограниченных ИИ-конспектов.",
@@ -252,7 +256,9 @@ export const RU = {
   "settingsAuthNav.complimentaryUntil": "Бесплатно · до {date}",
   "settingsAuthNav.upgrade": "Улучшить",
   "settingsAuthNav.upgradeSub": "{price} · все тарифы",
-  "settingsAuthNav.usageLine": "{su} из {sl} сессий · {mu} из {ml} конспектов использовано в этом месяце.",
+  "settingsAuthNav.hoursUsageLine":
+    "{hu} из {hl} записи · {mu} из {ml} конспектов использовано в этом месяце.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} из {hl} записи использовано в этом месяце.",
   "settingsAuthNav.focusSpeakerDesc": "Отбрасывать другие голоса, когда обнаружено несколько говорящих.",
   "settingsAuthNav.tipsResetDone": "Советы появятся при следующей записи.",
   "settingsAuthNav.tipsResetSub": "Снова показать подсказку по расположению микрофона.",

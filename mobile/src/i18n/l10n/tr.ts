@@ -76,7 +76,6 @@ export const TR = {
   // record
   "record.starting": "Başlatılıyor…",
   "record.startRecording": "Kaydı başlat",
-  "record.sessionsUsage": "Bu ay {limit} oturumdan {used} kullanıldı",
   "record.recent": "Son",
   "record.untitled": "Adsız oturum",
   "record.notSavingTitle": "Kaydedilmiyor",
@@ -130,9 +129,14 @@ export const TR = {
   "record.micFailedTitle": "Kayıt başlatılamadı",
   "record.micFailedBody": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
   "record.limitTitle": "Aylık sınıra ulaşıldı",
-  "record.limitBody":
-    "Bu ayki {limit} ücretsiz oturumun hepsini kullandınız. Sınırsız kayıt için Tarjuman Pro'ya yükseltin.",
   "record.upgrade": "Yükselt",
+  "record.hoursUsage": "Bu ay {limit} kayıt süresinden {used} kullanıldı",
+  "record.hoursLimitUpgrade":
+    "Bu ayki {limit} kayıt sürenizi kullandınız. Ayda {pro} için Tarjuman Pro'ya yükseltin.",
+  "record.hoursLimitReset": "Bu ayki {limit} kayıt sürenizi kullandınız. {date} tarihinde sıfırlanır.",
+  "record.timeLeftTitle": "Bu ay {min} dk kayıt süresi kaldı",
+  "record.timeLeftBody": "Aylık süreniz bittiğinde kayıt durur ve kaydedilir.",
+  "record.stoppedAtLimit": "Durduruldu — bu ayın kayıt süresine ulaştınız. Dökümünüz kaydedildi.",
   "record.summaryLimitTitle": "Özet sınırına ulaşıldı",
   "record.summaryLimitBody":
     "Bu ayki {limit} ücretsiz özetin hepsini kullandınız. Sınırsız yapay zekâ özetleri için Tarjuman Pro'ya yükseltin.",
@@ -252,7 +256,8 @@ export const TR = {
   "settingsAuthNav.complimentaryUntil": "Ücretsiz · {date} tarihine kadar",
   "settingsAuthNav.upgrade": "Yükselt",
   "settingsAuthNav.upgradeSub": "{price} · tüm planları gör",
-  "settingsAuthNav.usageLine": "Bu ay {sl} oturumdan {su} · {ml} özetten {mu} kullanıldı.",
+  "settingsAuthNav.hoursUsageLine": "Bu ay {hl} kayıttan {hu} · {ml} özetten {mu} kullanıldı.",
+  "settingsAuthNav.hoursOnlyUsageLine": "Bu ay {hl} kayıttan {hu} kullanıldı.",
   "settingsAuthNav.focusSpeakerDesc": "Birden fazla konuşmacı algılandığında diğer sesleri çıkar.",
   "settingsAuthNav.tipsResetDone": "İpuçları bir sonraki kaydınızda gösterilecek.",
   "settingsAuthNav.tipsResetSub": "Mikrofon konumlandırma rehberini yeniden göster.",

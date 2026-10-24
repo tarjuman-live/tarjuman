@@ -76,7 +76,6 @@ export const ID = {
   // record
   "record.starting": "Memulai…",
   "record.startRecording": "Mulai merekam",
-  "record.sessionsUsage": "{used} dari {limit} sesi bulan ini",
   "record.recent": "Terbaru",
   "record.untitled": "Sesi tanpa judul",
   "record.notSavingTitle": "Tidak tersimpan",
@@ -130,9 +129,15 @@ export const ID = {
   "record.micFailedTitle": "Tidak dapat mulai merekam",
   "record.micFailedBody": "Terjadi kesalahan. Silakan coba lagi.",
   "record.limitTitle": "Batas bulanan tercapai",
-  "record.limitBody":
-    "Anda telah memakai semua {limit} sesi gratis bulan ini. Tingkatkan ke Tarjuman Pro untuk merekam tanpa batas.",
   "record.upgrade": "Tingkatkan",
+  "record.hoursUsage": "{used} dari {limit} waktu rekam terpakai bulan ini",
+  "record.hoursLimitUpgrade":
+    "Anda telah memakai {limit} waktu rekam bulan ini. Tingkatkan ke Tarjuman Pro untuk {pro} per bulan.",
+  "record.hoursLimitReset":
+    "Anda telah memakai {limit} waktu rekam bulan ini. Akan diatur ulang pada {date}.",
+  "record.timeLeftTitle": "Sisa {min} menit waktu rekam bulan ini",
+  "record.timeLeftBody": "Rekaman berhenti dan tersimpan saat waktu bulanan Anda habis.",
+  "record.stoppedAtLimit": "Berhenti — waktu rekam bulan ini sudah habis. Transkrip Anda tersimpan.",
   "record.summaryLimitTitle": "Batas ringkasan tercapai",
   "record.summaryLimitBody":
     "Anda telah memakai semua {limit} ringkasan gratis bulan ini. Tingkatkan ke Tarjuman Pro untuk ringkasan AI tanpa batas.",
@@ -252,7 +257,9 @@ export const ID = {
   "settingsAuthNav.complimentaryUntil": "Gratis · hingga {date}",
   "settingsAuthNav.upgrade": "Tingkatkan",
   "settingsAuthNav.upgradeSub": "{price} · lihat semua paket",
-  "settingsAuthNav.usageLine": "{su} dari {sl} sesi · {mu} dari {ml} ringkasan terpakai bulan ini.",
+  "settingsAuthNav.hoursUsageLine":
+    "{hu} dari {hl} waktu rekam · {mu} dari {ml} ringkasan terpakai bulan ini.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} dari {hl} waktu rekam terpakai bulan ini.",
   "settingsAuthNav.focusSpeakerDesc": "Abaikan suara lain saat beberapa pembicara terdeteksi.",
   "settingsAuthNav.tipsResetDone": "Tips akan muncul saat Anda merekam berikutnya.",
   "settingsAuthNav.tipsResetSub": "Tampilkan lagi panduan posisi mikrofon.",
