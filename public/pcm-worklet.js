@@ -17,6 +17,13 @@
 // through unchanged — only true near-silence (gaps between phrases, ambient
 // hum after the audio-graph filters) is suppressed.
 
+// Capture gate: while off, process() emits nothing. The recorder opens the
+// pipeline early (prewarm) with capture OFF and switches it on only when the
+// user taps Record — otherwise frames from the idle /record screen queue up on
+// the port and get transcribed the moment an STT engine starts listening.
+// Toggled from the main thread with port.postMessage({ capture: boolean }).
+// processorOptions.capture sets the initial state (default on).
+
 // 10 ^ (-55 / 20) — RMS threshold in linear amplitude. Keep in sync with
 // AUDIO_DSP.noiseGateLinear in src/lib/audio/dsp.ts (the native app's copy).
 const NOISE_GATE_LINEAR = 0.001778;
@@ -29,9 +36,21 @@ class PcmWorkletProcessor extends AudioWorkletProcessor {
     this.frameSize = typeof fs === "number" && fs > 0 ? Math.round(fs) : 640;
     this.buffer = new Float32Array(this.frameSize);
     this.bufferIndex = 0;
+    this.capturing = !(
+      options &&
+      options.processorOptions &&
+      options.processorOptions.capture === false
+    );
+    this.port.onmessage = (e) => {
+      if (e.data && typeof e.data.capture === "boolean") {
+        this.capturing = e.data.capture;
+        this.bufferIndex = 0; // never splice pre-gate audio into a frame
+      }
+    };
   }
 
   process(inputs) {
+    if (!this.capturing) return true;
     const input = inputs[0];
     if (!input || !input[0]) return true;
     const channel = input[0];

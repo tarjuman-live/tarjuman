@@ -12,10 +12,9 @@ import { useWakeLock } from "./use-wake-lock";
 export type RecorderPhase =
   | "idle"
   | "starting"
-  // Pipeline open and feeding the worklet, but the user hasn't tapped Record
-  // yet. The STT WS opens during this phase so the user's first words
-  // don't race the handshake; pcmNode frames are gated off until phase
-  // flips to "recording".
+  // Pipeline open (mic warm, level meter live), but the user hasn't tapped
+  // Record yet. The worklet's capture gate is OFF in this phase — no PCM
+  // frames exist until Record — and no STT socket is open.
   | "prewarmed"
   | "recording"
   | "paused"
@@ -74,11 +73,24 @@ export function useRecorder(): UseRecorderReturn {
   // held during prewarm: the user hasn't started yet.
   useWakeLock(phase === "recording" || phase === "paused");
 
+  // Worklet capture gate follows the phase: frames flow only for an active
+  // recording (paused frames are dropped downstream, keeping the engine's
+  // socket warm). Re-runs when the pipeline itself is (re)created.
+  const capturing = phase === "recording" || phase === "paused";
+  useEffect(() => {
+    pipelineRef.current?.setCapture(capturing);
+  }, [capturing, pcmNode]);
+
   const openPipeline = useCallback(async (): Promise<boolean> => {
     if (pipelineRef.current) return true;
     const seq = openSeqRef.current;
     try {
-      const pipeline = await createAudioPipeline();
+      // Capture starts OFF: the capture effect below turns it on only for an
+      // active recording, so prewarm audio never exists as PCM frames.
+      const pipeline = await createAudioPipeline({ captureOnStart: false });
+      pipeline.setCapture(
+        phaseRef.current === "recording" || phaseRef.current === "paused",
+      );
       // Cancelled during the await (stop()/unmount bumped the token) or another
       // open already won the race — do NOT adopt this pipeline; tear it down so
       // the mic track + AudioContext are released instead of leaking hot.

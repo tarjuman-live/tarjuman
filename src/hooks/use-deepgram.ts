@@ -155,11 +155,12 @@ export function useDeepgram({
     mainSpeakerOnlyRef.current = mainSpeakerOnly;
   }, [mainSpeakerOnly]);
 
-  // Session-wide speaker lock. Once locked, segments where the dominant
-  // speaker isn't the locked speaker are dropped (per user policy: "ignore
-  // side conversations"). The lock survives WS reconnects within the same
-  // session and is reset only when the hook teardown fires (enabled=false /
-  // unmount).
+  // Speaker lock. Once locked, segments where the dominant speaker isn't the
+  // locked speaker are dropped (per user policy: "ignore side conversations").
+  // Reset on every NEW SOCKET, not just at teardown: Deepgram's speaker
+  // indices are per-connection, so a lock carried across a reconnect could
+  // point at a different person and drop the khateeb for the rest of the
+  // session. Same policy as the Speechmatics core.
   //
   // Deepgram keys speakers by numeric index; Speechmatics uses labels like
   // "S1". Same module, same policy, different key type — which is why the lock
@@ -171,7 +172,9 @@ export function useDeepgram({
       diarizeWarmupMs: DEEPGRAM.diarizeWarmupMs,
     }),
   );
-  const sessionStartRef = useRef<number | null>(null);
+  // The lock's clock: audio actually SENT on the current socket (not wall
+  // time, which counted idle prewarm and pauses toward the warmups).
+  const lockAudioMsRef = useRef(0);
 
   const resetTranscript = useCallback(() => {
     setSegments([]);
@@ -186,13 +189,12 @@ export function useDeepgram({
       // starts fresh. Keeping it across stop/start would carry a stale lock
       // from a previous speaker into a new recording.
       speakerLockRef.current.reset();
-      sessionStartRef.current = null;
+      lockAudioMsRef.current = 0;
       return;
     }
 
     const myGeneration = ++generationRef.current;
     const isLive = () => generationRef.current === myGeneration;
-    sessionStartRef.current = Date.now();
 
     // Closure-local state. NOT refs. This entire block is torn down on
     // the next mount, and nothing leaks into the re-mount.
@@ -399,6 +401,9 @@ export function useDeepgram({
         attempt = 0;
         hasEverOpened = true;
         setReconnectAttempt(0);
+        // New socket → new speaker indices → re-learn the main speaker.
+        speakerLockRef.current.reset();
+        lockAudioMsRef.current = 0;
 
         // Step 3: subscribe to the PCM worklet's frame stream. Each message
         // is an Int16 ArrayBuffer (40ms @ 16kHz, mono) ready to forward as
@@ -410,6 +415,8 @@ export function useDeepgram({
           const data = event.data as ArrayBuffer;
           if (!data || data.byteLength === 0) return;
           currentWs.send(data);
+          const rate = pcmNode.context?.sampleRate ?? 16000;
+          lockAudioMsRef.current += (data.byteLength / (2 * rate)) * 1000;
         };
       };
 
@@ -505,9 +512,7 @@ export function useDeepgram({
           // within that window (DEEPGRAM.diarizeWarmupMs) — no accounting, no
           // per-segment speaker id — so a lone khateeb isn't split into
           // "Speaker 1" + "Speaker 2".
-          const sessionAgeMs = sessionStartRef.current
-            ? Date.now() - sessionStartRef.current
-            : 0;
+          const sessionAgeMs = lockAudioMsRef.current;
           const lock = speakerLockRef.current;
 
           // Speaker lock (operates on RAW indices) — accumulate per-speaker

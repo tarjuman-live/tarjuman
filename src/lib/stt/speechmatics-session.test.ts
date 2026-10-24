@@ -134,19 +134,51 @@ describe("speechmatics session core", () => {
     expect(start.transcription_config.additional_vocab.length).toBeGreaterThan(0);
   });
 
-  it("drops frames before RecognitionStarted and while paused", async () => {
+  it("holds frames until RecognitionStarted, then sends them in order", async () => {
     const t = setup();
+    // Before the socket even exists (credential fetch in flight)…
+    t.session.sendFrame(new Uint8Array([1, 1]).buffer);
     await vi.waitFor(() => expect(t.sockets.length).toBe(1));
     const ws = t.sockets[0];
     ws.open();
-    t.session.sendFrame(new ArrayBuffer(8)); // pre-ack
-    expect(ws.sent.length).toBe(1); // only StartRecognition
+    // …and after it opens but before the ack: the server would discard these.
+    t.session.sendFrame(new Uint8Array([2, 2]).buffer);
+    expect(ws.sent.length).toBe(1); // only StartRecognition so far
     ws.msg({ message: "RecognitionStarted" });
+    const audio = ws.sent.slice(1) as ArrayBuffer[];
+    expect(audio.map((b) => new Uint8Array(b)[0])).toEqual([1, 2]);
+    t.session.sendFrame(new Uint8Array([3, 3]).buffer);
+    expect(ws.sent.length).toBe(4);
+  });
+
+  it("drops frames while paused, even before the ack", async () => {
+    const t = setup({ paused: true });
     t.session.sendFrame(new ArrayBuffer(8));
-    expect(ws.sent.length).toBe(2);
-    t.setPaused(true);
+    const ws = await connected(t);
     t.session.sendFrame(new ArrayBuffer(8));
-    expect(ws.sent.length).toBe(2);
+    expect(ws.sent.length).toBe(1); // only StartRecognition
+  });
+
+  it("caps held audio, shedding the oldest", async () => {
+    const t = setup(); // 48 kHz → 96,000 bytes per second
+    const frame = (tag: number) => {
+      const b = new Uint8Array(96_000); // 1s
+      b[0] = tag;
+      return b.buffer;
+    };
+    for (let i = 0; i < 15; i++) t.session.sendFrame(frame(i));
+    const ws = await connected(t);
+    const audio = ws.sent.slice(1) as ArrayBuffer[];
+    expect(audio).toHaveLength(10);
+    expect(new Uint8Array(audio[0])[0]).toBe(5); // seconds 0-4 shed
+  });
+
+  it("maps zh to Speechmatics' cmn", async () => {
+    const t = setup({ lang: "zh" });
+    const ws = await connected(t);
+    expect(JSON.parse(ws.sent[0] as string).transcription_config.language).toBe(
+      "cmn",
+    );
   });
 
   it("accumulates words into one sentence and flushes on is_eos", async () => {
@@ -223,9 +255,9 @@ describe("speechmatics session core", () => {
       message: "AddTranscript",
       results: [word("الحمد", 10), word("لله", 10.5), punct(".", 11)],
     });
-    ws.close(1011);
+    ws.close(1011); // internal error: vendor asks for >= 5s before retrying
     expect(t.states.at(-1)).toBe("reconnecting");
-    await vi.advanceTimersByTimeAsync(1100);
+    await vi.advanceTimersByTimeAsync(5100);
     await vi.waitFor(() => expect(t.sockets.length).toBe(2));
     const ws2 = t.sockets[1];
     ws2.open();
@@ -238,5 +270,164 @@ describe("speechmatics session core", () => {
     expect(t.segments).toHaveLength(2);
     expect(t.segments[1].timestamp).toBeGreaterThan(t.segments[0].timestamp);
     expect(t.fetchCredentials).toHaveBeenCalledTimes(2);
+  });
+
+  // ── Speaker lock ──────────────────────────────────────────────────────────
+  // The lock's clock is audio SENT, so these feed ~1s frames to age it.
+  const second = () => new ArrayBuffer(96_000); // 1s at 48 kHz
+  const age = (t: ReturnType<typeof setup>, seconds: number) => {
+    for (let i = 0; i < seconds; i++) t.session.sendFrame(second());
+  };
+  /** One finished sentence of `n` 0.4s words from `speaker`. */
+  const sentence = (
+    ws: FakeSocket,
+    speaker: string,
+    start: number,
+    n: number,
+    conf = 0.98,
+  ) =>
+    ws.msg({
+      message: "AddTranscript",
+      results: [
+        ...Array.from({ length: n }, (_, i) =>
+          word("كلمة", start + i * 0.5, { speaker, conf }),
+        ),
+        punct(".", start + n * 0.5),
+      ],
+    });
+
+  it("locks onto the main speaker and drops a side speaker", async () => {
+    const t = setup();
+    const ws = await connected(t);
+    age(t, 20); // past the 10s diarize + 15s lock warmups
+    sentence(ws, "S1", 20, 14); // 5.6s of S1 → lock
+    sentence(ws, "S2", 30, 3);
+    sentence(ws, "S1", 35, 3);
+    expect(t.segments).toHaveLength(2);
+  });
+
+  it("never credits the lock with speech the gates dropped", async () => {
+    const t = setup();
+    const ws = await connected(t);
+    age(t, 20);
+    // 8s of LOW-CONFIDENCE S2 noise: dropped, so it must not win the lock…
+    sentence(ws, "S2", 20, 20, 0.2);
+    expect(t.segments).toHaveLength(0);
+    // …which leaves S1 (the khateeb) to take it.
+    sentence(ws, "S1", 40, 14);
+    sentence(ws, "S1", 50, 3);
+    expect(t.segments).toHaveLength(2);
+  });
+
+  it("does not let prewarm/idle wall time count as warmup", async () => {
+    const t = setup();
+    const ws = await connected(t);
+    // No audio sent: still inside the diarize warmup however long we wait, so
+    // a side speaker can't be dropped (and nobody can be locked) yet.
+    sentence(ws, "S1", 1, 14);
+    sentence(ws, "S2", 9, 3);
+    expect(t.segments).toHaveLength(2);
+  });
+
+  it("treats the UU (unknown) label as no speaker", async () => {
+    const t = setup();
+    const ws = await connected(t);
+    age(t, 20);
+    sentence(ws, "S1", 20, 14);
+    sentence(ws, "UU", 30, 3); // unattributed — kept, not dropped as a side speaker
+    expect(t.segments).toHaveLength(2);
+    expect(t.segments[1].speaker).toBeUndefined();
+  });
+
+  it("re-learns the speaker after a reconnect (labels are per socket)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const t = setup();
+    const ws = await connected(t);
+    age(t, 20);
+    sentence(ws, "S2", 20, 14); // S2 locked on the first socket
+    ws.close(1011);
+    await vi.advanceTimersByTimeAsync(5100);
+    await vi.waitFor(() => expect(t.sockets.length).toBe(2));
+    const ws2 = t.sockets[1];
+    ws2.open();
+    ws2.msg({ message: "RecognitionStarted" });
+    age(t, 20);
+    // The same person is "S1" on the new socket — must not be dropped as a
+    // side speaker of the OLD socket's lock.
+    sentence(ws2, "S1", 20, 14);
+    sentence(ws2, "S1", 30, 3);
+    expect(t.segments).toHaveLength(3);
+  });
+
+  // ── Close / error handling ────────────────────────────────────────────────
+  it("reconnects when the server closes normally mid-session", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const t = setup();
+    const ws = await connected(t);
+    ws.close(1000);
+    expect(t.states.at(-1)).toBe("reconnecting");
+    await vi.advanceTimersByTimeAsync(1100);
+    await vi.waitFor(() => expect(t.sockets.length).toBe(2));
+  });
+
+  it("ignores a stale socket's late close after the watchdog replaced it", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const t = setup();
+    await vi.waitFor(() => expect(t.sockets.length).toBe(1));
+    const stale = t.sockets[0];
+    const staleOnClose = stale.onclose;
+    await vi.advanceTimersByTimeAsync(10_100); // watchdog: never acked
+    await vi.advanceTimersByTimeAsync(1100);
+    await vi.waitFor(() => expect(t.sockets.length).toBe(2));
+    const ws2 = t.sockets[1];
+    ws2.open();
+    ws2.msg({ message: "RecognitionStarted" });
+    // The old socket's close lands late. Even if a handler were still wired,
+    // it must not knock the live socket offline or open a third one.
+    staleOnClose?.({ code: 1006, reason: "" });
+    t.session.sendFrame(new ArrayBuffer(8));
+    expect(ws2.sent.length).toBe(2); // StartRecognition + the frame
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(t.sockets).toHaveLength(2);
+    expect(t.states.at(-1)).toBe("connected");
+  });
+
+  it("treats a fatal in-band Error as final — no reconnect over it", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const t = setup();
+    const ws = await connected(t);
+    ws.msg({ message: "Error", type: "timelimit_exceeded", reason: "quota" });
+    ws.close(1011);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(t.states.at(-1)).toBe("error");
+    expect(t.sockets).toHaveLength(1);
+  });
+
+  it("retries quota_exceeded instead of ending the recording", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const t = setup();
+    const ws = await connected(t);
+    ws.close(4005);
+    expect(t.states.at(-1)).toBe("reconnecting");
+    expect(t.errors.at(-1)).toMatch(/concurrent-session limit/);
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(t.sockets).toHaveLength(1); // vendor asks for >= 5s spacing
+    await vi.advanceTimersByTimeAsync(1500);
+    await vi.waitFor(() => expect(t.sockets.length).toBe(2));
+  });
+
+  it("retries a pre-open 1006 a couple of times before calling it blocked", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const t = setup();
+    for (let i = 0; i < 3; i++) {
+      await vi.waitFor(() => expect(t.sockets.length).toBe(i + 1));
+      t.sockets[i].close(1006);
+      if (i < 2) {
+        expect(t.states.at(-1)).toBe("reconnecting");
+        await vi.advanceTimersByTimeAsync(5000);
+      }
+    }
+    expect(t.states.at(-1)).toBe("error");
+    expect(t.errors.at(-1)).toMatch(/firewall/);
   });
 });

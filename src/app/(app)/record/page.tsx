@@ -158,7 +158,6 @@ export default function RecordPage() {
   const recorder = useRecorder();
   const isActive =
     recorder.phase === "recording" || recorder.phase === "paused";
-  const isPrewarmed = recorder.phase === "prewarmed";
 
   // Hide the floating bottom nav while recording/paused AND on the
   // "Session complete" view (completedSession set), so the recording and
@@ -173,11 +172,11 @@ export default function RecordPage() {
   }, [hideNav, setNavHidden]);
   useEffect(() => () => setNavHidden(false), [setNavHidden]);
 
-  // Pre-warm the audio pipeline + STT WS as soon as the page mounts,
-  // but ONLY if mic permission is already granted — never trigger an
-  // unsolicited permission prompt. The first time a user reaches /record
-  // there's no prewarm; from the second visit onward, their first word
-  // transcribes without the cold-start handshake swallow.
+  // Pre-warm the AUDIO pipeline as soon as the page mounts, but ONLY if mic
+  // permission is already granted — never trigger an unsolicited permission
+  // prompt. The STT socket is NOT prewarmed (see useStt below); the session
+  // core holds the first frames until the engine acks, so the opening words
+  // still land.
   useEffect(() => {
     if (typeof navigator === "undefined" || !navigator.permissions) return;
     let cancelled = false;
@@ -202,14 +201,17 @@ export default function RecordPage() {
   const stt = useStt({
     pcmNode: recorder.pcmNode,
     sourceLanguage: sourceLang,
-    // Keep the WS alive across prewarm + active recording. paused gates
-    // outbound frames so prewarm doesn't accidentally leak audio. A free user
-    // over their session cap never opens the WS (no STT credentials minted).
-    enabled: (isActive || isPrewarmed) && !overSessionLimit,
-    paused: recorder.phase === "paused" || isPrewarmed,
-    // Only drop side-speaker segments when the user has turned the toggle ON.
-    // Default (off) captures every speaker so multi-speaker Q&A isn't silently
-    // truncated. Transient-noise defenses stay on regardless.
+    // Open the engine only once Record is tapped. Prewarming it meant every
+    // visitor idling on /record held a paid Speechmatics session open — and
+    // the free tier allows TWO concurrent sessions app-wide, so two idle tabs
+    // blocked everyone else from recording. The socket stays up across pause
+    // (paused gates outbound frames). A free user over their session cap
+    // never opens it (no STT credentials minted).
+    enabled: isActive && !overSessionLimit,
+    paused: recorder.phase === "paused",
+    // Drop side-speaker segments only while the main-speaker toggle is on
+    // (default on, persisted in preferences). Transient-noise defenses stay
+    // on regardless.
     mainSpeakerOnly,
   });
 

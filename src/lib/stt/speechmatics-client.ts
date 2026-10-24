@@ -20,6 +20,7 @@
 import type { SttClient, SttClientOptions, SttStatus } from "./types";
 import { describeHttpError } from "./types";
 import { keytermsFor } from "./keyterms";
+import { speechmaticsLanguageCode } from "./speechmatics-session";
 
 interface SmAlternative {
   content?: string;
@@ -166,7 +167,7 @@ export function createSpeechmaticsClient(opts: SpeechmaticsOptions): SttClient {
         // Connection is up but the engine is NOT ready — audio must wait for
         // RecognitionStarted.
         const transcription_config: Record<string, unknown> = {
-          language: sourceLanguage,
+          language: speechmaticsLanguageCode(sourceLanguage),
           enable_partials: true,
           max_delay: maxDelay,
           max_delay_mode: "flexible",

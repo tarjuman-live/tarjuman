@@ -21,7 +21,22 @@ export interface AudioPipeline {
    * transcript comes back empty or garbled. See createAudioPipeline.
    */
   sampleRate: number;
+  /**
+   * Start/stop the worklet emitting PCM frames. A pipeline opened with
+   * `captureOnStart: false` (the recorder's prewarm) emits nothing until this
+   * is called with true.
+   */
+  setCapture: (on: boolean) => void;
   teardown: () => Promise<void>;
+}
+
+export interface AudioPipelineOptions {
+  /**
+   * Emit frames from the moment the pipeline opens (default true). The
+   * recorder passes false and turns capture on at the Record tap, so idle
+   * prewarm audio can never reach an STT engine.
+   */
+  captureOnStart?: boolean;
 }
 
 export class MicPermissionError extends Error {
@@ -130,7 +145,9 @@ export function mapMicError(err: DOMException): Error {
  * during gaps between phrases (helps endpointing without breaking the WS
  * cadence).
  */
-export async function createAudioPipeline(): Promise<AudioPipeline> {
+export async function createAudioPipeline(
+  options: AudioPipelineOptions = {},
+): Promise<AudioPipeline> {
   if (
     typeof navigator === "undefined" ||
     !navigator.mediaDevices ||
@@ -252,8 +269,15 @@ export async function createAudioPipeline(): Promise<AudioPipeline> {
     channelCount: 1,
     channelCountMode: "explicit",
     channelInterpretation: "speakers",
-    processorOptions: { frameSize },
+    processorOptions: { frameSize, capture: options.captureOnStart !== false },
   });
+  const setCapture = (on: boolean) => {
+    try {
+      pcmNode.port.postMessage({ capture: on });
+    } catch {
+      /* port closed by teardown */
+    }
+  };
   gain.connect(pcmNode);
 
   const analyser = audioContext.createAnalyser();
@@ -300,6 +324,7 @@ export async function createAudioPipeline(): Promise<AudioPipeline> {
     analyser,
     gainNode: gain,
     sampleRate: actualSampleRate,
+    setCapture,
     teardown,
   };
   } catch (e) {
