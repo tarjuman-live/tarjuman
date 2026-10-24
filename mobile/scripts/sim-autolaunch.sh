@@ -69,24 +69,45 @@ log() { echo "$(date '+%F %T') $*"; }
 listening() { lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
 
 # Start each server at most once a minute: a server that crashes on boot
-# (e.g. a broken dependency) must not be respawned every 3 seconds.
+# (e.g. a broken dependency) must not be respawned every 3 seconds. And never
+# while the copy we started is still alive: on a loaded machine (first boot
+# after a macOS update, 2026-10-24) Metro took over a minute to bind its port,
+# and a second copy raced it — for the web server that is worse, since
+# `bun run dev` kills whatever holds :3000.
 last_metro=0
 last_web=0
+metro_pid=0
+web_pid=0
+alive() { [ "$1" -gt 0 ] && kill -0 "$1" 2>/dev/null; }
+# A copy still not listening after 5 minutes is stuck, not slow: kill it so
+# the next pass starts a fresh one.
+reap_stuck() {
+  local pid="$1" since="$2" port="$3"
+  if alive "$pid" && ! listening "$port" && [ $(($(date +%s) - since)) -ge 300 ]; then
+    log "server on :$port never came up — restarting it"
+    pkill -TERM -P "$pid" 2>/dev/null
+    kill -TERM "$pid" 2>/dev/null
+  fi
+}
 start_servers() {
   local now
   now=$(date +%s)
   # Storage cleaners delete ~/Library/Logs; a missing log dir makes every
   # `>>"$LOG_DIR/…"` redirect fail, so the servers would silently never start.
   mkdir -p "$LOG_DIR"
-  if ! listening 8081 && [ $((now - last_metro)) -ge 60 ]; then
+  reap_stuck "$metro_pid" "$last_metro" 8081
+  reap_stuck "$web_pid" "$last_web" 3000
+  if ! listening 8081 && ! alive "$metro_pid" && [ $((now - last_metro)) -ge 60 ]; then
     last_metro=$now
     log "starting Metro on :8081"
-    (cd "$MOBILE" && nohup bunx expo start --port 8081 </dev/null >>"$LOG_DIR/metro.log" 2>&1 &)
+    (cd "$MOBILE" && exec nohup bunx expo start --port 8081 </dev/null >>"$LOG_DIR/metro.log" 2>&1) &
+    metro_pid=$!
   fi
-  if ! listening 3000 && [ $((now - last_web)) -ge 60 ]; then
+  if ! listening 3000 && ! alive "$web_pid" && [ $((now - last_web)) -ge 60 ]; then
     last_web=$now
     log "starting web dev server on :3000"
-    (cd "$REPO" && nohup bun run dev </dev/null >>"$LOG_DIR/web-dev.log" 2>&1 &)
+    (cd "$REPO" && exec nohup bun run dev </dev/null >>"$LOG_DIR/web-dev.log" 2>&1) &
+    web_pid=$!
   fi
 }
 
