@@ -328,7 +328,7 @@ export function startSpeechmaticsSession(
     // it arrived let a burst of dropped noise or an English announcement win
     // the lock, after which the khateeb himself was dropped as a side speaker.
     const age = sessionAge();
-    for (const [spk, dur] of speakerDurations) lock.observe(spk, dur, age);
+    speakerDurations.forEach((dur, spk) => lock.observe(spk, dur, age));
     lock.maybeLock(age);
     if (lock.shouldDrop(speaker, age, isMainSpeakerOnly())) {
       log(`[sm] dropped side-speaker segment (speaker=${speaker})`);

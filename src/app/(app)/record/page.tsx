@@ -67,6 +67,9 @@ export default function RecordPage() {
   const completeSessionM = useMutation(api.sessions.completeSession);
   const saveSummaryM = useMutation(api.sessions.saveSummary);
   const updateSegmentMerge = useMutation(api.sessions.updateSegmentMerge);
+  const patchSegmentTranslation = useMutation(
+    api.sessions.patchSegmentTranslation,
+  );
 
   // Per-user preferences (default languages + TTS), backed by Convex so they
   // follow the user across devices and into the planned native apps.
@@ -239,6 +242,14 @@ export default function RecordPage() {
   const sessionIdRef = useRef<Id<"sessions"> | null>(null);
   const createSessionPromiseRef = useRef<Promise<Id<"sessions">> | null>(null);
   const flushedIdsRef = useRef<Set<string>>(new Set());
+  // Segments saved WITHOUT their translation — still translating at Stop, or
+  // failed and saved source-only. Patched in when the translation lands, which
+  // can be after Stop, so it keeps the session id rather than reading
+  // sessionIdRef (nulled on Stop). Reset on every new recording.
+  const blankSavedRef = useRef<{
+    sessionId: Id<"sessions"> | null;
+    ids: Set<string>;
+  }>({ sessionId: null, ids: new Set() });
   // Mirror the latest source/target language into a ref so the imperative
   // flushSegments() callback can read current values without being rebound.
   // Synced in an effect to avoid writing ref.current during render — that
@@ -344,6 +355,11 @@ export default function RecordPage() {
   const flushSegments = (force = false) => {
     const sessionId = sessionIdRef.current;
     if (!sessionId) return;
+    const sameLanguage = langsRef.current.source === langsRef.current.target;
+    // Failed translations that aren't being retried right now.
+    const errorIds = new Set(
+      Object.keys(translator.errors).filter((id) => !translator.pending.has(id)),
+    );
     // Selection rules are shared with the native app — see
     // lib/recording-persistence.ts.
     const stored = takeFlushableSegments({
@@ -351,12 +367,18 @@ export default function RecordPage() {
       flushed: flushedIdsRef.current,
       filteredIds: translator.filteredIds,
       completedIds: translator.completedIds,
+      errorIds,
       translations: translator.translations,
       merges: translator.merges,
-      sameLanguage: langsRef.current.source === langsRef.current.target,
+      sameLanguage,
       force,
     });
     if (stored.length === 0) return;
+    if (!sameLanguage) {
+      const blank = blankSavedRef.current;
+      blank.sessionId = sessionId;
+      for (const seg of stored) if (!seg.translatedText) blank.ids.add(seg.id);
+    }
 
     // Fire-and-forget. Convex queues mutations and applies them in order;
     // on transient WS disconnect they retry automatically, so we don't need
@@ -398,6 +420,39 @@ export default function RecordPage() {
     }
   }, [translator.merges, updateSegmentMerge]);
 
+  // Late-translation effect: a segment saved source-only (still translating at
+  // Stop, or failed then retried) gets its translation patched in once it
+  // completes — on the saved row AND on the results screen, which is a
+  // snapshot taken at Stop.
+  useEffect(() => {
+    const blank = blankSavedRef.current;
+    const sessionId = blank.sessionId;
+    if (!sessionId || blank.ids.size === 0) return;
+    const landed: Record<string, string> = {};
+    for (const id of blank.ids) {
+      if (!translator.completedIds.has(id)) continue;
+      const text = translator.translations[id]?.trim();
+      blank.ids.delete(id); // completed: patch once, or never (blank verdict)
+      if (!text) continue;
+      landed[id] = text;
+      void patchSegmentTranslation({
+        sessionId,
+        segmentId: id,
+        translatedText: text,
+      });
+    }
+    if (Object.keys(landed).length === 0) return;
+    setCompletedSession((prev) =>
+      prev && prev._id === sessionId
+        ? { ...prev, translations: { ...prev.translations, ...landed } }
+        : prev,
+    );
+  }, [
+    translator.completedIds,
+    translator.translations,
+    patchSegmentTranslation,
+  ]);
+
   // 5s flush tick during active recording.
   useEffect(() => {
     if (recorder.phase !== "recording") return;
@@ -417,6 +472,7 @@ export default function RecordPage() {
       translator.reset();
       flushedIdsRef.current = new Set();
       mergedFlushedRef.current = new Set();
+      blankSavedRef.current = { sessionId: null, ids: new Set() };
       sessionIdRef.current = null;
       const promise = createSession({
         sourceLanguage: sourceLang,
@@ -426,8 +482,13 @@ export default function RecordPage() {
       createSessionPromiseRef.current = promise;
       void promise.then((id) => {
         sessionIdRef.current = id;
-        // Drain anything that arrived during the create round-trip.
-        flushSegments();
+        // Drain anything that arrived during the create round-trip. Through
+        // the REF: this effect's own `flushSegments` closure is from the render
+        // where the phase flipped to "starting" — it still holds the PREVIOUS
+        // recording's segments (reset above is only queued), and with the
+        // flushed set just cleared it wrote that whole old transcript into
+        // this new session on every "New recording".
+        flushRef.current();
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -530,6 +591,10 @@ export default function RecordPage() {
       writePendingMirror(); // make the <=5s tail recoverable on next visit
       const id = sessionIdRef.current;
       if (id) {
+        // Persist everything left (unfinished translations source-only)
+        // BEFORE completing: once complete, the next visit's crash recovery
+        // won't replay this tail — and it skips a mirror younger than 15s.
+        flushRef.current(true);
         void completeSessionM({
           sessionId: id,
           duration: elapsedRef.current,
@@ -582,9 +647,20 @@ export default function RecordPage() {
           ? crypto.randomUUID()
           : `${Date.now()}-tail`,
     );
+    // A translation still streaming at Stop is shown (and saved) source-only
+    // rather than cut off mid-sentence; the late-translation effect fills it
+    // in on both when it completes.
+    const finishedTranslations: Record<string, string> =
+      sourceLang === targetLang
+        ? translator.translations
+        : Object.fromEntries(
+            Object.entries(translator.translations).filter(([id]) =>
+              translator.completedIds.has(id),
+            ),
+          );
     const captured = {
       segments: stt.segments,
-      translations: translator.translations,
+      translations: finishedTranslations,
       merges: translator.merges,
       filteredIds: translator.filteredIds,
       sourceLang,
@@ -604,13 +680,16 @@ export default function RecordPage() {
         }
       }
 
+      // This render's closure (the transcript as of the Stop tap) on purpose:
+      // it matches `captured` and the rescued interim tail, so the sentence
+      // the engine flushes during teardown isn't saved twice.
       flushSegments();
       await recorder.stop();
       if (sessionId) {
         // Final flush after the recorder tears down — Convex's mutation
         // queue ensures addSegments applies before completeSession. Force it:
-        // persist every remaining final segment (even ones whose translation
-        // hadn't resolved yet) so the closing content is never lost.
+        // persist every remaining final segment (unfinished translations
+        // source-only) so the closing content is never lost.
         flushSegments(true);
         // Persist the captured interim tail (source-only) so the closing words
         // the user saw on screen aren't lost. addSegments dedupes by id.

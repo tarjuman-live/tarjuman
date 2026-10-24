@@ -24,6 +24,13 @@ export interface FlushInput {
   flushed: Set<string>;
   filteredIds: Set<string>;
   completedIds: Set<string>;
+  /**
+   * Ids whose translation FAILED and isn't being retried right now. They're
+   * saved source-only on a regular tick rather than holding back every later
+   * segment until Stop (see the ordering note below); a successful retry is
+   * patched in afterwards.
+   */
+  errorIds: Set<string>;
   translations: Record<string, string>;
   merges: Record<string, MergeRecord>;
   sameLanguage: boolean;
@@ -35,25 +42,42 @@ export interface FlushInput {
  * Returns the batch for addSegments and marks it flushed.
  *
  * - Noise the translator filtered server-side is never persisted.
- * - Regular ticks wait for the FINAL enriched translation (completedIds), not
- *   a partial streamed delta.
- * - A forced flush (Stop) persists in-flight finals with a blank translation —
- *   better the Arabic source than losing the closing du'a because its
- *   translation hadn't landed yet.
+ * - Only a COMPLETED translation is ever written. `translations[id]` also holds
+ *   the partial text of a translation still streaming; persisting that saved a
+ *   sentence cut off mid-word, before the server's citation check had run.
+ * - Regular ticks write only the contiguous run of ready segments from the
+ *   start. Rows come back in insertion order, so writing a later segment
+ *   before a slow earlier one (a long merge, a retry) scrambled the saved
+ *   transcript — and a failed one used to surface at the very END.
+ * - A forced flush (Stop) persists everything left, unfinished translations
+ *   blank — better the Arabic source than losing the closing du'a because its
+ *   translation hadn't landed yet. The record page patches late arrivals in.
  */
 export function takeFlushableSegments(input: FlushInput): StoredSegment[] {
-  const { segments, flushed, filteredIds, completedIds, sameLanguage, force } =
-    input;
-  const ready = segments.filter((seg) => {
-    if (!seg.isFinal || flushed.has(seg.id)) return false;
+  const {
+    segments,
+    flushed,
+    filteredIds,
+    completedIds,
+    errorIds,
+    sameLanguage,
+    force,
+  } = input;
+  const ready: LiveSegment[] = [];
+  for (const seg of segments) {
+    if (!seg.isFinal || flushed.has(seg.id)) continue;
     if (filteredIds.has(seg.id)) {
       flushed.add(seg.id); // don't reconsider it on every tick
-      return false;
+      continue;
     }
-    if (sameLanguage) return true;
-    if (completedIds.has(seg.id)) return true;
-    return force;
-  });
+    const isReady =
+      force ||
+      sameLanguage ||
+      completedIds.has(seg.id) ||
+      errorIds.has(seg.id);
+    if (!isReady) break; // keep saved order = spoken order
+    ready.push(seg);
+  }
 
   for (const seg of ready) flushed.add(seg.id);
   return ready.map((seg) => {
@@ -63,7 +87,9 @@ export function takeFlushableSegments(input: FlushInput): StoredSegment[] {
       sourceText: seg.text,
       translatedText: sameLanguage
         ? seg.text
-        : (input.translations[seg.id] ?? ""),
+        : completedIds.has(seg.id)
+          ? (input.translations[seg.id] ?? "")
+          : "",
       timestamp: seg.timestamp,
       // Include verse/hadith merge metadata on first flush when the
       // translator returned a merge before the flush tick fires.

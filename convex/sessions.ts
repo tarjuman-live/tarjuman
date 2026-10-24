@@ -263,6 +263,55 @@ export const updateSegmentMerge = mutation({
   },
 });
 
+/**
+ * Fill in a translation that finished AFTER its segment was saved. Stop
+ * persists still-translating segments source-only (a cut-off partial must
+ * never be written), and a segment whose translation failed is saved
+ * source-only so it doesn't hold back the rest; this patches the real
+ * translation in when it lands. Only ever fills a BLANK translation — it can't
+ * overwrite one that was already saved.
+ */
+export const patchSegmentTranslation = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    segmentId: v.string(),
+    translatedText: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const text = args.translatedText.trim();
+    if (!text) return null;
+    const userId = await requireUserId(ctx);
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) return null; // deleted meanwhile — nothing to patch
+    if (session.userId !== userId) throw new Error("Not your session");
+
+    const row = await ctx.db
+      .query("transcriptSegments")
+      .withIndex("by_session_seg", (q) =>
+        q.eq("sessionId", args.sessionId).eq("segId", args.segmentId),
+      )
+      .first();
+    if (!row || row.translatedText) return null;
+    await ctx.db.patch(row._id, { translatedText: text });
+    // The history title is derived from the first segment's text, which was
+    // its SOURCE while the translation was blank. Follow the translation —
+    // but never over a title the user set themselves.
+    if (session.firstSegmentText === row.sourceText) {
+      const derivedFromSource =
+        session.title !== undefined &&
+        session.title === truncateTitle(row.sourceText);
+      await ctx.db.patch(args.sessionId, {
+        firstSegmentText: text,
+        ...(derivedFromSource
+          ? { title: truncateTitle(text) ?? text.slice(0, 60) }
+          : {}),
+      });
+    }
+    return null;
+  },
+});
+
 export const pauseSession = mutation({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, args) => {

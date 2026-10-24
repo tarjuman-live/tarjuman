@@ -59,6 +59,13 @@ export interface TranslateOptions {
   /** Progressive text while the stream is open. Already guard-filtered. */
   onPartial?: (visible: string) => void;
   attempts?: number;
+  /**
+   * Abort an attempt (handshake + stream) after this long. Without it a
+   * stalled mobile connection left the segment "translating…" forever — and
+   * since saves keep spoken order, it held back every later segment until
+   * Stop. A timeout is not retried: it already took the full budget.
+   */
+  timeoutMs?: number;
 }
 
 function outcomeFrom(data: TranslateResponseData): TranslateOutcome {
@@ -78,8 +85,17 @@ export async function translateSegment(
   req: TranslateRequest,
   opts: TranslateOptions,
 ): Promise<TranslateOutcome> {
-  const { url, authToken, fetchImpl = fetch, onPartial, attempts = 3 } = opts;
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const {
+    url,
+    authToken,
+    fetchImpl = fetch,
+    onPartial,
+    attempts = 3,
+    timeoutMs = 45_000,
+  } = opts;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
   const body = JSON.stringify({
     text: req.text,
@@ -92,91 +108,116 @@ export async function translateSegment(
   // failure before the stream opens retries with backoff. Once a 200 stream is
   // open, a failure is terminal-for-segment (tap to retry). A 4xx fails fast.
   for (let attempt = 1; attempt <= attempts; attempt++) {
-    let r: Response;
+    const controller =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+    let timedOut = false;
+    const timer = controller
+      ? setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, timeoutMs)
+      : null;
     try {
-      r = await fetchImpl(url, { method: "POST", headers, body });
-    } catch (netErr) {
-      if (attempt === attempts) {
-        return {
-          kind: "error",
-          message: netErr instanceof Error ? netErr.message : String(netErr),
-        };
-      }
-      await sleep(400 * attempt);
-      continue;
-    }
-
-    if (!r.ok) {
-      // Retry transient handshake failures (429/500/502/503), but NOT 504:
-      // the server already fails fast on a 15s upstream timeout, so retrying
-      // it 3× would stall the segment at "translating…" for ~45s.
-      if (
-        (r.status === 429 || (r.status >= 500 && r.status !== 504)) &&
-        attempt < attempts
-      ) {
+      let r: Response;
+      try {
+        r = await fetchImpl(url, {
+          method: "POST",
+          headers,
+          body,
+          ...(controller ? { signal: controller.signal } : {}),
+        });
+      } catch (netErr) {
+        if (timedOut)
+          return { kind: "error", message: "Translation timed out" };
+        if (attempt === attempts) {
+          return {
+            kind: "error",
+            message: netErr instanceof Error ? netErr.message : String(netErr),
+          };
+        }
         await sleep(400 * attempt);
         continue;
       }
-      const d = (await r.json().catch(() => ({}))) as { error?: string };
-      return {
-        kind: "error",
-        message: d.error ?? `Translation failed (${r.status})`,
-      };
-    }
 
-    // Decide the shape by CONTENT, not Content-Type (Next behind the custom
-    // server can rewrite it on a streamed Response). The durable contract is
-    // the in-band META_SENTINEL:
-    //   - body contains META_SENTINEL → streamed translation + trailer
-    //   - no sentinel → a small JSON body (passthrough or noise-filter result)
-    let acc = "";
-    const reader = r.body?.getReader?.();
-    if (!reader) {
-      // No streaming body available (plain RN fetch) — read it whole.
-      acc = await r.text();
-    } else {
-      const decoder = new TextDecoder();
-      let sentinelAt = -1;
-      let looksLikeJson = false;
-      const show = (visible: string) =>
-        onPartial?.(looksLikeMetaCommentary(visible) ? "" : visible);
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          acc += decoder.decode(value, { stream: true });
-          if (sentinelAt === -1) sentinelAt = acc.indexOf(META_SENTINEL);
-          // Progressive display only for the streamed prose shape — never
-          // render a JSON body (passthrough/filtered) as the translation.
-          if (sentinelAt !== -1) {
-            show(acc.slice(0, sentinelAt));
-          } else if (!looksLikeJson && acc.trimStart().startsWith("{")) {
-            looksLikeJson = true;
-          } else if (!looksLikeJson) {
-            // Hold back the sentinel's length: if it straddles a chunk
-            // boundary, showing `acc` raw would flash its prefix on screen.
-            const safeEnd = acc.length - META_SENTINEL.length;
-            if (safeEnd > 0) show(acc.slice(0, safeEnd));
-          }
+      if (!r.ok) {
+        // Retry transient handshake failures (429/500/502/503), but NOT 504:
+        // the server already fails fast on a 15s upstream timeout, so retrying
+        // it 3× would stall the segment at "translating…" for ~45s.
+        if (
+          (r.status === 429 || (r.status >= 500 && r.status !== 504)) &&
+          attempt < attempts
+        ) {
+          await sleep(400 * attempt);
+          continue;
         }
-      } catch {
-        return { kind: "error", message: "Translation stream interrupted" };
+        const d = (await r.json().catch(() => ({}))) as { error?: string };
+        return {
+          kind: "error",
+          message: d.error ?? `Translation failed (${r.status})`,
+        };
       }
-    }
 
-    const idx = acc.indexOf(META_SENTINEL);
-    try {
-      return outcomeFrom(
-        JSON.parse(idx !== -1 ? acc.slice(idx + META_SENTINEL.length) : acc),
-      );
-    } catch {
-      return {
-        kind: "error",
-        message:
-          idx !== -1
-            ? "Malformed translation trailer"
-            : "Malformed translation response",
-      };
+      // Decide the shape by CONTENT, not Content-Type (Next behind the custom
+      // server can rewrite it on a streamed Response). The durable contract is
+      // the in-band META_SENTINEL:
+      //   - body contains META_SENTINEL → streamed translation + trailer
+      //   - no sentinel → a small JSON body (passthrough or noise-filter result)
+      let acc = "";
+      const reader = r.body?.getReader?.();
+      if (!reader) {
+        // No streaming body available (plain RN fetch) — read it whole.
+        acc = await r.text();
+      } else {
+        const decoder = new TextDecoder();
+        let sentinelAt = -1;
+        let looksLikeJson = false;
+        const show = (visible: string) =>
+          onPartial?.(looksLikeMetaCommentary(visible) ? "" : visible);
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            acc += decoder.decode(value, { stream: true });
+            if (sentinelAt === -1) sentinelAt = acc.indexOf(META_SENTINEL);
+            // Progressive display only for the streamed prose shape — never
+            // render a JSON body (passthrough/filtered) as the translation.
+            if (sentinelAt !== -1) {
+              show(acc.slice(0, sentinelAt));
+            } else if (!looksLikeJson && acc.trimStart().startsWith("{")) {
+              looksLikeJson = true;
+            } else if (!looksLikeJson) {
+              // Hold back the sentinel's length: if it straddles a chunk
+              // boundary, showing `acc` raw would flash its prefix on screen.
+              const safeEnd = acc.length - META_SENTINEL.length;
+              if (safeEnd > 0) show(acc.slice(0, safeEnd));
+            }
+          }
+        } catch {
+          return {
+            kind: "error",
+            message: timedOut
+              ? "Translation timed out"
+              : "Translation stream interrupted",
+          };
+        }
+      }
+
+      const idx = acc.indexOf(META_SENTINEL);
+      try {
+        return outcomeFrom(
+          JSON.parse(idx !== -1 ? acc.slice(idx + META_SENTINEL.length) : acc),
+        );
+      } catch {
+        return {
+          kind: "error",
+          message:
+            idx !== -1
+              ? "Malformed translation trailer"
+              : "Malformed translation response",
+        };
+      }
+    } finally {
+      if (timer !== null) clearTimeout(timer);
     }
   }
   return { kind: "error", message: "Translation failed" };
