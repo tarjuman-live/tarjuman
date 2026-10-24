@@ -122,7 +122,7 @@ export default function RecordPage() {
       const v = localStorage.getItem("tarjuman:transcript-layout");
       if (v === "split" || v === "paired") {
         // Legitimate on-mount read of a stored preference (house convention —
-        // same as locale-context / try-live). Not a cascading render.
+        // same as locale-context). Not a cascading render.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setTranscriptLayout(v);
         return;

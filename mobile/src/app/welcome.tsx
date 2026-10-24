@@ -6,9 +6,8 @@
  *   MarketingNav (floating glass island)
  *   Hero: eyebrow · h1 · subhead · CTAs · fine print (RotatingText), then the
  *         LiveDemo card below — over HeroParallax(HeroGlow)
- *   (#try — the web's no-signup "Try it live" trial — is intentionally NOT
- *   ported: the user scoped the trial out of the app on 2026-09-29. The
- *   nav link to it is dropped with it; "Try it free" opens sign-up.)
+ *   (No #try trial: the user scoped it out of the app on 2026-09-29 and
+ *   removed it from the web on 2026-10-24. "Try it free" opens sign-up.)
  *   Features · UseCases · [Pricing: SHOW_PRICING is localhost-only] ·
  *   EarlyNote · FAQ (+ Back to top) · Footer
  *

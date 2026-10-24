@@ -54,10 +54,7 @@ export const NAV_TOP_GAP = 12;
 export const NAV_HEIGHT = 56;
 
 /**
- * marketing-nav LINKS minus "#pricing" (SHOW_PRICING is localhost-only). "#try"
- * is always there: the #try section always renders (its card falls back to
- * TryLive's "unsupported" state when the build has no on-device recognizer,
- * like the web in a browser without Web Speech).
+ * marketing-nav LINKS minus "#pricing" (SHOW_PRICING is localhost-only).
  */
 const LINKS: { id: WelcomeSectionId; key: MessageKey }[] = [
   { id: "features", key: "lp.features" },

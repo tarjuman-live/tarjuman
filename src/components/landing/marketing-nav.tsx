@@ -20,7 +20,6 @@ const AuthModal = dynamic(
 );
 
 const LINKS: { href: string; key: MessageKey }[] = [
-  { href: "#try", key: "lp.tryIt" },
   { href: "#features", key: "lp.features" },
   { href: "#use-cases", key: "lp.useCases" },
   { href: "#pricing", key: "lp.pricing" },
@@ -64,8 +63,8 @@ export function MarketingNav() {
   useEffect(() => {
     const auth = new URLSearchParams(window.location.search).get("auth");
     if (auth !== "signin" && auth !== "signup") return;
-    // Legitimate on-mount browser-state read (same pattern as locale-context /
-    // try-live): open the popup once based on the URL. Not a cascading render.
+    // Legitimate on-mount browser-state read (same pattern as locale-context):
+    // open the popup once based on the URL. Not a cascading render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMode(auth === "signup" ? "signUp" : "signIn");
     setSeq((s) => s + 1);
