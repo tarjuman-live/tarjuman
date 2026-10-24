@@ -47,13 +47,49 @@ const COMMENTARY_MARKERS: RegExp[] = [
   /\bnon-?words?\b/i,
   /\bmeaningful source text\b/i,
   /\bappears to be (?:spoken |mangled |garbled |a )?(?:transliteration|gibberish|noise|non-)/i,
-  // The literal tell from the observed leak: the model narrating "(empty string)"
-  /\(empty string\)/i,
+  // The model narrating its "empty" verdict as text — the canonical failure this
+  // guard exists for. It wraps the verdict in a parenthetical opener — observed
+  // as "(Empty string — …)" and "(empty response)" — so match the paren-anchored
+  // "(empty <string|response|output|translation>" family (anchored so a real
+  // "the empty string of prayer beads" can't false-positive). Also catch the
+  // unambiguous "empty response/output/translation" phrases without the paren —
+  // real khutbah/lecture prose never contains them.
+  /\(\s*empty[-\s]?(?:string|response|output|translation|result)\b/i,
+  /\bempty (?:response|output|translation)\b/i,
+  // "empty string" is the model echoing its own instruction ("output an empty
+  // string") back as prose — present in nearly every observed leak. A
+  // translation of religious speech essentially never contains the phrase;
+  // blanking fails OPEN (source card is kept), so the asymmetry favors it —
+  // except the literal "empty string of <something>" (prayer beads), which is
+  // a real object, not the verdict.
+  /\bempty string\b(?!\s+of\b)/i,
+  // The whole output is a bracketed verdict: "(empty)", "[blank]", "(none)",
+  // "(no output)", "(No translation - noise)".
+  /^[[(]\s*(?:empty|blank|none|no (?:output|translation|text|content|speech))\b[^)\]]*[)\]]\.?$/i,
+  // "transliterated phonetically into…", "transliteration of English", etc. —
+  // the model describing the input's form instead of translating it.
+  /\btransliterat(?:ed|ion|ing) (?:phonetically|into|of|from|as)\b/i,
+  // The model instructing the user to supply different input, or narrating that
+  // it *will* translate — a real translation never addresses the user this way.
+  // (Observed: "…Please provide actual Arabic or English speech content, and
+  //  I'll translate it according to the rules.")
+  /\bplease provide (?:actual|valid|real|proper|coherent|the actual)\b/i,
+  /\bI'?ll translate it\b/i,
+  /\bthere is no (?:meaningful |actual |real )?(?:text|content|speech) to translate\b/i,
+  // Diagnosing the input as not-real-language: "I'm not recognizing this as
+  // coherent Arabic…", "…phonetic English/transliteration…", "…written in /
+  // rendered as Arabic letters/characters".
+  /\brecognizing this as (?:coherent|meaningful|valid|real)\b/i,
+  /\bphonetic (?:transliteration|english|arabic|spanish|french|turkish|urdu|latin)\b/i,
+  /\b(?:written in|rendered as) (?:arabic|latin|hebrew|cyrillic|roman) (?:letters|characters|script)\b/i,
 ];
 
 export function looksLikeMetaCommentary(text: string): boolean {
   if (!text) return false;
   const t = text.trim();
+  // Nothing but quotes / brackets / punctuation — `""` is the model literally
+  // writing out the "empty string" the prompt asks for. Never a translation.
+  if (t && !/[\p{L}\p{N}]/u.test(t)) return true;
   if (t.length < 3) return false;
   return COMMENTARY_MARKERS.some((re) => re.test(t));
 }

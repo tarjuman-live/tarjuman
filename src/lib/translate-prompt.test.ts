@@ -135,3 +135,20 @@ describe("shouldFilterAsNoise — two-word dhikr is never dropped", () => {
     expect(shouldFilterAsNoise("   ", "ar").filter).toBe(true);
   });
 });
+
+describe("shouldFilterAsNoise — repeated-token hallucination", () => {
+  it("drops one token repeated three or more times", () => {
+    expect(shouldFilterAsNoise("الله الله الله", "ar")).toEqual({
+      filter: true,
+      reason: "repeated-token",
+    });
+    expect(shouldFilterAsNoise("نعم، نعم، نعم، نعم.", "ar").filter).toBe(true);
+  });
+  it("keeps genuine repeated dhikr (two or more distinct tokens)", () => {
+    expect(shouldFilterAsNoise("الله أكبر الله أكبر", "ar").filter).toBe(false);
+    expect(shouldFilterAsNoise("سبحان الله سبحان الله", "ar").filter).toBe(false);
+  });
+  it("keeps a two-word repeat (not enough signal to call it noise)", () => {
+    expect(shouldFilterAsNoise("الله الله", "ar").filter).toBe(false);
+  });
+});

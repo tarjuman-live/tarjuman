@@ -863,6 +863,15 @@ export default function RecordPage() {
           onChange={({ sourceLang: s, targetLang: t }) => {
             setSourceLang(s);
             setTargetLang(t);
+            // Persist the pair. Preferences HYDRATE defaultSourceLanguage /
+            // defaultTargetLanguage on mount, but nothing ever WROTE them — so
+            // every visit fell back to ar→en, and a speaker of any other
+            // language who forgot to re-pick was transcribed by an
+            // Arabic-forced engine into transliterated nonsense.
+            void updatePrefs({
+              defaultSourceLanguage: s,
+              defaultTargetLanguage: t,
+            });
           }}
         />
 

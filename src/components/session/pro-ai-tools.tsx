@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useAuthToken } from "@convex-dev/auth/react";
-import { COLORS } from "@/lib/constants";
+import { COLORS, LANGUAGES } from "@/lib/constants";
 import { isRtl, getLangName } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
 import { usePlan } from "@/hooks/use-plan";
@@ -317,7 +317,16 @@ function TranslateTranscript({
   targetLang: string;
   authToken: string | null | undefined;
 }) {
-  const [lang, setLang] = useState(targetLang === "en" ? "ur" : "en");
+  // Default to a SUPPORTED language the user isn't already reading. This used
+  // to hardcode "ur", which is NOT in LANGUAGES — so the dropdown opened on a
+  // value it doesn't list, getLangName() leaked the raw code "ur" into the UI,
+  // and isRtl("ur") returned false (LANGUAGES-derived), rendering Urdu
+  // left-to-right. Deriving the default keeps it valid by construction.
+  const [lang, setLang] = useState<string>(
+    () =>
+      LANGUAGES.find((l) => l.code !== targetLang && l.code !== sourceLang)
+        ?.code ?? "en",
+  );
   const [gen, setGen] = useState<Gen>({ phase: "idle" });
   // Abort the (potentially long, up-to-8000-token) translation when the user
   // switches tabs or restarts it, so it doesn't run to completion unseen.
