@@ -80,8 +80,10 @@ export function MarketingNav() {
   const preload = () => setMounted(true);
 
   const openAuth = (next: "signIn" | "signUp") => {
+    // Already signed in (e.g. the popup raced a session restore): treat it as
+    // a sign-in — /start routes operators to /admin, everyone else to /record.
     if (isAuthenticated) {
-      router.push("/record");
+      router.push("/start");
       return;
     }
     setMode(next);

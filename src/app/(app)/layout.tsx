@@ -9,7 +9,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 import { UpgradeWatcher } from "@/components/billing/upgrade-watcher";
 import { NavVisibilityProvider } from "@/components/layout/nav-visibility";
-import { Icon } from "@/components/shared/icon";
+import { AppGate } from "@/components/shared/app-gate";
 import { COLORS, SHOW_PRICING } from "@/lib/constants";
 import { LocaleProvider } from "@/lib/i18n/locale-context";
 import { MotionProvider } from "@/components/providers/motion-provider";
@@ -69,30 +69,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }, [pathname, router]);
 
-  if (isLoading || !isAuthenticated) {
-    return (
-      <div
-        className="w-full mx-auto relative overflow-hidden flex flex-col items-center justify-center"
-        style={{
-          maxWidth: 420,
-          minHeight: "100dvh",
-          background: COLORS.bg,
-        }}
-      >
-        {/* Branded gate while Convex Auth resolves — gentle pulse, not a bare
-            spinner, so the app reads as "loading" on-brand. */}
-        <div
-          className="w-12 h-12 rounded-2xl grid place-items-center animate-pulse"
-          style={{
-            background: COLORS.accent,
-            boxShadow: `0 0 30px ${COLORS.accent}40`,
-          }}
-        >
-          <Icon name="mic" size={22} color="#0A0F1C" />
-        </div>
-      </div>
-    );
-  }
+  if (isLoading || !isAuthenticated) return <AppGate />;
 
   return (
     <LocaleProvider>
