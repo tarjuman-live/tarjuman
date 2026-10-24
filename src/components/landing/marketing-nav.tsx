@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
+import { useLenis } from "lenis/react";
 import { SITE_NAME } from "@/lib/site";
 import { useLocale } from "@/lib/i18n/locale-context";
 import { LocaleSwitcher } from "@/components/shared/locale-switcher";
@@ -32,25 +39,36 @@ const LINKS: { href: string; key: MessageKey }[] = [
 // squeezing the links into wrapping.
 const ISLAND_GAP = 40;
 
+// The scroll window (px) over which the spread nav gathers into the island.
+// It starts a little below the top on purpose: Lenis spends its last ~400ms
+// creeping through the final few px into 0, and a morph still running through
+// that crawl reads as lag. Starting at 16px, the nav is fully spread before it.
+const GATHER_START = 16;
+const GATHER_END = 80;
+
 /**
  * Sticky marketing top-nav for the landing page. Logo + section anchors +
  * auth-aware actions. Signed-out visitors get "Sign in" (ghost) and "Get
  * started" (primary), both opening the in-place auth popup; signed-in visitors
  * get a single "Open recorder".
  *
- * Two states. At the top of the page there is no bar: the groups sit directly
- * on the page, spread to the hero column's edges. Once scrolled they slide in
- * toward each other and a frosted glass island forms around them, sized to fit
- * its contents. Scrolling back to the top reverses it. Both directions are plain
- * CSS transitions on one `scrolled` flag, so a reversal mid-flight glides from
- * wherever it is rather than restarting.
+ * At the top of the page there is no bar: the groups sit directly on the page,
+ * spread to the hero column's edges. As you scroll they slide in toward each
+ * other and a frosted glass island forms around them, sized to fit its
+ * contents. Scrolling back to the top reverses it.
+ *
+ * The morph is scroll-LINKED, not a timed transition: a 0→1 `--gather` value
+ * tracks scroll between GATHER_START and GATHER_END, so the nav moves exactly with
+ * the wheel or finger in both directions, and Lenis's easing is what makes it
+ * glide. A scroll threshold plus a 600ms CSS transition was tried first and
+ * lagged on the way back up: Lenis creeps through the last few px toward 0, so
+ * the threshold tripped late, and then the whole transition still had to play.
  */
 export function MarketingNav() {
   const { isAuthenticated } = useConvexAuth();
   const { t } = useLocale();
   const router = useRouter();
 
-  const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"signIn" | "signUp">("signUp");
@@ -59,31 +77,63 @@ export function MarketingNav() {
   // already animated out, so this doesn't interrupt any transition.
   const [seq, setSeq] = useState(0);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  // The island's width is measured, not a fixed max-w: the nav carries 31
-  // locales, and a fixed width that looks snug in English overflows in
-  // Ukrainian or Greek. The observer re-measures whenever a group resizes —
-  // locale switch, the signed-in button swap, web-font load — and when the nav
-  // itself does (a breakpoint changes the padding and hides the links, which
-  // then report 0 and drop out of the sum).
   const navRef = useRef<HTMLElement>(null);
   const brandRef = useRef<HTMLAnchorElement>(null);
   const linksRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
+
+  // Written straight to the nav's style, never through React state: scrolling
+  // then costs no re-renders, and since `--gather` is absent from the style
+  // prop, a re-render can't clobber it either.
+  const lastGather = useRef(-1);
+  const reduceMotion = useRef<MediaQueryList | null>(null);
+  const applyGather = useCallback(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    reduceMotion.current ??= window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    );
+    const y = window.scrollY;
+    // Reduced motion: a plain two-state switch, no in-between frames.
+    const gather = reduceMotion.current.matches
+      ? y > 8
+        ? 1
+        : 0
+      : Math.min(
+          Math.max((y - GATHER_START) / (GATHER_END - GATHER_START), 0),
+          1
+        );
+    if (gather === lastGather.current) return;
+    lastGather.current = gather;
+    nav.style.setProperty("--gather", String(gather));
+  }, []);
+
+  // Lenis moves the page from its own rAF and calls this synchronously, so the
+  // nav updates in the same frame as the scroll it follows. The window listener
+  // only hears about that scroll a frame later (deduped above); it's the path
+  // for touch, which Lenis leaves native, and for reduced motion, where Lenis
+  // isn't mounted at all.
+  useLenis(applyGather);
+
+  useEffect(() => {
+    applyGather();
+    window.addEventListener("scroll", applyGather, { passive: true });
+    return () => window.removeEventListener("scroll", applyGather);
+  }, [applyGather]);
+
+  // The island's width is measured, not a fixed max-w: the nav carries 31
+  // locales, and a fixed width that looks snug in English overflows in
+  // Ukrainian or Greek. The observer re-measures whenever a group resizes —
+  // locale switch, the signed-in button swap, web-font load, the md breakpoint
+  // hiding the links (which then report 0 and drop out of the sum) — and the
+  // sm breakpoint re-measures because it changes the island's padding. Not
+  // observing the nav itself: it resizes on every frame of the morph.
   const [islandWidth, setIslandWidth] = useState<number | null>(null);
 
   useEffect(() => {
-    const nav = navRef.current;
     const groups = [brandRef.current, linksRef.current, actionsRef.current].filter(
       (el): el is HTMLAnchorElement | HTMLDivElement => el !== null
     );
-    if (!nav) return;
     const sm = window.matchMedia("(min-width: 640px)");
     const measure = () => {
       const shown = groups.filter((el) => el.offsetWidth > 0);
@@ -91,16 +141,19 @@ export function MarketingNav() {
         (sum, el) => sum + el.getBoundingClientRect().width,
         0
       );
-      // The island's own padding (px-3.5 / sm:px-5) and its 1px border.
+      // The island's padding: --island-pad below.
       const pad = sm.matches ? 20 : 14;
       setIslandWidth(
-        Math.ceil(content + ISLAND_GAP * (shown.length - 1) + pad * 2 + 2)
+        Math.ceil(content + ISLAND_GAP * (shown.length - 1) + pad * 2)
       );
     };
     const ro = new ResizeObserver(measure);
-    ro.observe(nav);
     groups.forEach((el) => ro.observe(el));
-    return () => ro.disconnect();
+    sm.addEventListener("change", measure);
+    return () => {
+      ro.disconnect();
+      sm.removeEventListener("change", measure);
+    };
   }, []);
 
   // Deep-link / guard redirect: /?auth=signin|signup opens the popup straight
@@ -142,49 +195,51 @@ export function MarketingNav() {
 
   return (
     // The outer header is just a sticky, click-through spacer; the nav is the
-    // interactive surface. Its height never changes between the two states, so
-    // nothing below it shifts while it morphs.
+    // interactive surface. Its height never changes during the morph, so
+    // nothing below it shifts.
     <header className="sticky top-0 z-50 px-3 pt-3 pointer-events-none">
       {/* Caps the spread state so, with the nav's px-3, the groups line up
           with the hero's max-w-6xl column (73.5rem − 2 × 0.75rem = 72rem).
-          Capping here rather than in the nav keeps the transitioned value a
-          plain 100% → px, which every browser tweens. */}
+          Capping here rather than in the nav keeps the nav's width a plain
+          100% → px blend, with no min() inside it. */}
       <div className="mx-auto max-w-[73.5rem]">
         <nav
           ref={navRef}
-          className={`pointer-events-auto mx-auto rounded-2xl h-14 flex items-center justify-between gap-4 transition-[max-width,padding,background-color,border-color,box-shadow,backdrop-filter,-webkit-backdrop-filter] duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
-            scrolled ? "px-3.5 sm:px-5" : "px-3"
-          }`}
-          style={{
-            maxWidth: scrolled
-              ? islandWidth
-                ? `${islandWidth}px`
-                : "64rem"
-              : "100%",
-            backgroundColor: scrolled
-              ? "rgba(14,21,37,0.7)"
-              : "rgba(14,21,37,0)",
-            backdropFilter: scrolled
-              ? "blur(18px) saturate(160%)"
-              : "blur(0px) saturate(100%)",
-            WebkitBackdropFilter: scrolled
-              ? "blur(18px) saturate(160%)"
-              : "blur(0px) saturate(100%)",
-            borderWidth: 1,
-            borderStyle: "solid",
-            borderColor: scrolled ? "var(--color-border-light)" : "transparent",
-            // Same two layers in both states, only the alpha changes — that is
-            // what lets the shadow tween instead of snapping.
-            boxShadow: scrolled
-              ? "0 12px 34px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)"
-              : "0 12px 34px rgba(0,0,0,0), inset 0 1px 0 rgba(255,255,255,0)",
-          }}
+          className="relative pointer-events-auto mx-auto h-14 flex items-center justify-between gap-4 [--island-pad:14px] sm:[--island-pad:20px]"
+          style={
+            {
+              // Both blend from the spread state (--gather 0, px-3 so the
+              // groups line up with the hero's px-6) to the island (1).
+              "--island-w": islandWidth ? `${islandWidth}px` : "64rem",
+              maxWidth:
+                "calc(100% + var(--gather, 0) * (var(--island-w) - 100%))",
+              paddingInline:
+                "calc(12px + var(--gather, 0) * (var(--island-pad) - 12px))",
+            } as CSSProperties
+          }
         >
+          {/* The glass, on its own layer so forming it is one opacity fade —
+              no per-frame blur-radius or shadow recompute. The groups below
+              are `relative` so they paint above it. */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-2xl"
+            style={{
+              opacity: "var(--gather, 0)",
+              backgroundColor: "rgba(14,21,37,0.7)",
+              backdropFilter: "blur(18px) saturate(160%)",
+              WebkitBackdropFilter: "blur(18px) saturate(160%)",
+              border: "1px solid var(--color-border-light)",
+              boxShadow:
+                "0 12px 34px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+            }}
+          />
+
           {/* Brand */}
           <Link
             ref={brandRef}
             href="/"
-            className="flex items-center gap-2.5 shrink-0 group"
+            className="relative flex items-center gap-2.5 shrink-0 group"
           >
             <span className="w-9 h-9 rounded-xl bg-[var(--color-accent)] grid place-items-center shadow-[0_0_24px_rgba(46,204,113,0.4)] transition-transform group-hover:scale-105">
               <svg
@@ -210,7 +265,7 @@ export function MarketingNav() {
           {/* Section anchors — desktop only */}
           <div
             ref={linksRef}
-            className="hidden md:flex items-center gap-7 text-sm text-[var(--color-text-2)]"
+            className="relative hidden md:flex items-center gap-7 text-sm text-[var(--color-text-2)]"
           >
             {LINKS.filter(
               (l) => SHOW_PRICING || l.href !== "#pricing"
@@ -228,7 +283,7 @@ export function MarketingNav() {
           {/* Actions */}
           <div
             ref={actionsRef}
-            className="flex items-center gap-2 sm:gap-3 shrink-0"
+            className="relative flex items-center gap-2 sm:gap-3 shrink-0"
           >
             {/* App-language picker (top corner) */}
             <LocaleSwitcher compact />
