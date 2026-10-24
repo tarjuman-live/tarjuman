@@ -98,10 +98,11 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
   const [success, setSuccess] = useState(false);
 
   // After a successful signup, hold on the success state for ~1.2s so the
-  // user sees the confirmation, then route forward.
+  // user sees the confirmation, then route forward. /start sends operators
+  // (ADMIN_USER_IDS) to /admin and everyone else to /record.
   useEffect(() => {
     if (!success) return;
-    const t = setTimeout(() => router.push("/record"), 1200);
+    const t = setTimeout(() => router.push("/start"), 1200);
     return () => clearTimeout(t);
   }, [success, router]);
 
@@ -134,7 +135,7 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
       if (isSignUp) {
         setSuccess(true);
       } else {
-        router.push("/record");
+        router.push("/start");
       }
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
@@ -147,7 +148,7 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
   const handleGoogle = async () => {
     setTopError(null);
     try {
-      await signIn("google", { redirectTo: "/record" });
+      await signIn("google", { redirectTo: "/start" });
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
       setTopError(friendlyError(raw, mode));
