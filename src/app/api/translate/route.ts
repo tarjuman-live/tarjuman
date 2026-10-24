@@ -13,6 +13,7 @@ import { verifyAndEnrich } from "@/lib/sunnah";
 import { verifyAndEnrichQuran } from "@/lib/quran";
 import { looksLikeMetaCommentary } from "@/lib/translation-guard";
 import { trackAnthropicCall, upstreamErrorMessage } from "@/lib/usage/ingest";
+import { fetchAnthropicStream } from "@/lib/anthropic-fetch";
 
 interface TranslateRequest {
   text: string;
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { text, source, target, context } = body;
+  const { text, source, target } = body;
   if (!text || typeof text !== "string") {
     return NextResponse.json(
       { error: "Missing or invalid `text`" },
@@ -131,6 +132,30 @@ export async function POST(req: NextRequest) {
   if (text.length > 8000) {
     return NextResponse.json({ error: "Segment too large" }, { status: 413 });
   }
+
+  // `context` gets the same treatment. Unchecked, it bypassed the cap above
+  // (any number of entries, any length each), and an entry without a string
+  // `sourceText` threw inside buildUserMessage — a 500 the client then retried
+  // three times. The client sends at most 6 prior segments.
+  if (body.context !== undefined && !Array.isArray(body.context)) {
+    return NextResponse.json(
+      { error: "Invalid `context`" },
+      { status: 400 },
+    );
+  }
+  const context = body.context
+    ?.slice(-6)
+    .filter(
+      (c) =>
+        !!c && typeof c.id === "string" && typeof c.sourceText === "string",
+    )
+    .map((c) => ({
+      id: c.id.slice(0, 64),
+      sourceText: c.sourceText.slice(0, 2000),
+      ...(typeof c.translatedText === "string"
+        ? { translatedText: c.translatedText.slice(0, 2000) }
+        : {}),
+    }));
 
   // No-op when source === target. Skipping the upstream call avoids both
   // unnecessary cost and unnecessary latency.
@@ -215,17 +240,22 @@ export async function POST(req: NextRequest) {
   let lastTransientDetail = "";
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
+      // 15s to first byte, then 15s max between chunks — not 15s for the
+      // whole response, which cut a long merge off mid-stream.
+      const r = await fetchAnthropicStream(
+        "https://api.anthropic.com/v1/messages",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+          },
+          body: requestBody,
+          cache: "no-store",
         },
-        body: requestBody,
-        cache: "no-store",
-        signal: AbortSignal.timeout(15_000),
-      });
+        { firstByteMs: 15_000, idleMs: 15_000 },
+      );
       // Rate-limited / overloaded / server error → transient; retry if budget left.
       if ((r.status === 429 || r.status >= 500) && attempt < MAX_ATTEMPTS) {
         lastTransientDetail = `HTTP ${r.status}`;
@@ -414,7 +444,10 @@ export async function POST(req: NextRequest) {
         // Citation enrichment: verify hadith (sunnah.com) + Quran (quran.com),
         // swap in canonical bodies + clickable links. Off the perceived path —
         // the plain translation already streamed; this lands in the trailer.
-        const hadithEnriched = await verifyAndEnrich(parsed.translation);
+        const hadithEnriched = await verifyAndEnrich(
+          parsed.translation,
+          target,
+        );
         const quranEnriched = await verifyAndEnrichQuran(
           hadithEnriched.text,
           target,
@@ -423,6 +456,7 @@ export async function POST(req: NextRequest) {
           ? await (async () => {
               const h = await verifyAndEnrich(
                 parsed.merge!.combinedTranslatedText,
+                target,
               );
               const q = await verifyAndEnrichQuran(h.text, target);
               return { ...parsed.merge!, combinedTranslatedText: q.text };

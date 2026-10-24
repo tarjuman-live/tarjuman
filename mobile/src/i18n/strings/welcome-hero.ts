@@ -25,7 +25,9 @@ export const WELCOME_HERO_STRINGS = {
   /** Accessibility label for the brand tile (tap scrolls to top; web links to "/"). */
   "welcomeHero.brandHome": { en: "Tarjuman — back to top" },
 
-  // ── #try section (page.tsx:114-124 + try-live.tsx — hardcoded English on the web) ──
+  // ── #try section — UNUSED: never rendered natively, and the web trial it
+  // mirrored was removed 2026-10-24. Kept only because every l10n file
+  // `satisfies` this key set; drop all 31 together if cleaning up. ──
   /**
    * lp.trialSub says "right here in your browser"; the native app isn't a
    * browser, so this is the same line with the device wording.

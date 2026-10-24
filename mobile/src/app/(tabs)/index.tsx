@@ -210,6 +210,9 @@ export default function RecordScreen() {
       flushed: flushedRef.current,
       filteredIds: tr.filteredIds,
       completedIds: tr.completedIds,
+      // Failed translations: saved source-only so they don't hold back every
+      // later segment (saved order = spoken order — see recording-persistence).
+      errorIds: new Set(Object.keys(tr.errors)),
       translations: tr.translations,
       merges: tr.merges,
       sameLanguage: src === tgt,

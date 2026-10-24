@@ -32,7 +32,8 @@ interface SessionBodyProps {
   /** Pre-existing summary text (from storage). When null, show the Generate CTA. */
   existingSummary?: string | null;
   /** Called once after a successful generation so the parent can persist. */
-  onSummaryGenerated?: (summary: string) => void;
+  /** `language` is the summary's own language (the picker), not the target. */
+  onSummaryGenerated?: (summary: string, language: string) => void;
 }
 
 type SummaryState =
@@ -86,6 +87,10 @@ export function SessionBody({
 
   const handleGenerate = async () => {
     if (segments.length === 0) return;
+    // The summary is written in the picker's language, which can differ from
+    // the session's target. Pinned here so a change mid-generation can't split
+    // the request, the citation pass and the saved language.
+    const lang = summaryLang;
     setSummary({ phase: "loading" });
     // Hoisted so the catch can clear it: the typewriter interval must never
     // outlive a stream error/timeout (orphaned 60fps timer) and must not flip
@@ -104,7 +109,7 @@ export function SessionBody({
         headers,
         body: JSON.stringify({
           transcript: transcriptForLLM,
-          targetLanguage: summaryLang,
+          targetLanguage: lang,
         }),
       });
 
@@ -185,7 +190,10 @@ export function SessionBody({
           headers,
           body: JSON.stringify({
             text: displayed,
-            targetLanguage: targetLang,
+            // The SUMMARY's language: verified Quran/hadith text is only
+            // spliced in when it's English (an English verse used to land in
+            // a French summary of an English-target session).
+            targetLanguage: lang,
           }),
         });
         if (vRes.ok) {
@@ -202,7 +210,7 @@ export function SessionBody({
         /* keep displayed text as-is */
       }
 
-      onSummaryGenerated?.(finalText);
+      onSummaryGenerated?.(finalText, lang);
     } catch (e) {
       // Kill the typewriter interval BEFORE setting the error, so a late tick
       // can't overwrite the error with a truncated, unverified "ready" summary.

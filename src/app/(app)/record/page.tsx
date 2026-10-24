@@ -67,6 +67,9 @@ export default function RecordPage() {
   const completeSessionM = useMutation(api.sessions.completeSession);
   const saveSummaryM = useMutation(api.sessions.saveSummary);
   const updateSegmentMerge = useMutation(api.sessions.updateSegmentMerge);
+  const patchSegmentTranslation = useMutation(
+    api.sessions.patchSegmentTranslation,
+  );
 
   // Per-user preferences (default languages + TTS), backed by Convex so they
   // follow the user across devices and into the planned native apps.
@@ -122,7 +125,7 @@ export default function RecordPage() {
       const v = localStorage.getItem("tarjuman:transcript-layout");
       if (v === "split" || v === "paired") {
         // Legitimate on-mount read of a stored preference (house convention —
-        // same as locale-context / try-live). Not a cascading render.
+        // same as locale-context). Not a cascading render.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setTranscriptLayout(v);
         return;
@@ -158,7 +161,6 @@ export default function RecordPage() {
   const recorder = useRecorder();
   const isActive =
     recorder.phase === "recording" || recorder.phase === "paused";
-  const isPrewarmed = recorder.phase === "prewarmed";
 
   // Hide the floating bottom nav while recording/paused AND on the
   // "Session complete" view (completedSession set), so the recording and
@@ -173,11 +175,11 @@ export default function RecordPage() {
   }, [hideNav, setNavHidden]);
   useEffect(() => () => setNavHidden(false), [setNavHidden]);
 
-  // Pre-warm the audio pipeline + STT WS as soon as the page mounts,
-  // but ONLY if mic permission is already granted — never trigger an
-  // unsolicited permission prompt. The first time a user reaches /record
-  // there's no prewarm; from the second visit onward, their first word
-  // transcribes without the cold-start handshake swallow.
+  // Pre-warm the AUDIO pipeline as soon as the page mounts, but ONLY if mic
+  // permission is already granted — never trigger an unsolicited permission
+  // prompt. The STT socket is NOT prewarmed (see useStt below); the session
+  // core holds the first frames until the engine acks, so the opening words
+  // still land.
   useEffect(() => {
     if (typeof navigator === "undefined" || !navigator.permissions) return;
     let cancelled = false;
@@ -202,14 +204,17 @@ export default function RecordPage() {
   const stt = useStt({
     pcmNode: recorder.pcmNode,
     sourceLanguage: sourceLang,
-    // Keep the WS alive across prewarm + active recording. paused gates
-    // outbound frames so prewarm doesn't accidentally leak audio. A free user
-    // over their session cap never opens the WS (no STT credentials minted).
-    enabled: (isActive || isPrewarmed) && !overSessionLimit,
-    paused: recorder.phase === "paused" || isPrewarmed,
-    // Only drop side-speaker segments when the user has turned the toggle ON.
-    // Default (off) captures every speaker so multi-speaker Q&A isn't silently
-    // truncated. Transient-noise defenses stay on regardless.
+    // Open the engine only once Record is tapped. Prewarming it meant every
+    // visitor idling on /record held a paid Speechmatics session open — and
+    // the free tier allows TWO concurrent sessions app-wide, so two idle tabs
+    // blocked everyone else from recording. The socket stays up across pause
+    // (paused gates outbound frames). A free user over their session cap
+    // never opens it (no STT credentials minted).
+    enabled: isActive && !overSessionLimit,
+    paused: recorder.phase === "paused",
+    // Drop side-speaker segments only while the main-speaker toggle is on
+    // (default on, persisted in preferences). Transient-noise defenses stay
+    // on regardless.
     mainSpeakerOnly,
   });
 
@@ -237,6 +242,14 @@ export default function RecordPage() {
   const sessionIdRef = useRef<Id<"sessions"> | null>(null);
   const createSessionPromiseRef = useRef<Promise<Id<"sessions">> | null>(null);
   const flushedIdsRef = useRef<Set<string>>(new Set());
+  // Segments saved WITHOUT their translation — still translating at Stop, or
+  // failed and saved source-only. Patched in when the translation lands, which
+  // can be after Stop, so it keeps the session id rather than reading
+  // sessionIdRef (nulled on Stop). Reset on every new recording.
+  const blankSavedRef = useRef<{
+    sessionId: Id<"sessions"> | null;
+    ids: Set<string>;
+  }>({ sessionId: null, ids: new Set() });
   // Mirror the latest source/target language into a ref so the imperative
   // flushSegments() callback can read current values without being rebound.
   // Synced in an effect to avoid writing ref.current during render — that
@@ -342,6 +355,11 @@ export default function RecordPage() {
   const flushSegments = (force = false) => {
     const sessionId = sessionIdRef.current;
     if (!sessionId) return;
+    const sameLanguage = langsRef.current.source === langsRef.current.target;
+    // Failed translations that aren't being retried right now.
+    const errorIds = new Set(
+      Object.keys(translator.errors).filter((id) => !translator.pending.has(id)),
+    );
     // Selection rules are shared with the native app — see
     // lib/recording-persistence.ts.
     const stored = takeFlushableSegments({
@@ -349,12 +367,18 @@ export default function RecordPage() {
       flushed: flushedIdsRef.current,
       filteredIds: translator.filteredIds,
       completedIds: translator.completedIds,
+      errorIds,
       translations: translator.translations,
       merges: translator.merges,
-      sameLanguage: langsRef.current.source === langsRef.current.target,
+      sameLanguage,
       force,
     });
     if (stored.length === 0) return;
+    if (!sameLanguage) {
+      const blank = blankSavedRef.current;
+      blank.sessionId = sessionId;
+      for (const seg of stored) if (!seg.translatedText) blank.ids.add(seg.id);
+    }
 
     // Fire-and-forget. Convex queues mutations and applies them in order;
     // on transient WS disconnect they retry automatically, so we don't need
@@ -396,6 +420,39 @@ export default function RecordPage() {
     }
   }, [translator.merges, updateSegmentMerge]);
 
+  // Late-translation effect: a segment saved source-only (still translating at
+  // Stop, or failed then retried) gets its translation patched in once it
+  // completes — on the saved row AND on the results screen, which is a
+  // snapshot taken at Stop.
+  useEffect(() => {
+    const blank = blankSavedRef.current;
+    const sessionId = blank.sessionId;
+    if (!sessionId || blank.ids.size === 0) return;
+    const landed: Record<string, string> = {};
+    for (const id of blank.ids) {
+      if (!translator.completedIds.has(id)) continue;
+      const text = translator.translations[id]?.trim();
+      blank.ids.delete(id); // completed: patch once, or never (blank verdict)
+      if (!text) continue;
+      landed[id] = text;
+      void patchSegmentTranslation({
+        sessionId,
+        segmentId: id,
+        translatedText: text,
+      });
+    }
+    if (Object.keys(landed).length === 0) return;
+    setCompletedSession((prev) =>
+      prev && prev._id === sessionId
+        ? { ...prev, translations: { ...prev.translations, ...landed } }
+        : prev,
+    );
+  }, [
+    translator.completedIds,
+    translator.translations,
+    patchSegmentTranslation,
+  ]);
+
   // 5s flush tick during active recording.
   useEffect(() => {
     if (recorder.phase !== "recording") return;
@@ -415,6 +472,7 @@ export default function RecordPage() {
       translator.reset();
       flushedIdsRef.current = new Set();
       mergedFlushedRef.current = new Set();
+      blankSavedRef.current = { sessionId: null, ids: new Set() };
       sessionIdRef.current = null;
       const promise = createSession({
         sourceLanguage: sourceLang,
@@ -424,8 +482,13 @@ export default function RecordPage() {
       createSessionPromiseRef.current = promise;
       void promise.then((id) => {
         sessionIdRef.current = id;
-        // Drain anything that arrived during the create round-trip.
-        flushSegments();
+        // Drain anything that arrived during the create round-trip. Through
+        // the REF: this effect's own `flushSegments` closure is from the render
+        // where the phase flipped to "starting" — it still holds the PREVIOUS
+        // recording's segments (reset above is only queued), and with the
+        // flushed set just cleared it wrote that whole old transcript into
+        // this new session on every "New recording".
+        flushRef.current();
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -528,6 +591,10 @@ export default function RecordPage() {
       writePendingMirror(); // make the <=5s tail recoverable on next visit
       const id = sessionIdRef.current;
       if (id) {
+        // Persist everything left (unfinished translations source-only)
+        // BEFORE completing: once complete, the next visit's crash recovery
+        // won't replay this tail — and it skips a mirror younger than 15s.
+        flushRef.current(true);
         void completeSessionM({
           sessionId: id,
           duration: elapsedRef.current,
@@ -580,9 +647,20 @@ export default function RecordPage() {
           ? crypto.randomUUID()
           : `${Date.now()}-tail`,
     );
+    // A translation still streaming at Stop is shown (and saved) source-only
+    // rather than cut off mid-sentence; the late-translation effect fills it
+    // in on both when it completes.
+    const finishedTranslations: Record<string, string> =
+      sourceLang === targetLang
+        ? translator.translations
+        : Object.fromEntries(
+            Object.entries(translator.translations).filter(([id]) =>
+              translator.completedIds.has(id),
+            ),
+          );
     const captured = {
       segments: stt.segments,
-      translations: translator.translations,
+      translations: finishedTranslations,
       merges: translator.merges,
       filteredIds: translator.filteredIds,
       sourceLang,
@@ -602,13 +680,16 @@ export default function RecordPage() {
         }
       }
 
+      // This render's closure (the transcript as of the Stop tap) on purpose:
+      // it matches `captured` and the rescued interim tail, so the sentence
+      // the engine flushes during teardown isn't saved twice.
       flushSegments();
       await recorder.stop();
       if (sessionId) {
         // Final flush after the recorder tears down — Convex's mutation
         // queue ensures addSegments applies before completeSession. Force it:
-        // persist every remaining final segment (even ones whose translation
-        // hadn't resolved yet) so the closing content is never lost.
+        // persist every remaining final segment (unfinished translations
+        // source-only) so the closing content is never lost.
         flushSegments(true);
         // Persist the captured interim tail (source-only) so the closing words
         // the user saw on screen aren't lost. addSegments dedupes by id.
@@ -660,12 +741,12 @@ export default function RecordPage() {
     })();
   };
 
-  const handleSummaryGenerated = (summary: string) => {
+  const handleSummaryGenerated = (summary: string, language: string) => {
     if (!completedSession?._id) return;
     void saveSummaryM({
       sessionId: completedSession._id as Id<"sessions">,
       summary,
-      summaryLanguage: completedSession.targetLang,
+      summaryLanguage: language,
     });
   };
 
@@ -782,6 +863,15 @@ export default function RecordPage() {
           onChange={({ sourceLang: s, targetLang: t }) => {
             setSourceLang(s);
             setTargetLang(t);
+            // Persist the pair. Preferences HYDRATE defaultSourceLanguage /
+            // defaultTargetLanguage on mount, but nothing ever WROTE them — so
+            // every visit fell back to ar→en, and a speaker of any other
+            // language who forgot to re-pick was transcribed by an
+            // Arabic-forced engine into transliterated nonsense.
+            void updatePrefs({
+              defaultSourceLanguage: s,
+              defaultTargetLanguage: t,
+            });
           }}
         />
 

@@ -117,12 +117,12 @@ export default function SessionDetailPage() {
     }
   };
 
-  const handleSummaryGenerated = (summary: string) => {
+  const handleSummaryGenerated = (summary: string, language: string) => {
     if (!sessionId) return;
     void saveSummaryM({
       sessionId: sessionId as Id<"sessions">,
       summary,
-      summaryLanguage: session.targetLanguage,
+      summaryLanguage: language,
     });
   };
 

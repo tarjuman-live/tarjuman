@@ -87,7 +87,8 @@ ${question.trim()}`;
     system: SYSTEM,
     userMessage,
     model: "claude-sonnet-5",
-    maxTokens: 1200,
+    // Sonnet 5 counts ~30% more tokens for the same text than 4.x did.
+    maxTokens: 2000,
     logTag: "ask",
     usage: { kind: "ask", userId: auth.userId },
   });

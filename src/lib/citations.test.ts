@@ -159,3 +159,43 @@ describe("parseQuranCitations — surah names and numbers resolve", () => {
     expect(parseQuranCitations("(Quran NotASurah:1)")).toHaveLength(0);
   });
 });
+
+describe("verifyAndEnrich — target language", () => {
+  // A verified lookup whose canonical body is ENGLISH.
+  const BODY = "Actions are judged by intentions.";
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ hadiths: [{ text: BODY }] }), {
+            status: 200,
+          }),
+      ),
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("splices the canonical English body into an English translation", async () => {
+    const { text } = await verifyAndEnrich(
+      "As the Prophet ﷺ said (Sahih al-Bukhari 1).",
+      "en",
+    );
+    expect(text).toContain(BODY);
+    expect(text).toContain("https://sunnah.com/bukhari:1");
+  });
+
+  it("never splices English into a non-English translation — link only", async () => {
+    const lead = "Le Prophète ﷺ a dit que les actes valent par les intentions";
+    const { text, citations } = await verifyAndEnrich(
+      `${lead} (Sahih al-Bukhari 1).`,
+      "fr",
+    );
+    expect(text).not.toContain(BODY);
+    expect(text).toContain(lead);
+    expect(text).toContain("https://sunnah.com/bukhari:1");
+    expect(citations[0].verified).toBe(true);
+  });
+});

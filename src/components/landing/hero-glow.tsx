@@ -34,6 +34,26 @@ const HeroGlow3D = dynamic(() => import("./hero-glow-3d"), {
   loading: () => <CssGlow />,
 });
 
+/**
+ * Can this browser actually create a WebGL context? Hover + core count say
+ * nothing about a desktop with hardware acceleration off, a blocklisted GPU or
+ * a hardened browser — there three.js threw an unhandled "Error creating WebGL
+ * context" and the hero lost its glow entirely. The probe context is released
+ * immediately.
+ */
+function canUseWebGL(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = (canvas.getContext("webgl2") ??
+      canvas.getContext("webgl")) as WebGLRenderingContext | null;
+    if (!gl) return false;
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function HeroGlow() {
   const [use3d, setUse3d] = useState(false);
 
@@ -47,7 +67,7 @@ export function HeroGlow() {
       // context is the wrong thing to spend a stranger's battery on.
       const coarse = window.matchMedia("(hover: none)").matches;
       const weak = (navigator.hardwareConcurrency ?? 8) <= 4;
-      setUse3d(!reduce && !coarse && !weak);
+      setUse3d(!reduce && !coarse && !weak && canUseWebGL());
     };
 
     check();

@@ -73,8 +73,10 @@ ${transcript}`;
     system: SYSTEM,
     userMessage,
     model: "claude-sonnet-5",
-    maxTokens: 8000,
-    timeoutMs: 120_000,
+    // Whole-lecture translation is the longest output in the app; it streams,
+    // and the stream is bounded by first-byte + idle timeouts, not wall time.
+    maxTokens: 16000,
+    timeoutMs: 280_000,
     logTag: "translate-transcript",
     usage: { kind: "translate_transcript", userId: auth.userId },
   });

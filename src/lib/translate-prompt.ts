@@ -124,11 +124,12 @@ export function routeModel(
 
 // ─── Noise filter ──────────────────────────────────────────────────────────
 // Drop segments before they ever hit the LLM:
-//   1. Fewer than 3 words — single-word interjections like "اجمعين" are noise.
+//   1. A single word — isolated interjections like "اجمعين" are noise (2-word
+//      dhikr is kept; see below).
 //   2. Off-language by script — non-source-script text in an RTL session (e.g.
-//      English in an Arabic session, now visible as Latin thanks to the STT
-//      multilingual mode). Server-side backstop to the client gate in
-//      use-speechmatics and use-deepgram; both share src/lib/script.ts.
+//      English in an Arabic session). Server-side backstop to the client gate
+//      in the Speechmatics core and use-deepgram; both share src/lib/script.ts.
+//   3. One token repeated ≥3× — the engine hallucinating on non-speech.
 
 export function shouldFilterAsNoise(
   text: string,
@@ -149,7 +150,29 @@ export function shouldFilterAsNoise(
     return { filter: true, reason: "off-language-script" };
   }
 
+  if (isRepeatedTokenNoise(trimmed)) {
+    return { filter: true, reason: "repeated-token" };
+  }
+
   return { filter: false };
+}
+
+// Repeated-token hallucination. On sustained NON-speech (AC hum, distant
+// nasheed/music, crowd murmur, coughs) a realtime engine's well-known failure
+// mode is to emit a single token repeated — "الله الله الله", "نعم نعم نعم".
+// That passes the word-count and off-language-script gates and would render as
+// plausible dhikr the speaker never said (the reported "picks up words that
+// weren't spoken"). Drop it ONLY when EVERY word is the same token repeated
+// ≥3×. High-precision: genuine repeated dhikr always has ≥2 distinct tokens
+// ("الله أكبر الله أكبر", "سبحان الله سبحان الله"), so it's never touched.
+// Punctuation and case are normalized out before the uniqueness test.
+export function isRepeatedTokenNoise(text: string): boolean {
+  const words = text
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, "").toLowerCase())
+    .filter(Boolean);
+  if (words.length < 3) return false;
+  return new Set(words).size === 1;
 }
 
 export function buildUserMessage(opts: {

@@ -1,6 +1,5 @@
 import { MarketingNav } from "@/components/landing/marketing-nav";
 import { LiveDemo } from "@/components/landing/live-demo";
-import { TryLive } from "@/components/landing/try-live";
 import { RotatingText } from "@/components/landing/rotating-text";
 import { Features } from "@/components/landing/features";
 import { TryItFree } from "@/components/landing/try-it-free";
@@ -107,21 +106,6 @@ export default function Home() {
             <LiveDemo />
           </Reveal>
         </div>
-      </section>
-
-      {/* Interactive, no-sign-up trial — speak and watch it translate live */}
-      <section id="try" className="w-full max-w-5xl mx-auto px-6 py-16 sm:py-24">
-        <Reveal>
-          <h2 className="text-2xl sm:text-3xl font-bold text-center leading-tight">
-            <T k="lp.trialHeading" />
-          </h2>
-          <p className="mt-3 text-center text-[var(--color-text-2)] max-w-xl mx-auto">
-            <T k="lp.trialSub" />
-          </p>
-        </Reveal>
-        <Reveal delay={120} className="mt-10">
-          <TryLive />
-        </Reveal>
       </section>
 
       {/* Sections self-animate (heading first, then items stagger in) */}

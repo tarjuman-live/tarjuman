@@ -16,8 +16,10 @@
  * exist in both browsers and React Native (WebSocket, fetch, setTimeout).
  *
  * PROTOCOL NOTES that differ from Deepgram and matter here:
- *   - Audio sent before RecognitionStarted is DISCARDED, so frames are gated
- *     on the ack rather than the socket being open.
+ *   - Audio sent before RecognitionStarted is DISCARDED by the server, so
+ *     frames that arrive before the ack (cold start, every reconnect) are HELD
+ *     here — bounded by PENDING_AUDIO_MAX_SEC — and sent in order on the ack.
+ *     Dropping them lost the first 1-2s of every recording and every reconnect.
  *   - Finals arrive ONE WORD AT A TIME. They're accumulated into sentences and
  *     flushed on Speechmatics' own `is_eos` marker, because a word-per-segment
  *     transcript would wreck translation quality (each segment is translated
@@ -66,6 +68,63 @@ export const MAX_WORDS_PER_SEGMENT = 25;
 /** A socket stalled in CONNECTING (captive portal, wifi↔cell) fires nothing. */
 const OPEN_WATCHDOG_MS = 10_000;
 
+/**
+ * Most audio held while waiting for RecognitionStarted. Covers a cold start
+ * (credential fetch + handshake ≈ 1-2s) with a wide margin; past it the OLDEST
+ * audio is shed, so a long outage keeps the most recent speech.
+ */
+export const PENDING_AUDIO_MAX_SEC = 10;
+
+/**
+ * A handshake that fails before any socket has EVER opened (1006) is usually a
+ * firewall — but one flaky handshake on masjid wifi looks identical. Retry
+ * this many times with a fresh JWT before calling it blocked.
+ */
+const PRE_OPEN_RETRY_LIMIT = 2;
+
+/**
+ * Vendor guidance for quota_exceeded (4005), job_error (4013) and internal
+ * errors (1011): retry no sooner than 5-10s.
+ */
+const SLOW_RETRY_MIN_MS = 5_000;
+
+/**
+ * In-band Error types that retrying cannot fix. Everything else
+ * (quota_exceeded, job_error, idle_timeout, unknown_error, …) is transient and
+ * left to the reconnect that follows the server's close.
+ */
+const FATAL_ERROR_TYPES = new Set([
+  "invalid_message",
+  "invalid_model",
+  "invalid_language",
+  "invalid_config",
+  "invalid_audio_type",
+  "invalid_output_format",
+  "not_authorised",
+  "not_allowed",
+  "timelimit_exceeded",
+]);
+
+const QUOTA_MESSAGE =
+  "Speechmatics is at its concurrent-session limit. Wait a moment and try again.";
+
+/**
+ * Speechmatics' code where it differs from the app's language code. Mandarin
+ * is `cmn` there — sending `zh` fails StartRecognition outright.
+ */
+const SPEECHMATICS_LANGUAGE: Record<string, string> = { zh: "cmn" };
+
+export function speechmaticsLanguageCode(appCode: string): string {
+  return SPEECHMATICS_LANGUAGE[appCode] ?? appCode;
+}
+
+/**
+ * Speechmatics labels a word it can't attribute "UU". That is not a speaker:
+ * counting it would let "unknown" win the speaker lock, and treating it as one
+ * would drop every unattributed sentence once the lock is taken.
+ */
+const UNKNOWN_SPEAKER = "UU";
+
 export interface SpeechmaticsSessionOptions {
   sourceLanguage: string;
   /**
@@ -90,11 +149,13 @@ export interface SpeechmaticsSessionOptions {
   createWebSocket?: (url: string) => WebSocket;
   makeId?: () => string;
   log?: (...args: unknown[]) => void;
-  now?: () => number;
 }
 
 export interface SpeechmaticsSession {
-  /** Forward one Int16 PCM frame. Dropped unless acked, open and unpaused. */
+  /**
+   * Forward one Int16 PCM frame. Dropped while paused; held (bounded) until
+   * the server acks, then sent in order.
+   */
   sendFrame: (frame: ArrayBuffer) => void;
   /** Flush the pending sentence, send EndOfStream, close. Idempotent. */
   stop: () => void;
@@ -137,7 +198,6 @@ export function startSpeechmaticsSession(
     createWebSocket = (url) => new WebSocket(url),
     makeId = defaultMakeId,
     log = () => {},
-    now = () => Date.now(),
   } = opts;
 
   // Errors are sticky in one case (the backoff-exhausted message must not
@@ -148,8 +208,13 @@ export function startSpeechmaticsSession(
     opts.onError(msg);
   };
 
-  const sessionStart = now();
-  const sessionAge = () => now() - sessionStart;
+  // The speaker lock's clock is AUDIO ACTUALLY SENT on the current socket, not
+  // wall time. Wall time counted idle prewarm and pauses, so a user who opened
+  // /record and waited 15s started recording with both warmups already spent —
+  // the diarizer's noisy first labels went straight into the lock. Reset on
+  // every new socket (see connect()).
+  let lockAudioMs = 0;
+  const sessionAge = () => lockAudioMs;
   const lock = createSpeakerLock<string>({
     warmupMs: SPEECHMATICS.speakerLockWarmupMs,
     minDurationS: SPEECHMATICS.speakerLockMinDurationS,
@@ -163,8 +228,20 @@ export function startSpeechmaticsSession(
   let openWatchdog: ReturnType<typeof setTimeout> | null = null;
   let attempt = 0;
   let hasEverOpened = false;
+  let preOpenFailures = 0;
+  // An in-band Error that retrying can't fix — the close that follows must not
+  // schedule a reconnect over it.
+  let fatal = false;
+  // The last in-band Error asked for the vendor's 5-10s retry spacing.
+  let slowRetry = false;
   let seqNo = 0;
   let lastTimestamp = 0;
+
+  // Audio waiting for RecognitionStarted (see PENDING_AUDIO_MAX_SEC).
+  let pendingFrames: ArrayBuffer[] = [];
+  let pendingBytes = 0;
+  const bytesPerSec = () =>
+    2 * (getSampleRate() ?? SPEECHMATICS.fallbackSampleRate);
 
   // Sentence accumulation across AddTranscript word frames.
   let buffer = "";
@@ -219,6 +296,7 @@ export function startSpeechmaticsSession(
     const words = bufferWords;
     const confs = bufferConfs;
     const speaker = dominantBufferSpeaker();
+    const speakerDurations = bufferSpeakerDurations;
     const startSec = bufferStartSec;
     const endSec = bufferEndSec;
     resetBuffer();
@@ -245,7 +323,12 @@ export function startSpeechmaticsSession(
       return;
     }
 
+    // Only speech that survived the floor and the script gate counts toward
+    // the lock — the same order use-deepgram.ts uses. Crediting every word as
+    // it arrived let a burst of dropped noise or an English announcement win
+    // the lock, after which the khateeb himself was dropped as a side speaker.
     const age = sessionAge();
+    speakerDurations.forEach((dur, spk) => lock.observe(spk, dur, age));
     lock.maybeLock(age);
     if (lock.shouldDrop(speaker, age, isMainSpeakerOnly())) {
       log(`[sm] dropped side-speaker segment (speaker=${speaker})`);
@@ -291,7 +374,37 @@ export function startSpeechmaticsSession(
     ws = null;
   };
 
-  const scheduleReconnect = () => {
+  /** Send every held frame, in order, on a socket that has just been acked. */
+  const drainPending = (socket: WebSocket) => {
+    const frames = pendingFrames;
+    pendingFrames = [];
+    pendingBytes = 0;
+    for (const frame of frames) {
+      socket.send(frame);
+      seqNo++;
+      lockAudioMs += (frame.byteLength / bytesPerSec()) * 1000;
+    }
+  };
+
+  /**
+   * Retire a socket we are replacing (watchdog) WITHOUT letting its late
+   * close/message events touch the session — a stale onclose used to flip
+   * `ready` off under the live socket (audio silently dropped while the UI
+   * said "connected") and schedule a third, leaked connection.
+   */
+  const abandon = (socket: WebSocket) => {
+    socket.onopen = null;
+    socket.onmessage = null;
+    socket.onerror = null;
+    socket.onclose = null;
+    try {
+      socket.close();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const scheduleReconnect = (minDelayMs = 0) => {
     if (stopped || reconnectTimer !== null) return;
     if (attempt >= RECONNECT_BACKOFF.length) {
       onState("error");
@@ -301,7 +414,7 @@ export function startSpeechmaticsSession(
       );
       return;
     }
-    const delay = RECONNECT_BACKOFF[attempt];
+    const delay = Math.max(RECONNECT_BACKOFF[attempt], minDelayMs);
     attempt += 1;
     onReconnectAttempt(attempt);
     onState("reconnecting");
@@ -324,6 +437,13 @@ export function startSpeechmaticsSession(
     timeOffsetSec += lastSeenEndSec;
     lastSeenEndSec = 0;
     resetBuffer();
+    // Speaker labels are per-SOCKET: "S1" on the new connection need not be
+    // the person who was "S1" before the drop. Keeping the old lock across a
+    // reconnect could lock out the khateeb for the rest of the khutbah, so
+    // every new socket re-enters warmup and re-learns the main speaker.
+    lock.reset();
+    lockAudioMs = 0;
+    slowRetry = false;
 
     let creds: { jwt: string; url: string };
     try {
@@ -377,11 +497,9 @@ export function startSpeechmaticsSession(
       if (stopped || ws !== currentWs) return;
       if (currentWs.readyState === WebSocket.CONNECTING || !ready) {
         log("[sm] open/ack watchdog fired — forcing reconnect");
-        try {
-          currentWs.close();
-        } catch {
-          /* ignore */
-        }
+        ws = null;
+        ready = false;
+        abandon(currentWs);
         scheduleReconnect();
       }
     }, OPEN_WATCHDOG_MS);
@@ -399,7 +517,7 @@ export function startSpeechmaticsSession(
       seqNo = 0;
 
       const transcription_config: Record<string, unknown> = {
-        language: sourceLanguage,
+        language: speechmaticsLanguageCode(sourceLanguage),
         enable_partials: true,
         max_delay: SPEECHMATICS.maxDelay,
         max_delay_mode: "flexible",
@@ -440,11 +558,13 @@ export function startSpeechmaticsSession(
       switch (msg.message) {
         case "RecognitionStarted":
           clearWatchdog();
-          ready = true; // only now may audio flow — pre-ack frames are discarded
+          ready = true; // only now may audio flow — the server discards earlier frames
           attempt = 0;
+          preOpenFailures = 0;
           onState("connected");
           setError(null);
           onReconnectAttempt(0);
+          drainPending(currentWs);
           return;
 
         case "AddPartialTranscript": {
@@ -474,12 +594,13 @@ export function startSpeechmaticsSession(
               if (bufferStartSec === null && typeof r.start_time === "number") {
                 bufferStartSec = r.start_time;
               }
-              // Feed the lock every word, not just flushed sentences, so a
-              // long interloper is measured accurately. The same duration
-              // also accumulates per-speaker WITHIN this sentence, so flush()
-              // can attribute the segment to whoever actually spoke most of it.
+              // Per-speaker duration WITHIN this sentence: flush() attributes
+              // the segment to whoever spoke most of it, and — only once the
+              // sentence has passed the confidence floor and script gate —
+              // credits those durations to the speaker lock.
               if (
                 alt?.speaker &&
+                alt.speaker !== UNKNOWN_SPEAKER &&
                 typeof r.start_time === "number" &&
                 typeof r.end_time === "number"
               ) {
@@ -488,7 +609,6 @@ export function startSpeechmaticsSession(
                   alt.speaker,
                   (bufferSpeakerDurations.get(alt.speaker) ?? 0) + dur,
                 );
-                lock.observe(alt.speaker, dur, sessionAge());
               }
             }
             if (typeof r.end_time === "number") bufferEndSec = r.end_time;
@@ -513,16 +633,35 @@ export function startSpeechmaticsSession(
         }
 
         case "Error": {
-          const detail = `${msg.type ?? "error"}: ${msg.reason ?? "unknown"}`;
+          const type = msg.type ?? "error";
+          const detail = `${type}: ${msg.reason ?? "unknown"}`;
           log("[sm] in-band error", detail);
-          // quota_exceeded is the one users will actually hit — the free tier
-          // allows only 2 concurrent sessions. Say so plainly.
+          if (FATAL_ERROR_TYPES.has(type)) {
+            // Retrying can't fix these. Flag it so the close that follows
+            // doesn't flip the error back to "reconnecting" and burn a JWT
+            // per attempt for a minute.
+            fatal = true;
+            pendingFrames = [];
+            pendingBytes = 0;
+            setError(
+              type === "timelimit_exceeded"
+                ? "Speechmatics usage limit reached for this account."
+                : `Speechmatics error — ${detail}`,
+            );
+            onState("error");
+            return;
+          }
+          // Transient. quota_exceeded is the one users will actually hit — the
+          // free tier allows only 2 concurrent sessions app-wide — and a slot
+          // frees as soon as someone else stops, so it's retried (at the
+          // vendor's 5-10s spacing) by the close that follows rather than
+          // ending the recording.
+          if (type === "quota_exceeded" || type === "job_error") {
+            slowRetry = true;
+          }
           setError(
-            msg.type === "quota_exceeded"
-              ? "Speechmatics is at its concurrent-session limit. Wait a moment and try again."
-              : `Speechmatics error — ${detail}`,
+            type === "quota_exceeded" ? QUOTA_MESSAGE : `Speechmatics error — ${detail}`,
           );
-          onState("error");
           return;
         }
 
@@ -541,40 +680,61 @@ export function startSpeechmaticsSession(
     };
 
     currentWs.onclose = (event) => {
+      // A socket we already replaced or retired must never touch the live
+      // one's state.
+      if (ws !== currentWs) return;
       clearWatchdog();
       log("[sm] ws onclose", { code: event.code, reason: event.reason });
-
-      if (ws === currentWs) ws = null;
+      ws = null;
       ready = false;
 
-      if (stopped) return;
-      if (event.code === 1000) {
-        onState("idle");
-        return;
-      }
+      if (stopped || fatal) return;
 
-      // 4001 not_authorised / 4005 quota / 4006 timelimit are not fixed by
-      // retrying blindly; a handshake rejected before any successful open is
-      // usually a config or network block. Everything else gets backoff.
-      if (event.code === 4001 || event.code === 4003) {
+      const code = event.code;
+      // Not fixed by retrying: bad credentials, a language the account can't
+      // use, or the account's usage quota.
+      if (code === 4001 || code === 4003) {
         setError("Speechmatics rejected the session credentials.");
         onState("error");
         return;
       }
-      if (event.code === 4005) {
+      if (code === 4004) {
         setError(
-          "Speechmatics is at its concurrent-session limit. Wait a moment and try again.",
+          `Speechmatics can't transcribe this language (${speechmaticsLanguageCode(sourceLanguage)}).`,
         );
         onState("error");
         return;
       }
-      if (event.code === 1006 && !hasEverOpened) {
-        setError(
-          "Could not open a Speechmatics connection. A firewall or network policy may be blocking it.",
-        );
+      if (code === 4006) {
+        setError("Speechmatics usage limit reached for this account.");
         onState("error");
         return;
       }
+      // Transient on the vendor's side — retry, but no sooner than 5-10s.
+      if (code === 4005) {
+        setError(QUOTA_MESSAGE);
+        scheduleReconnect(SLOW_RETRY_MIN_MS);
+        return;
+      }
+      if (code === 4013 || code === 1011 || slowRetry) {
+        scheduleReconnect(SLOW_RETRY_MIN_MS);
+        return;
+      }
+      // Rejected before any socket ever opened: usually a firewall, but a
+      // single flaky handshake looks the same. A few retries, then say so.
+      if (code === 1006 && !hasEverOpened) {
+        preOpenFailures += 1;
+        if (preOpenFailures > PRE_OPEN_RETRY_LIMIT) {
+          setError(
+            "Could not open a Speechmatics connection. A firewall or network policy may be blocking it.",
+          );
+          onState("error");
+          return;
+        }
+      }
+      // Everything else reconnects — including a server-side 1000/1008
+      // (proxy recycle, idle timeout) while we're still recording, which used
+      // to leave the UI silently "idle" under a running timer.
       scheduleReconnect();
     };
   };
@@ -583,12 +743,23 @@ export function startSpeechmaticsSession(
 
   return {
     sendFrame(frame) {
-      if (stopped || !ready || isPaused()) return;
-      const current = ws;
-      if (!current || current.readyState !== WebSocket.OPEN) return;
+      if (stopped || fatal || isPaused()) return;
       if (!frame || frame.byteLength === 0) return;
-      current.send(frame);
-      seqNo++;
+      const current = ws;
+      if (ready && current && current.readyState === WebSocket.OPEN) {
+        current.send(frame);
+        seqNo++;
+        lockAudioMs += (frame.byteLength / bytesPerSec()) * 1000;
+        return;
+      }
+      // Not acked yet (cold start or reconnect): hold it. Copied, because a
+      // producer may reuse its buffer once the callback returns.
+      pendingFrames.push(frame.slice(0));
+      pendingBytes += frame.byteLength;
+      const cap = PENDING_AUDIO_MAX_SEC * bytesPerSec();
+      while (pendingBytes > cap && pendingFrames.length > 1) {
+        pendingBytes -= pendingFrames.shift()!.byteLength;
+      }
     },
     stop() {
       if (stopped) return;
@@ -596,6 +767,8 @@ export function startSpeechmaticsSession(
       // recording are not silently lost on stop.
       flush();
       stopped = true;
+      pendingFrames = [];
+      pendingBytes = 0;
       if (reconnectTimer !== null) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;

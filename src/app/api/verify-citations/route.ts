@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   // Hadith pass (open hadith CDN) then Quran pass (quran.com — public API).
   // Order doesn't matter since the two citation regexes don't overlap, but we
   // run hadith first for consistency with the translate route.
-  const hadithEnriched = await verifyAndEnrich(text);
+  const hadithEnriched = await verifyAndEnrich(text, targetLanguage ?? "en");
   const quranEnriched = await verifyAndEnrichQuran(
     hadithEnriched.text,
     targetLanguage ?? "en"
