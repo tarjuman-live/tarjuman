@@ -9,6 +9,7 @@ import {
   getUsageFromHeader,
 } from "@/lib/api-auth";
 import { trackAnthropicCall, upstreamErrorMessage } from "@/lib/usage/ingest";
+import { fetchAnthropicStream, thinkingOff } from "@/lib/anthropic-fetch";
 
 interface SummarizeRequest {
   transcript: string;
@@ -163,13 +164,15 @@ ${transcript}`;
     kind: "summarize",
     model: SUMMARY_MODEL,
     userId: auth.userId,
-    timeoutMs: 45_000,
+    // Bookkeeping bound only — the request is limited by first-byte + idle
+    // timeouts below, so a long summary still streaming is never cut off.
+    timeoutMs: 120_000,
   });
 
   // Open a streaming connection to Anthropic.
   let upstream: Response;
   try {
-    upstream = await fetch("https://api.anthropic.com/v1/messages", {
+    upstream = await fetchAnthropicStream("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -182,15 +185,20 @@ ${transcript}`;
         // Summaries are one-shot per session and stream, so they sit OFF the
         // live per-segment critical path — the higher raw quality (structure,
         // nuance, long-lecture coherence) is worth more here than shaving
-        // latency. `thinking` is intentionally omitted (adaptive is off when
-        // absent) to avoid adding time-to-first-token. Watch TTFT: Sonnet 4.6
+        // latency. Thinking is turned OFF explicitly: Sonnet 5 runs adaptive
+        // thinking when `thinking` is omitted (an earlier comment here assumed
+        // the opposite), which delayed the first word and ate into
+        // max_tokens. Watch TTFT: Sonnet 4.6
         // measured ~4.9s to first char on 2026-06-24 (read as a dead spinner);
         // if Sonnet 5 regresses the same way, drop back to
         // "claude-haiku-4-5-20251001" (TTFT ~1.3s). The Islamic-quality bar is
         // still held by (a) the shared terminology system prompt and (b) the
         // sunnah.com /api/verify-citations pass that repairs hallucinated refs.
         model: SUMMARY_MODEL,
-        max_tokens: 2000,
+        // Room for a long lecture's summary (Sonnet 5 tokenizes ~30% larger
+        // than 4.x). A ceiling, not a reservation.
+        max_tokens: 4000,
+        ...thinkingOff(SUMMARY_MODEL),
         stream: true,
         system: [
           {
@@ -202,8 +210,7 @@ ${transcript}`;
         messages: [{ role: "user", content: userMessage }],
       }),
       cache: "no-store",
-      signal: AbortSignal.timeout(45_000),
-    });
+    }, { firstByteMs: 30_000, idleMs: 30_000 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     tracker.settle({ ok: false, error: msg });

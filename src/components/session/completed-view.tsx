@@ -33,7 +33,7 @@ interface CompletedViewProps {
   /** Leave the results screen and go back to the home/idle screen. */
   onDone: () => void;
   /** Called once the user generates a summary, so the page can persist it. */
-  onSummaryGenerated?: (summary: string) => void;
+  onSummaryGenerated?: (summary: string, language: string) => void;
 }
 
 export function CompletedView({

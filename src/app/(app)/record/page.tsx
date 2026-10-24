@@ -741,12 +741,12 @@ export default function RecordPage() {
     })();
   };
 
-  const handleSummaryGenerated = (summary: string) => {
+  const handleSummaryGenerated = (summary: string, language: string) => {
     if (!completedSession?._id) return;
     void saveSummaryM({
       sessionId: completedSession._id as Id<"sessions">,
       summary,
-      summaryLanguage: completedSession.targetLang,
+      summaryLanguage: language,
     });
   };
 

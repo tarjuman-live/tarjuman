@@ -86,7 +86,8 @@ ${transcript}`;
     system: SYSTEM,
     userMessage,
     model: "claude-sonnet-5",
-    maxTokens: 2000,
+    maxTokens: 4000,
+    timeoutMs: 120_000,
     logTag: "study-notes",
     usage: { kind: "study_notes", userId: auth.userId },
   });

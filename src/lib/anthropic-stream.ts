@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { Id } from "../../convex/_generated/dataModel";
 import type { UsageKind } from "../../convex/usageShared";
 import { trackAnthropicCall, upstreamErrorMessage } from "@/lib/usage/ingest";
+import { fetchAnthropicStream, thinkingOff } from "@/lib/anthropic-fetch";
 
 /**
  * Shared Anthropic streaming helper for the AI API routes (study-notes, ask,
@@ -20,6 +21,11 @@ export async function streamAnthropicText(opts: {
   userMessage: string;
   model?: string;
   maxTokens?: number;
+  /**
+   * Upper bound on the whole call, for the usage tracker's bookkeeping only.
+   * The request itself is bounded by first-byte + idle timeouts, so a long
+   * answer that keeps streaming is never cut off at a wall-clock limit.
+   */
   timeoutMs?: number;
   /** Label for server-side error logs. */
   logTag: string;
@@ -38,7 +44,7 @@ export async function streamAnthropicText(opts: {
   });
   let upstream: Response;
   try {
-    upstream = await fetch("https://api.anthropic.com/v1/messages", {
+    upstream = await fetchAnthropicStream("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -47,7 +53,11 @@ export async function streamAnthropicText(opts: {
       },
       body: JSON.stringify({
         model,
-        max_tokens: opts.maxTokens ?? 2000,
+        max_tokens: opts.maxTokens ?? 4000,
+        // Sonnet 5 thinks by default; that thinking would come out of
+        // max_tokens and delay the first word. These routes stream prose
+        // straight to the user — keep it off.
+        ...thinkingOff(model),
         stream: true,
         system: [
           {
@@ -59,8 +69,7 @@ export async function streamAnthropicText(opts: {
         messages: [{ role: "user", content: opts.userMessage }],
       }),
       cache: "no-store",
-      signal: AbortSignal.timeout(timeoutMs),
-    });
+    }, { firstByteMs: 30_000, idleMs: 30_000 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     tracker.settle({ ok: false, error: msg });

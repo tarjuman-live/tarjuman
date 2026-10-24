@@ -269,7 +269,17 @@ function bodyOverlapFraction(lead: string, body: string): number {
  *
  * `skipped` is true only when there were no citations to process.
  */
-export async function verifyAndEnrich(text: string): Promise<{
+export async function verifyAndEnrich(
+  text: string,
+  /**
+   * Language `text` is written in. The canonical hadith body is ENGLISH, so
+   * it's only spliced in for an English target; any other target keeps the
+   * model's own rendering (already in that language) and just gets the
+   * verified link — the same rule verifyAndEnrichQuran follows. Splicing it
+   * everywhere put an English paragraph into French/Urdu/… translations.
+   */
+  targetLang = "en",
+): Promise<{
   text: string;
   citations: VerifiedCitation[];
   skipped: boolean;
@@ -316,14 +326,21 @@ export async function verifyAndEnrich(text: string): Promise<{
       // happy path. Never delete the speaker's/summary's own words.)
       const body = result.englishBody.trim();
       const lead = leadIn.replace(/\s+$/, "");
+      const targetIsEnglish = (targetLang || "en")
+        .toLowerCase()
+        .startsWith("en");
       // Collapse the duplicate when the lead-in is essentially the model's own
       // rendering of this same hadith; a lead-in with real preceding prose
       // scores below the overlap threshold and is preserved in full.
       const collapse = lead.length > 0 && bodyOverlapFraction(lead, body) >= 0.6;
       out.push(
-        !lead || collapse
-          ? `${body} ${linkMarkdown}`
-          : `${lead} ${body} ${linkMarkdown}`
+        !targetIsEnglish
+          ? lead
+            ? `${lead} ${linkMarkdown}`
+            : linkMarkdown
+          : !lead || collapse
+            ? `${body} ${linkMarkdown}`
+            : `${lead} ${body} ${linkMarkdown}`
       );
       citations.push({
         raw: m.raw,
