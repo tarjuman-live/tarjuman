@@ -240,6 +240,8 @@ export const HE = {
   "settingsAuthNav.renewsOn": "יתחדש ב-{date}",
   "settingsAuthNav.activeSubscription": "מינוי פעיל",
   "settingsAuthNav.manageBilling": "{status} · ניהול חיובים",
+  "settingsAuthNav.complimentary": "חינם",
+  "settingsAuthNav.complimentaryUntil": "חינם · עד {date}",
   "settingsAuthNav.upgrade": "שדרוג",
   "settingsAuthNav.upgradeSub": "{price} · לכל התוכניות",
   "settingsAuthNav.usageLine": "נוצלו החודש {su} מתוך {sl} מפגשים · {mu} מתוך {ml} סיכומים.",

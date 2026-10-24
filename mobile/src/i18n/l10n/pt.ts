@@ -248,6 +248,8 @@ export const PT = {
   "settingsAuthNav.renewsOn": "Renova em {date}",
   "settingsAuthNav.activeSubscription": "Assinatura ativa",
   "settingsAuthNav.manageBilling": "{status} · Gerenciar cobrança",
+  "settingsAuthNav.complimentary": "Cortesia",
+  "settingsAuthNav.complimentaryUntil": "Cortesia · até {date}",
   "settingsAuthNav.upgrade": "Fazer upgrade",
   "settingsAuthNav.upgradeSub": "{price} · ver todos os planos",
   "settingsAuthNav.usageLine": "{su} de {sl} sessões · {mu} de {ml} resumos usados este mês.",

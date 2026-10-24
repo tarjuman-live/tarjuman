@@ -248,6 +248,8 @@ export const DE = {
   "settingsAuthNav.renewsOn": "Verlängert sich am {date}",
   "settingsAuthNav.activeSubscription": "Aktives Abo",
   "settingsAuthNav.manageBilling": "{status} · Abrechnung verwalten",
+  "settingsAuthNav.complimentary": "Kostenlos",
+  "settingsAuthNav.complimentaryUntil": "Kostenlos · bis {date}",
   "settingsAuthNav.upgrade": "Upgraden",
   "settingsAuthNav.upgradeSub": "{price} · alle Tarife ansehen",
   "settingsAuthNav.usageLine": "{su} von {sl} Sitzungen · {mu} von {ml} Zusammenfassungen diesen Monat genutzt.",

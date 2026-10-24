@@ -246,6 +246,8 @@ export const UK = {
   "settingsAuthNav.renewsOn": "Поновлюється {date}",
   "settingsAuthNav.activeSubscription": "Активна підписка",
   "settingsAuthNav.manageBilling": "{status} · Керувати оплатою",
+  "settingsAuthNav.complimentary": "Безкоштовно",
+  "settingsAuthNav.complimentaryUntil": "Безкоштовно · до {date}",
   "settingsAuthNav.upgrade": "Покращити",
   "settingsAuthNav.upgradeSub": "{price} · усі плани",
   "settingsAuthNav.usageLine": "Цього місяця використано {su} з {sl} сесій · {mu} з {ml} підсумків.",

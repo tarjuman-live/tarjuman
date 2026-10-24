@@ -248,6 +248,8 @@ export const NL = {
   "settingsAuthNav.renewsOn": "Verlengt op {date}",
   "settingsAuthNav.activeSubscription": "Actief abonnement",
   "settingsAuthNav.manageBilling": "{status} · Facturering beheren",
+  "settingsAuthNav.complimentary": "Gratis",
+  "settingsAuthNav.complimentaryUntil": "Gratis · tot {date}",
   "settingsAuthNav.upgrade": "Upgraden",
   "settingsAuthNav.upgradeSub": "{price} · alle abonnementen bekijken",
   "settingsAuthNav.usageLine": "{su} van {sl} sessies · {mu} van {ml} samenvattingen gebruikt deze maand.",

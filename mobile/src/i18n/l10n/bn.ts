@@ -248,6 +248,8 @@ export const BN = {
   "settingsAuthNav.renewsOn": "{date}-এ নবায়ন হবে",
   "settingsAuthNav.activeSubscription": "সক্রিয় সাবস্ক্রিপশন",
   "settingsAuthNav.manageBilling": "{status} · বিলিং পরিচালনা",
+  "settingsAuthNav.complimentary": "বিনামূল্যে",
+  "settingsAuthNav.complimentaryUntil": "বিনামূল্যে · {date} পর্যন্ত",
   "settingsAuthNav.upgrade": "আপগ্রেড",
   "settingsAuthNav.upgradeSub": "{price} · সব প্ল্যান দেখুন",
   "settingsAuthNav.usageLine": "এই মাসে {sl}টির মধ্যে {su}টি সেশন · {ml}টির মধ্যে {mu}টি সারসংক্ষেপ ব্যবহৃত।",

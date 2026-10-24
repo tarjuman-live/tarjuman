@@ -246,6 +246,8 @@ export const HU = {
   "settingsAuthNav.renewsOn": "Megújul: {date}",
   "settingsAuthNav.activeSubscription": "Aktív előfizetés",
   "settingsAuthNav.manageBilling": "{status} · Számlázás kezelése",
+  "settingsAuthNav.complimentary": "Ingyenes",
+  "settingsAuthNav.complimentaryUntil": "Ingyenes · eddig: {date}",
   "settingsAuthNav.upgrade": "Frissítés",
   "settingsAuthNav.upgradeSub": "{price} · összes csomag",
   "settingsAuthNav.usageLine": "Ebben a hónapban: {su} / {sl} munkamenet · {mu} / {ml} összefoglaló felhasználva.",

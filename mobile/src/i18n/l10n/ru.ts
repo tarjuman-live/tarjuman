@@ -248,6 +248,8 @@ export const RU = {
   "settingsAuthNav.renewsOn": "Продлевается {date}",
   "settingsAuthNav.activeSubscription": "Активная подписка",
   "settingsAuthNav.manageBilling": "{status} · Управление оплатой",
+  "settingsAuthNav.complimentary": "Бесплатно",
+  "settingsAuthNav.complimentaryUntil": "Бесплатно · до {date}",
   "settingsAuthNav.upgrade": "Улучшить",
   "settingsAuthNav.upgradeSub": "{price} · все тарифы",
   "settingsAuthNav.usageLine": "{su} из {sl} сессий · {mu} из {ml} конспектов использовано в этом месяце.",

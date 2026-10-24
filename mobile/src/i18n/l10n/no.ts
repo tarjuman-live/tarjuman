@@ -246,6 +246,8 @@ export const NO = {
   "settingsAuthNav.renewsOn": "Fornyes {date}",
   "settingsAuthNav.activeSubscription": "Aktivt abonnement",
   "settingsAuthNav.manageBilling": "{status} · Administrer betaling",
+  "settingsAuthNav.complimentary": "Gratis",
+  "settingsAuthNav.complimentaryUntil": "Gratis · til {date}",
   "settingsAuthNav.upgrade": "Oppgrader",
   "settingsAuthNav.upgradeSub": "{price} · se alle planer",
   "settingsAuthNav.usageLine": "{su} av {sl} økter · {mu} av {ml} sammendrag brukt denne måneden.",

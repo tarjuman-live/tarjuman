@@ -248,6 +248,8 @@ export const UR = {
   "settingsAuthNav.renewsOn": "{date} کو تجدید ہوگی",
   "settingsAuthNav.activeSubscription": "فعال سبسکرپشن",
   "settingsAuthNav.manageBilling": "{status} · بلنگ کا انتظام",
+  "settingsAuthNav.complimentary": "مفت",
+  "settingsAuthNav.complimentaryUntil": "مفت · {date} تک",
   "settingsAuthNav.upgrade": "اپ گریڈ",
   "settingsAuthNav.upgradeSub": "{price} · تمام پلان دیکھیں",
   "settingsAuthNav.usageLine": "اس مہینے {sl} میں سے {su} سیشنز · {ml} میں سے {mu} خلاصے استعمال ہوئے۔",

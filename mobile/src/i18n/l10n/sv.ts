@@ -246,6 +246,8 @@ export const SV = {
   "settingsAuthNav.renewsOn": "Förnyas {date}",
   "settingsAuthNav.activeSubscription": "Aktiv prenumeration",
   "settingsAuthNav.manageBilling": "{status} · Hantera betalning",
+  "settingsAuthNav.complimentary": "Gratis",
+  "settingsAuthNav.complimentaryUntil": "Gratis · till {date}",
   "settingsAuthNav.upgrade": "Uppgradera",
   "settingsAuthNav.upgradeSub": "{price} · se alla planer",
   "settingsAuthNav.usageLine": "{su} av {sl} sessioner · {mu} av {ml} sammanfattningar använda den här månaden.",

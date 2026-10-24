@@ -246,6 +246,8 @@ export const CS = {
   "settingsAuthNav.renewsOn": "Obnoví se {date}",
   "settingsAuthNav.activeSubscription": "Aktivní předplatné",
   "settingsAuthNav.manageBilling": "{status} · Spravovat platby",
+  "settingsAuthNav.complimentary": "Zdarma",
+  "settingsAuthNav.complimentaryUntil": "Zdarma · do {date}",
   "settingsAuthNav.upgrade": "Upgradovat",
   "settingsAuthNav.upgradeSub": "{price} · zobrazit všechny tarify",
   "settingsAuthNav.usageLine": "Tento měsíc využito {su} z {sl} relací · {mu} z {ml} shrnutí.",

@@ -246,6 +246,8 @@ export const DA = {
   "settingsAuthNav.renewsOn": "Fornyes {date}",
   "settingsAuthNav.activeSubscription": "Aktivt abonnement",
   "settingsAuthNav.manageBilling": "{status} · Administrer betaling",
+  "settingsAuthNav.complimentary": "Gratis",
+  "settingsAuthNav.complimentaryUntil": "Gratis · indtil {date}",
   "settingsAuthNav.upgrade": "Opgrader",
   "settingsAuthNav.upgradeSub": "{price} · se alle abonnementer",
   "settingsAuthNav.usageLine": "{su} af {sl} sessioner · {mu} af {ml} resuméer brugt denne måned.",

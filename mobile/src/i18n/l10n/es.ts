@@ -248,6 +248,8 @@ export const ES = {
   "settingsAuthNav.renewsOn": "Se renueva el {date}",
   "settingsAuthNav.activeSubscription": "Suscripción activa",
   "settingsAuthNav.manageBilling": "{status} · Gestionar facturación",
+  "settingsAuthNav.complimentary": "Gratuito",
+  "settingsAuthNav.complimentaryUntil": "Gratuito · hasta el {date}",
   "settingsAuthNav.upgrade": "Mejorar",
   "settingsAuthNav.upgradeSub": "{price} · ver todos los planes",
   "settingsAuthNav.usageLine": "{su} de {sl} sesiones · {mu} de {ml} resúmenes usados este mes.",

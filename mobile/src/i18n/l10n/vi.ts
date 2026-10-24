@@ -246,6 +246,8 @@ export const VI = {
   "settingsAuthNav.renewsOn": "Gia hạn vào {date}",
   "settingsAuthNav.activeSubscription": "Gói đang hoạt động",
   "settingsAuthNav.manageBilling": "{status} · Quản lý thanh toán",
+  "settingsAuthNav.complimentary": "Miễn phí",
+  "settingsAuthNav.complimentaryUntil": "Miễn phí · đến {date}",
   "settingsAuthNav.upgrade": "Nâng cấp",
   "settingsAuthNav.upgradeSub": "{price} · xem tất cả gói",
   "settingsAuthNav.usageLine": "Đã dùng {su}/{sl} phiên · {mu}/{ml} bản tóm tắt trong tháng này.",

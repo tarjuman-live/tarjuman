@@ -246,6 +246,8 @@ export const EL = {
   "settingsAuthNav.renewsOn": "Ανανεώνεται στις {date}",
   "settingsAuthNav.activeSubscription": "Ενεργή συνδρομή",
   "settingsAuthNav.manageBilling": "{status} · Διαχείριση χρεώσεων",
+  "settingsAuthNav.complimentary": "Δωρεάν",
+  "settingsAuthNav.complimentaryUntil": "Δωρεάν · έως {date}",
   "settingsAuthNav.upgrade": "Αναβάθμιση",
   "settingsAuthNav.upgradeSub": "{price} · δείτε όλα τα πακέτα",
   "settingsAuthNav.usageLine": "{su} από {sl} συνεδρίες · {mu} από {ml} περιλήψεις αυτόν τον μήνα.",

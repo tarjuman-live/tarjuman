@@ -237,6 +237,8 @@ export const ZH = {
   "settingsAuthNav.renewsOn": "将于 {date} 续订",
   "settingsAuthNav.activeSubscription": "订阅有效",
   "settingsAuthNav.manageBilling": "{status} · 管理账单",
+  "settingsAuthNav.complimentary": "免费赠送",
+  "settingsAuthNav.complimentaryUntil": "免费赠送 · 至 {date}",
   "settingsAuthNav.upgrade": "升级",
   "settingsAuthNav.upgradeSub": "{price} · 查看所有方案",
   "settingsAuthNav.usageLine": "本月已用 {su}/{sl} 个会话 · {mu}/{ml} 次摘要。",

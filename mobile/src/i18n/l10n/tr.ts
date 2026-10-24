@@ -248,6 +248,8 @@ export const TR = {
   "settingsAuthNav.renewsOn": "{date} tarihinde yenilenir",
   "settingsAuthNav.activeSubscription": "Etkin abonelik",
   "settingsAuthNav.manageBilling": "{status} · Faturalandırmayı yönet",
+  "settingsAuthNav.complimentary": "Ücretsiz",
+  "settingsAuthNav.complimentaryUntil": "Ücretsiz · {date} tarihine kadar",
   "settingsAuthNav.upgrade": "Yükselt",
   "settingsAuthNav.upgradeSub": "{price} · tüm planları gör",
   "settingsAuthNav.usageLine": "Bu ay {sl} oturumdan {su} · {ml} özetten {mu} kullanıldı.",

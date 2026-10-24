@@ -246,6 +246,8 @@ export const FI = {
   "settingsAuthNav.renewsOn": "Uusitaan {date}",
   "settingsAuthNav.activeSubscription": "Aktiivinen tilaus",
   "settingsAuthNav.manageBilling": "{status} · Hallitse laskutusta",
+  "settingsAuthNav.complimentary": "Maksuton",
+  "settingsAuthNav.complimentaryUntil": "Maksuton · {date} asti",
   "settingsAuthNav.upgrade": "Päivitä",
   "settingsAuthNav.upgradeSub": "{price} · katso kaikki paketit",
   "settingsAuthNav.usageLine": "Tässä kuussa käytetty {su}/{sl} istuntoa · {mu}/{ml} tiivistelmää.",

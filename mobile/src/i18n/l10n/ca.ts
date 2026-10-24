@@ -246,6 +246,8 @@ export const CA = {
   "settingsAuthNav.renewsOn": "Es renova el {date}",
   "settingsAuthNav.activeSubscription": "Subscripció activa",
   "settingsAuthNav.manageBilling": "{status} · Gestiona la facturació",
+  "settingsAuthNav.complimentary": "Gratuït",
+  "settingsAuthNav.complimentaryUntil": "Gratuït · fins al {date}",
   "settingsAuthNav.upgrade": "Millora",
   "settingsAuthNav.upgradeSub": "{price} · mira tots els plans",
   "settingsAuthNav.usageLine": "{su} de {sl} sessions · {mu} de {ml} resums fets servir aquest mes.",

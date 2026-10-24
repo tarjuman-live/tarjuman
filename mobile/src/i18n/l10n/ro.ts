@@ -246,6 +246,8 @@ export const RO = {
   "settingsAuthNav.renewsOn": "Se reînnoiește pe {date}",
   "settingsAuthNav.activeSubscription": "Abonament activ",
   "settingsAuthNav.manageBilling": "{status} · Gestionează facturarea",
+  "settingsAuthNav.complimentary": "Gratuit",
+  "settingsAuthNav.complimentaryUntil": "Gratuit · până pe {date}",
   "settingsAuthNav.upgrade": "Treci la Pro",
   "settingsAuthNav.upgradeSub": "{price} · vezi toate planurile",
   "settingsAuthNav.usageLine": "{su} din {sl} sesiuni · {mu} din {ml} rezumate folosite luna aceasta.",

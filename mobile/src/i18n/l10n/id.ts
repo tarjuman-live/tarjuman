@@ -248,6 +248,8 @@ export const ID = {
   "settingsAuthNav.renewsOn": "Diperpanjang {date}",
   "settingsAuthNav.activeSubscription": "Langganan aktif",
   "settingsAuthNav.manageBilling": "{status} · Kelola tagihan",
+  "settingsAuthNav.complimentary": "Gratis",
+  "settingsAuthNav.complimentaryUntil": "Gratis · hingga {date}",
   "settingsAuthNav.upgrade": "Tingkatkan",
   "settingsAuthNav.upgradeSub": "{price} · lihat semua paket",
   "settingsAuthNav.usageLine": "{su} dari {sl} sesi · {mu} dari {ml} ringkasan terpakai bulan ini.",

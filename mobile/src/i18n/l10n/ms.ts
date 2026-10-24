@@ -248,6 +248,8 @@ export const MS = {
   "settingsAuthNav.renewsOn": "Diperbaharui pada {date}",
   "settingsAuthNav.activeSubscription": "Langganan aktif",
   "settingsAuthNav.manageBilling": "{status} · Urus pengebilan",
+  "settingsAuthNav.complimentary": "Percuma",
+  "settingsAuthNav.complimentaryUntil": "Percuma · hingga {date}",
   "settingsAuthNav.upgrade": "Naik taraf",
   "settingsAuthNav.upgradeSub": "{price} · lihat semua pelan",
   "settingsAuthNav.usageLine": "{su} daripada {sl} sesi · {mu} daripada {ml} ringkasan digunakan bulan ini.",

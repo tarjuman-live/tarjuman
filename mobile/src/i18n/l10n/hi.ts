@@ -246,6 +246,8 @@ export const HI = {
   "settingsAuthNav.renewsOn": "{date} को नवीनीकरण",
   "settingsAuthNav.activeSubscription": "सक्रिय सदस्यता",
   "settingsAuthNav.manageBilling": "{status} · बिलिंग प्रबंधित करें",
+  "settingsAuthNav.complimentary": "निःशुल्क",
+  "settingsAuthNav.complimentaryUntil": "निःशुल्क · {date} तक",
   "settingsAuthNav.upgrade": "अपग्रेड करें",
   "settingsAuthNav.upgradeSub": "{price} · सभी प्लान देखें",
   "settingsAuthNav.usageLine": "इस महीने {sl} में से {su} सत्र · {ml} में से {mu} सारांश इस्तेमाल हुए।",

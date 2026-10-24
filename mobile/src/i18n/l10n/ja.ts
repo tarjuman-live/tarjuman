@@ -247,6 +247,8 @@ export const JA = {
   "settingsAuthNav.renewsOn": "{date}に更新",
   "settingsAuthNav.activeSubscription": "有効なサブスクリプション",
   "settingsAuthNav.manageBilling": "{status} · 請求を管理",
+  "settingsAuthNav.complimentary": "無料提供",
+  "settingsAuthNav.complimentaryUntil": "無料提供 · {date}まで",
   "settingsAuthNav.upgrade": "アップグレード",
   "settingsAuthNav.upgradeSub": "{price} · すべてのプランを見る",
   "settingsAuthNav.usageLine": "今月の使用量: セッション {su}/{sl} · 要約 {mu}/{ml}",

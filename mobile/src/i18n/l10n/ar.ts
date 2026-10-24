@@ -248,6 +248,8 @@ export const AR = {
   "settingsAuthNav.renewsOn": "يتجدّد في {date}",
   "settingsAuthNav.activeSubscription": "اشتراك فعّال",
   "settingsAuthNav.manageBilling": "{status} · إدارة الفوترة",
+  "settingsAuthNav.complimentary": "مجاني",
+  "settingsAuthNav.complimentaryUntil": "مجاني · حتى {date}",
   "settingsAuthNav.upgrade": "ترقية",
   "settingsAuthNav.upgradeSub": "{price} · عرض جميع الخطط",
   "settingsAuthNav.usageLine": "{su} من {sl} جلسات · {mu} من {ml} ملخصات مستخدمة هذا الشهر.",

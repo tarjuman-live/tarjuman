@@ -248,6 +248,8 @@ export const IT = {
   "settingsAuthNav.renewsOn": "Si rinnova il {date}",
   "settingsAuthNav.activeSubscription": "Abbonamento attivo",
   "settingsAuthNav.manageBilling": "{status} · Gestisci fatturazione",
+  "settingsAuthNav.complimentary": "Omaggio",
+  "settingsAuthNav.complimentaryUntil": "Omaggio · fino al {date}",
   "settingsAuthNav.upgrade": "Passa a Pro",
   "settingsAuthNav.upgradeSub": "{price} · vedi tutti i piani",
   "settingsAuthNav.usageLine": "{su} di {sl} sessioni · {mu} di {ml} riassunti usati questo mese.",

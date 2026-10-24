@@ -246,6 +246,8 @@ export const PL = {
   "settingsAuthNav.renewsOn": "Odnowienie {date}",
   "settingsAuthNav.activeSubscription": "Aktywna subskrypcja",
   "settingsAuthNav.manageBilling": "{status} · Zarządzaj płatnościami",
+  "settingsAuthNav.complimentary": "Bezpłatnie",
+  "settingsAuthNav.complimentaryUntil": "Bezpłatnie · do {date}",
   "settingsAuthNav.upgrade": "Ulepsz",
   "settingsAuthNav.upgradeSub": "{price} · zobacz wszystkie plany",
   "settingsAuthNav.usageLine": "Wykorzystano {su} z {sl} sesji · {mu} z {ml} podsumowań w tym miesiącu.",

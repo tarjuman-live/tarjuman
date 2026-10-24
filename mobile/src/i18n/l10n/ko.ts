@@ -246,6 +246,8 @@ export const KO = {
   "settingsAuthNav.renewsOn": "{date}에 갱신",
   "settingsAuthNav.activeSubscription": "활성 구독",
   "settingsAuthNav.manageBilling": "{status} · 결제 관리",
+  "settingsAuthNav.complimentary": "무료 제공",
+  "settingsAuthNav.complimentaryUntil": "무료 제공 · {date}까지",
   "settingsAuthNav.upgrade": "업그레이드",
   "settingsAuthNav.upgradeSub": "{price} · 모든 요금제 보기",
   "settingsAuthNav.usageLine": "이번 달 세션 {sl}개 중 {su}개 · 요약 {ml}개 중 {mu}개 사용.",
