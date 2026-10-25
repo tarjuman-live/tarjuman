@@ -18,6 +18,10 @@ const AuthModal = dynamic(
   () => import("@/components/auth/auth-modal").then((m) => m.AuthModal),
   { ssr: false }
 );
+const WaitlistModal = dynamic(
+  () => import("./waitlist-modal").then((m) => m.WaitlistModal),
+  { ssr: false }
+);
 
 const LINKS: { href: string; key: MessageKey }[] = [
   { href: "#features", key: "lp.features" },
@@ -28,11 +32,13 @@ const LINKS: { href: string; key: MessageKey }[] = [
 
 /**
  * Sticky marketing top-nav for the landing page. Logo + section anchors +
- * auth-aware actions. Signed-out visitors get "Sign in" (ghost) and "Get
- * started" (primary), both opening the in-place auth popup; signed-in visitors
- * get a single "Open recorder". The bar is transparent at the top of the page
- * and gains a frosted background + border once scrolled, so it never fights the
- * hero on load.
+ * auth-aware actions. Pre-launch, signed-out visitors get a single "Join the
+ * waitlist" (no public Sign in / Get started); signed-in visitors get "Open
+ * recorder". Sign-in itself still works via the /?auth=signin deep link —
+ * that's where the (app) guard sends anyone who opens /record or /admin while
+ * signed out, so operators can always get in. The bar is transparent at the
+ * top of the page and gains a frosted background + border once scrolled, so it
+ * never fights the hero on load.
  */
 export function MarketingNav() {
   const { isAuthenticated } = useConvexAuth();
@@ -75,22 +81,11 @@ export function MarketingNav() {
     window.history.replaceState({}, "", url.pathname + url.search + url.hash);
   }, []);
 
-  // Mounting AuthModal triggers its dynamic import; preload on hover/focus so
-  // the first open is instant.
-  const preload = () => setMounted(true);
-
-  const openAuth = (next: "signIn" | "signUp") => {
-    // Already signed in (e.g. the popup raced a session restore): treat it as
-    // a sign-in — /start routes operators to /admin, everyone else to /record.
-    if (isAuthenticated) {
-      router.push("/start");
-      return;
-    }
-    setMode(next);
-    setSeq((s) => s + 1);
-    setMounted(true);
-    setOpen(true);
-  };
+  // The waitlist popup: mounting triggers its dynamic import, so preload on
+  // hover/focus and the first open is instant.
+  const [waitlistMounted, setWaitlistMounted] = useState(false);
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const preloadWaitlist = () => setWaitlistMounted(true);
 
   return (
     // Floating "island" tile — translucent glass, detached from the edges. The
@@ -164,32 +159,31 @@ export function MarketingNav() {
               {t("lp.openRecorder")}
             </button>
           ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => openAuth("signIn")}
-                onPointerEnter={preload}
-                onFocus={preload}
-                className="hidden sm:inline-block px-3 py-2 rounded-xl text-sm font-semibold text-[var(--color-text-2)] hover:text-[var(--color-accent)] cursor-pointer transition-colors"
-              >
-                {t("lp.signIn")}
-              </button>
-              <button
-                type="button"
-                onClick={() => openAuth("signUp")}
-                onPointerEnter={preload}
-                onFocus={preload}
-                className="px-4 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all duration-200 active:scale-95 bg-[var(--color-accent)] text-[#0A0F1C] hover:brightness-110 hover:-translate-y-0.5 shadow-[0_0_20px_rgba(46,204,113,0.3)] hover:shadow-[0_0_30px_rgba(46,204,113,0.6)]"
-              >
-                {t("lp.getStarted")}
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={() => {
+                setWaitlistMounted(true);
+                setWaitlistOpen(true);
+              }}
+              onPointerEnter={preloadWaitlist}
+              onFocus={preloadWaitlist}
+              className="px-3.5 sm:px-4 py-2 rounded-xl text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer transition-all duration-200 active:scale-95 bg-[var(--color-accent)] text-[#0A0F1C] hover:brightness-110 hover:-translate-y-0.5 shadow-[0_0_20px_rgba(46,204,113,0.3)] hover:shadow-[0_0_30px_rgba(46,204,113,0.6)]"
+            >
+              {/* Short label below lg — the full phrase overflows the bar on
+                  phones (e.g. French) and on tablets, where the section links
+                  share it (e.g. Swedish, Finnish). */}
+              <span className="lg:hidden">{t("lp.waitlistShort")}</span>
+              <span className="hidden lg:inline">{t("lp.joinWaitlist")}</span>
+            </button>
           )}
         </div>
       </nav>
 
       {mounted && (
         <AuthModal key={seq} open={open} onOpenChange={setOpen} initialMode={mode} />
+      )}
+      {waitlistMounted && (
+        <WaitlistModal open={waitlistOpen} onOpenChange={setWaitlistOpen} />
       )}
     </header>
   );
