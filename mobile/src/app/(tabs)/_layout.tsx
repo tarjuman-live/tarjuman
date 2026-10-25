@@ -16,6 +16,9 @@
  *   - Capsule: fixed, centred, bottom = safe-area + 12. Glass is
  *     rgba(20,28,46,.6) with blur(28px), a 1px white@10 border, the shadow
  *     0 12px 40px black@50 plus inset highlights, and padding 5.
+ *     iOS 26+ (LIQUID_GLASS): the capsule is Apple's Liquid Glass instead —
+ *     regular, interactive, following the app's light/dark — and the lens
+ *     becomes a flat platter under the icons (see BottomNav).
  *   - Lens: absolute, 4px inset, width TAB_WIDTH + 2, white@8 fill with inset
  *     rims. It sits ABOVE the tabs and passes touches through.
  *     x = useSpring(visualDuration .42, bounce .16) → SPRING.lens (exact
@@ -72,7 +75,7 @@
  * with it, so the lens always sits under the active tab.
  */
 import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -91,8 +94,9 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 import { Tabs } from "expo-router";
 import { BlurView } from "expo-blur";
+import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from "expo-glass-effect";
 import { SymbolView, type SFSymbol } from "expo-symbols";
-import { C, themed, themedShadow, getThemeMode } from "~/lib/theme";
+import { C, themed, themedShadow, getThemeMode, useThemeMode } from "~/lib/theme";
 import { EASE, SPRING, TW_ENTER, TW_EXIT, useReduceMotion } from "~/lib/motion";
 import { rtlRow, rtlText, useLocale, type MessageKey } from "~/i18n";
 import { liveElapsed, useLiveSession, useRecordNavHidden, type LiveSessionInfo } from "~/components/record-button";
@@ -141,7 +145,15 @@ const HIDE_MS = 320;
 /** bottom-nav.tsx capsule drop shadow (drawn by FadeGlass's frame layer). */
 const CAPSULE_SHADOW = "0 12px 40px rgba(0, 0, 0, 0.5)";
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
-const COLOR_T = { duration: 200, easing: EASE.tw, reduceMotion: ReduceMotion.Never };
+/**
+ * iOS 26+: the capsule is Apple's real Liquid Glass (UIGlassEffect via
+ * expo-glass-effect), not a blur + dark tint — it bends and catches light from
+ * whatever scrolls beneath it and answers a touch the way system glass does
+ * (user: "make it actually look and feel like liquid glass", 2026-10-25).
+ * Older iOS keeps the web's blur + tint capsule.
+ */
+const LIQUID_GLASS = Platform.OS === "ios" && isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+const COLOR_T ={ duration: 200, easing: EASE.tw, reduceMotion: ReduceMotion.Never };
 const ICON_T = { duration: 150, easing: EASE.tw, reduceMotion: ReduceMotion.Never };
 
 export default function TabsLayout() {
@@ -277,38 +289,69 @@ function BottomNav(props: TabBarProps) {
   useEffect(() => {
     fade.value = withTiming(hidden ? 0 : 1, { duration: HIDE_MS, easing: EASE.css, reduceMotion: ReduceMotion.Never });
   }, [hidden, fade]);
+  // The web's calc(100% + 28px) leaves the top of the bar on screen above a
+  // home indicator; the blur capsule fades so that sliver never shows, but
+  // Liquid Glass can't take opacity, so it travels fully below the edge.
+  const travel = LIQUID_GLASS ? barH + insets.bottom + 12 + 8 : barH + 28;
   const capsuleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: hide.value * (barH + 28) }],
+    transform: [{ translateY: hide.value * travel }],
   }));
   const contentFade = useAnimatedStyle(() => ({ opacity: fade.value }));
   const flyingBlur = useAnimatedProps(() => ({ intensity: FLYING_BLUR * fade.value }));
+  const mode = useThemeMode();
+
+  const tabs = (
+    <Animated.View style={[styles.tabRow, rtlRow(dir), contentFade]}>
+      {state.routes.map((route, i) => {
+        const meta = TABS[route.name];
+        if (!meta) return null;
+        return (
+          <BottomTab
+            key={route.key}
+            icon={meta.icon}
+            label={t(meta.labelKey)}
+            active={state.index === i}
+            onPress={() => onTab(i)}
+          />
+        );
+      })}
+    </Animated.View>
+  );
+  const a11y = {
+    pointerEvents: hidden ? ("none" as const) : ("auto" as const),
+    accessibilityRole: "tablist" as const,
+    accessibilityElementsHidden: hidden,
+    importantForAccessibility: hidden ? ("no-hide-descendants" as const) : ("auto" as const),
+  };
+
+  if (LIQUID_GLASS) {
+    // The glass carries its own rim, specular light and shadow, so none of
+    // the web capsule's frame is drawn. Hiding dematerializes it the system
+    // way (style → none, animated) while the capsule slides down; the tabs
+    // and the platter fade in their own layers. The platter sits UNDER the
+    // icons (system tab bars do), and still springs + swells between tabs.
+    return (
+      <View pointerEvents="box-none" style={[styles.navHost, { bottom: insets.bottom + 12 }]}>
+        <Animated.View onLayout={onLayout} {...a11y} style={capsuleStyle}>
+          <GlassView
+            glassEffectStyle={{ style: hidden ? "none" : "regular", animate: true, animationDuration: HIDE_MS / 1000 }}
+            isInteractive
+            colorScheme={mode}
+            style={[styles.capsule, { borderRadius: barH / 2 }]}
+          >
+            <Animated.View pointerEvents="none" style={[styles.lens, styles.platter, lensStyle, contentFade]} />
+            {tabs}
+          </GlassView>
+        </Animated.View>
+      </View>
+    );
+  }
 
   return (
     <View pointerEvents="box-none" style={[styles.navHost, { bottom: insets.bottom + 12 }]}>
-      <Animated.View
-        onLayout={onLayout}
-        pointerEvents={hidden ? "none" : "auto"}
-        accessibilityRole="tablist"
-        accessibilityElementsHidden={hidden}
-        importantForAccessibility={hidden ? "no-hide-descendants" : "auto"}
-        style={[styles.capsule, FADE_GLASS_FRAME, capsuleStyle]}
-      >
+      <Animated.View onLayout={onLayout} {...a11y} style={[styles.capsule, FADE_GLASS_FRAME, capsuleStyle]}>
         <FadeGlass progress={fade} radius={999} shadow={themedShadow(CAPSULE_SHADOW)} />
-        <Animated.View style={[styles.tabRow, rtlRow(dir), contentFade]}>
-          {state.routes.map((route, i) => {
-            const meta = TABS[route.name];
-            if (!meta) return null;
-            return (
-              <BottomTab
-                key={route.key}
-                icon={meta.icon}
-                label={t(meta.labelKey)}
-                active={state.index === i}
-                onPress={() => onTab(i)}
-              />
-            );
-          })}
-        </Animated.View>
+        {tabs}
         {/* The lens, above the tabs and passing touches through. */}
         <Animated.View pointerEvents="none" style={[styles.lens, lensStyle]}>
           <Animated.View style={[styles.lensFace, contentFade]} />
@@ -779,6 +822,11 @@ const styles = themed(() => StyleSheet.create({
       "inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 1px rgba(0, 0, 0, 0.25), 0 2px 10px rgba(0, 0, 0, 0.25)",
   },
   lensClip: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: 999, overflow: "hidden" },
+  // Liquid Glass selection platter: a flat brighter pill in the glass, like
+  // the system tab bar's (no inset rims — the glass draws the light).
+  platter: {
+    backgroundColor: getThemeMode() === "light" ? "rgba(15, 23, 42, 0.07)" : "rgba(255, 255, 255, 0.12)",
+  },
 
   // Sidebar rail
   railHost: { height: "100%" },
