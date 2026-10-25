@@ -296,17 +296,36 @@ describe("usage ingest", () => {
   });
 });
 
-describe("admin transcript access is audited", () => {
-  it("openSessionForAdmin returns table-backed segments and writes an audit row", async () => {
-    const sessionId = await makeSession(t, userId, 4);
-    const res = await as(t, adminId).mutation(api.adminPanel.openSessionForAdmin, {
-      sessionId,
+describe("operators never see recordings", () => {
+  it("exposes no function that lists or opens sessions", async () => {
+    const mod = await import("./adminPanel");
+    for (const name of ["openSessionForAdmin", "listSessions", "recentSessions"]) {
+      expect(name in mod).toBe(false);
+    }
+  });
+
+  it("session rows carry metadata only — no title, text or summary", async () => {
+    const sessionId = await makeSession(t, userId, 3);
+    await t.run((ctx) =>
+      ctx.db.patch(sessionId, {
+        title: "First line of what they said",
+        summary: "Private summary",
+        status: "recording",
+        updatedAt: Date.now(),
+      }),
+    );
+    const admin = as(t, adminId);
+    const live = await admin.query(api.adminPanel.liveNow, { since: 0 });
+    const own = await admin.query(api.adminPanel.listUserSessions, {
+      userId,
+      paginationOpts: { numItems: 10, cursor: null },
     });
-    expect(res?.segments).toHaveLength(4);
-    expect(res?.owner?.email).toBe("someone@example.org");
-    const audit = await t.run((ctx) => ctx.db.query("adminAuditLog").collect());
-    expect(audit).toHaveLength(1);
-    expect(audit[0]).toMatchObject({ action: "view_session", targetSessionId: sessionId });
+    for (const row of [live.live[0], own.page[0]]) {
+      expect(row).toBeDefined();
+      expect(row).not.toHaveProperty("title");
+      expect(row).not.toHaveProperty("summary");
+      expect(JSON.stringify(row)).not.toMatch(/First line|Private summary|نص/);
+    }
   });
 });
 

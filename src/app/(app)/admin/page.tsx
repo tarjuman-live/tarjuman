@@ -163,10 +163,8 @@ function LiveSection() {
             <ul className="flex flex-col divide-y" style={{ borderColor: COLORS.border }}>
               {live.live.map((s) => (
                 <li key={s.id} className="py-2.5 first:pt-0 last:pb-0">
-                  <Link
-                    href={`/admin/sessions/${s.id}`}
-                    className="flex items-center gap-3 rounded-lg -mx-2 px-2 py-1 transition-colors duration-200 hover:bg-black/15"
-                  >
+                  {/* Metadata only — operators can't open a recording. */}
+                  <div className="flex items-center gap-3 py-1">
                     <Avatar image={s.owner?.image} name={s.owner?.name} email={s.owner?.email} size={28} />
                     <span className="min-w-0 flex-1">
                       <span className="block text-[13px] font-semibold truncate" style={{ color: COLORS.w }}>
@@ -183,7 +181,7 @@ function LiveSection() {
                         {duration((s.updatedAt - s.createdAt) / 1000)}
                       </span>
                     </span>
-                  </Link>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -542,11 +540,10 @@ function Revenue() {
 function Recent() {
   const now = useNow(30_000);
   const signups = useQuery(api.adminPanel.recentSignups);
-  const sessions = useQuery(api.adminPanel.recentSessions);
   return (
     <>
       <SectionLabel>Recent activity</SectionLabel>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3">
         <Card
           title="Newest accounts"
           action={
@@ -580,48 +577,6 @@ function Recent() {
                       <ProviderBadges providers={u.providers} />
                       <span className="text-[11px]" style={{ color: COLORS.t4 }}>
                         {timeAgo(u.createdAt, now)}
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-        <Card
-          title="Latest sessions"
-          action={
-            <Link href="/admin/sessions" className="text-[12px] font-semibold" style={{ color: COLORS.accent }}>
-              All sessions
-            </Link>
-          }
-        >
-          {sessions === undefined ? (
-            <Skeleton style={{ height: 200 }} rounded={12} />
-          ) : sessions.length === 0 ? (
-            <EmptyHint>No sessions recorded yet.</EmptyHint>
-          ) : (
-            <ul className="flex flex-col">
-              {sessions.map((s) => (
-                <li key={s.id}>
-                  <Link
-                    href={`/admin/sessions/${s.id}`}
-                    className="flex items-center gap-3 rounded-lg -mx-2 px-2 py-2 transition-colors duration-200 hover:bg-black/15"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[13px] font-semibold truncate" style={{ color: COLORS.w }}>
-                        {s.title ?? "Untitled"}
-                      </span>
-                      <span className="block text-[11.5px] truncate" style={{ color: COLORS.t3 }}>
-                        {s.owner?.email ?? "deleted user"} · {pairName(`${s.sourceLanguage}→${s.targetLanguage}`)}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-right">
-                      <span className="block text-[12px] font-semibold tabular-nums" style={{ color: COLORS.w }}>
-                        {duration(s.seconds)}
-                      </span>
-                      <span className="block text-[11px]" style={{ color: COLORS.t4 }}>
-                        {timeAgo(s.createdAt, now)}
                       </span>
                     </span>
                   </Link>

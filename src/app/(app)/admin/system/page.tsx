@@ -663,7 +663,7 @@ function RecentErrorsCard({
 // ─── 5. Admin audit log ─────────────────────────────────────────────────────
 
 const AUDIT_LABEL: Record<AuditRow["action"], string> = {
-  view_session: "Viewed transcript",
+  view_session: "Viewed a session (old feature, removed)",
   grant_pro: "Granted Pro",
   revoke_pro: "Revoked comp",
   delete_user: "Deleted user",
@@ -677,7 +677,7 @@ function AuditCard({ rows, now }: { rows: AuditRow[] | undefined; now: number })
   return (
     <Card
       title="Operator actions"
-      subtitle="The 30 most recent. Every transcript view, plan change, deletion and cleanup is written here."
+      subtitle="The 30 most recent. Every plan change, deletion and cleanup is written here."
     >
       {rows.length === 0 ? (
         <EmptyHint>No admin actions yet.</EmptyHint>
@@ -705,16 +705,6 @@ function AuditCard({ rows, now }: { rows: AuditRow[] | undefined; now: number })
                       <UserLink id={r.targetUserId}>
                         {r.target?.email ?? r.target?.name ?? "deleted user"}
                       </UserLink>
-                    </span>
-                  )}
-                  {r.targetSessionId && (
-                    <span className="text-[12px]">
-                      <TextLink
-                        href={`/admin/sessions/${r.targetSessionId}`}
-                        title="Opening it logs another view"
-                      >
-                        session
-                      </TextLink>
                     </span>
                   )}
                 </div>

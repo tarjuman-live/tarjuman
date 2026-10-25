@@ -170,9 +170,10 @@ export default defineSchema({
     revokedBy: v.optional(v.id("users")),
   }).index("by_user", ["userId"]),
 
-  // Every admin write, plus every transcript an admin opens. Ids only — no
-  // copied user content — so it survives the target's account deletion
-  // without retaining their data.
+  // Every admin write. Ids only — no copied user content — so it survives
+  // the target's account deletion without retaining their data.
+  // ("view_session" is historic only: admins can no longer open sessions.
+  // Kept so old rows still validate.)
   adminAuditLog: defineTable({
     actorId: v.id("users"),
     action: v.union(
