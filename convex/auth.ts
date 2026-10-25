@@ -3,7 +3,10 @@ import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials"
 import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
 import { PasswordResetEmail } from "./passwordReset";
+import { EmailCode } from "./emailCode";
+import { createOrUpdateUser } from "./authLinking";
 import { internal } from "./_generated/api";
+import type { MutationCtx } from "./_generated/server";
 
 /** Constant-time string compare (the Convex runtime has no timingSafeEqual). */
 function safeEqual(a: string, b: string): boolean {
@@ -42,12 +45,18 @@ const DevBypass = ConvexCredentials({
 /**
  * Auth setup for Tarjuman.
  *
- * Three providers:
+ * Providers:
  * - Password: email + password. Convex Auth handles hashing/salting/user
  *   creation. The `reset` option enables the forgot-password flow via OTP.
+ * - EmailCode ("email-code"): passwordless — a 6-digit code emailed to the
+ *   user signs them in, creating the account on first use. See emailCode.ts.
  * - Google: OAuth via @auth/core. Requires AUTH_GOOGLE_ID + AUTH_GOOGLE_SECRET
  *   set as Convex env vars (NOT in .env.local — those are for the Next.js
  *   process; Convex env is separate).
+ * - DevBypass: dev-only simulator sign-in (above).
+ *
+ * `createOrUpdateUser` (authLinking.ts) keeps one person = one account across
+ * password and email code, and enforces the code send limit.
  *
  * The exported `auth` object is consumed by:
  * - convex/http.ts to register OAuth callback routes
@@ -56,10 +65,14 @@ const DevBypass = ConvexCredentials({
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password({ reset: PasswordResetEmail }),
+    EmailCode,
     Google,
     DevBypass,
   ],
   callbacks: {
+    async createOrUpdateUser(ctx, args) {
+      return await createOrUpdateUser(ctx as unknown as MutationCtx, args);
+    },
     /**
      * Where OAuth may send the browser back to. Same rule as the library
      * default (relative paths or anything on SITE_URL), plus the iOS app's own

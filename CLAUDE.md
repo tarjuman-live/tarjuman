@@ -28,7 +28,7 @@ This app will primarily capture audio from **PA speakers in masjids, lecture hal
 |-------|-----------|-----|
 | Framework | Next.js 15 (App Router) + TypeScript | SSR for landing page, API routes for backend, consistent ecosystem |
 | Backend / DB | Convex | Real-time subscriptions, file storage, serverless, type-safe |
-| Auth | Convex Auth (email/password + Google OAuth) | Integrated, simple, handles sessions |
+| Auth | Convex Auth (email/password, 6-digit email code, Google OAuth) | Integrated, simple, handles sessions. Email-code accounts link to an existing password account with the same email — see `convex/authLinking.ts` (a copy of the library's default user resolution; re-diff it on any `@convex-dev/auth` upgrade) |
 | Styling | Tailwind CSS + shadcn/ui | Fast, mobile-first, accessible components |
 | Speech-to-Text | **Speechmatics** realtime (WebSocket) — primary; **Deepgram** `nova-3` — fallback | Speechmatics won the 2026-08 Arabic bake-off: whole coherent sentences at ~1.00 confidence where nova-3 fragmented and dropped clauses. Deepgram stays wired behind a one-line switch (`STT_PROVIDER`). |
 | Translation | Anthropic Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) | Preserves Islamic terminology (Allah, Subhan'Allah, ﷺ, etc.) where Google Translate flattens them. Single LLM provider. |
