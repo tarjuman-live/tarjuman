@@ -6,9 +6,10 @@ import { getEffectivePlan } from "./entitlements";
 import {
   PLAN_LIMITS,
   monthStartMs,
-  limitForWire,
-  atLimit,
+  usageMonthKey,
+  buildUsage,
   BILLING_ENABLED,
+  type PlanUsageWire,
 } from "./billingLimits";
 
 /**
@@ -64,78 +65,86 @@ export const getMySubscription = query({
  * This-month usage + entitlements for the current user — the reactive source of
  * truth behind the record/summary gates and the Settings usage line. Plan is
  * the EFFECTIVE plan (Stripe Pro or an active comp grant — entitlements.ts);
- * limits come from billingLimits.ts.
+ * limits come from billingLimits.ts, and the shape from buildUsage there.
  *
- * Pro/Scholar are unlimited, so we SHORT-CIRCUIT without counting (cheap for the
- * paying majority). Only free users pay for the count, and they have ≤ a handful
- * of sessions/month, so the date-bounded read is tiny. Unlimited limits go over
- * the wire as `null` (Infinity isn't a valid Convex value).
+ * Recording time is metered on EVERY tier (Free 1h · Pro 3h a month), read from
+ * the recordingUsage ledger — one indexed row, no session scan. Only a tier
+ * with a finite session/summary cap (Free's summaries) pays for the date-bounded
+ * session read, and a free user has a handful of sessions a month.
+ *
+ * The in-progress recording is NOT in the ledger until it completes, so the
+ * record page compares its live timer against `recordingSecondsRemaining`
+ * without double counting.
  *
  * Returns null when unauthenticated (page may render before auth settles).
  */
 export const getMyUsageThisMonth = query({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<PlanUsageWire | null> => {
     const userId = await auth.getUserId(ctx);
     if (!userId) return null;
 
     // Stripe Pro OR an active complimentary grant — see entitlements.ts.
     const { plan } = await getEffectivePlan(ctx, userId);
-    const limits = PLAN_LIMITS[plan];
 
-    // Unlimited path — skip the session scan entirely. This covers BOTH:
-    //  • billing not live yet (BILLING_ENABLED=false) → everyone is unlimited,
-    //    because the free caps only mean anything once we can take money; and
-    //  • any paid tier (pro/scholar), which is always unlimited.
-    // Reporting null limits also hides the usage meters in the UI.
-    if (!BILLING_ENABLED || plan !== "free") {
-      return {
+    // Billing not live yet (BILLING_ENABLED=false) → everyone is unlimited,
+    // because the caps only mean anything once we can take money. Skip every
+    // read; buildUsage reports null limits, which also hides the meters.
+    if (!BILLING_ENABLED) {
+      return buildUsage({
         plan,
+        billingEnabled: false,
         sessionsUsed: 0,
         summariesUsed: 0,
-        // Both cases are unlimited: pro/scholar limits are Infinity, and a free
-        // user with billing off is treated as unlimited. Force null either way
-        // (don't read the free "4" here) so no cap or usage meter shows.
-        sessionsLimit: null,
-        summariesLimit: null,
-        canStartSession: true,
-        canSummarize: true,
-      };
+        recordingSecondsUsed: 0,
+      });
     }
 
-    const monthStart = monthStartMs(Date.now());
-    // Only this month's rows (cheap for free users). Counting summaries among
-    // this month's sessions is intentionally lenient — a summary generated this
-    // month on an older session won't count, which only ever favors the user.
-    const thisMonth = await ctx.db
-      .query("sessions")
-      .withIndex("by_user_date", (q) =>
-        q.eq("userId", userId).gte("createdAt", monthStart)
+    const now = Date.now();
+    const limits = PLAN_LIMITS[plan];
+    const ledger = await ctx.db
+      .query("recordingUsage")
+      .withIndex("by_userId_and_month", (q) =>
+        q.eq("userId", userId).eq("month", usageMonthKey(now)),
       )
-      .collect();
+      .unique();
 
-    // segmentCount, not segments.length: since segments moved to the
-    // transcriptSegments table, new sessions keep the inline array EMPTY, so
-    // `segments.length` is 0 for every modern session and the free cap would
-    // never meter. Legacy rows (no segmentCount) fall back to the inline length.
-    const sessionsUsed = thisMonth.filter(
-      (s) =>
-        s.status === "completed" &&
-        (s.segmentCount ?? s.segments.length) > 0
-    ).length;
-    const summariesUsed = thisMonth.filter(
-      (s) => (s.summaryGeneratedAt ?? 0) >= monthStart
-    ).length;
+    let sessionsUsed = 0;
+    let summariesUsed = 0;
+    if (
+      Number.isFinite(limits.sessionsPerMonth) ||
+      Number.isFinite(limits.summariesPerMonth)
+    ) {
+      const monthStart = monthStartMs(now);
+      // Only this month's rows. Counting summaries among this month's sessions
+      // is intentionally lenient — a summary generated this month on an older
+      // session won't count, which only ever favors the user.
+      const thisMonth = await ctx.db
+        .query("sessions")
+        .withIndex("by_user_date", (q) =>
+          q.eq("userId", userId).gte("createdAt", monthStart)
+        )
+        .collect();
+      // segmentCount, not segments.length: since segments moved to the
+      // transcriptSegments table, new sessions keep the inline array EMPTY.
+      // Legacy rows (no segmentCount) fall back to the inline length.
+      sessionsUsed = thisMonth.filter(
+        (s) =>
+          s.status === "completed" &&
+          (s.segmentCount ?? s.segments.length) > 0
+      ).length;
+      summariesUsed = thisMonth.filter(
+        (s) => (s.summaryGeneratedAt ?? 0) >= monthStart
+      ).length;
+    }
 
-    return {
+    return buildUsage({
       plan,
+      billingEnabled: true,
       sessionsUsed,
       summariesUsed,
-      sessionsLimit: limitForWire(limits.sessionsPerMonth),
-      summariesLimit: limitForWire(limits.summariesPerMonth),
-      canStartSession: !atLimit(sessionsUsed, limits.sessionsPerMonth),
-      canSummarize: !atLimit(summariesUsed, limits.summariesPerMonth),
-    };
+      recordingSecondsUsed: ledger?.seconds ?? 0,
+    });
   },
 });
 

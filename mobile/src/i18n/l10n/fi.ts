@@ -74,7 +74,6 @@ export const FI = {
   // record
   "record.starting": "Käynnistetään…",
   "record.startRecording": "Aloita tallennus",
-  "record.sessionsUsage": "{used}/{limit} istuntoa tässä kuussa",
   "record.recent": "Viimeisimmät",
   "record.untitled": "Nimetön istunto",
   "record.notSavingTitle": "Ei tallenneta",
@@ -128,9 +127,14 @@ export const FI = {
   "record.micFailedTitle": "Tallennusta ei voitu aloittaa",
   "record.micFailedBody": "Jokin meni vikaan. Yritä uudelleen.",
   "record.limitTitle": "Kuukausiraja täyttyi",
-  "record.limitBody":
-    "Olet käyttänyt kaikki {limit} maksutonta istuntoa tässä kuussa. Päivitä Tarjuman Prohon, niin voit tallentaa rajattomasti.",
   "record.upgrade": "Päivitä",
+  "record.hoursUsage": "Tässä kuussa käytetty {used}/{limit} tallennusaikaa",
+  "record.hoursLimitUpgrade":
+    "Olet käyttänyt tämän kuun {limit} tallennusaikaa. Päivitä Tarjuman Prohon, niin saat {pro} kuukaudessa.",
+  "record.hoursLimitReset": "Olet käyttänyt tämän kuun {limit} tallennusaikaa. Se nollautuu {date}.",
+  "record.timeLeftTitle": "Tallennusaikaa jäljellä tässä kuussa {min} min",
+  "record.timeLeftBody": "Tallennus pysähtyy ja tallentuu, kun kuukausiaika loppuu.",
+  "record.stoppedAtLimit": "Pysäytetty — tämän kuun tallennusaika on käytetty. Litterointi on tallennettu.",
   "record.summaryLimitTitle": "Tiivistelmien raja täyttyi",
   "record.summaryLimitBody":
     "Olet käyttänyt kaikki {limit} maksutonta tiivistelmää tässä kuussa. Päivitä Tarjuman Prohon saadaksesi rajattomasti tekoälytiivistelmiä.",
@@ -250,7 +254,9 @@ export const FI = {
   "settingsAuthNav.complimentaryUntil": "Maksuton · {date} asti",
   "settingsAuthNav.upgrade": "Päivitä",
   "settingsAuthNav.upgradeSub": "{price} · katso kaikki paketit",
-  "settingsAuthNav.usageLine": "Tässä kuussa käytetty {su}/{sl} istuntoa · {mu}/{ml} tiivistelmää.",
+  "settingsAuthNav.hoursUsageLine":
+    "Tässä kuussa käytetty {hu}/{hl} tallennusaikaa · {mu}/{ml} tiivistelmää.",
+  "settingsAuthNav.hoursOnlyUsageLine": "Tässä kuussa käytetty {hu}/{hl} tallennusaikaa.",
   "settingsAuthNav.focusSpeakerDesc": "Jätä muut äänet pois, kun havaitaan useita puhujia.",
   "settingsAuthNav.tipsResetDone": "Vinkit näytetään seuraavalla tallennuskerralla.",
   "settingsAuthNav.tipsResetSub": "Näytä mikrofonin sijoitusopas uudelleen.",

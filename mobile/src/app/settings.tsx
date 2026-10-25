@@ -66,7 +66,7 @@ import * as SecureStore from "expo-secure-store";
 import * as WebBrowser from "expo-web-browser";
 import { SymbolView } from "expo-symbols";
 import { api } from "@convex/api";
-import { BILLING_ENABLED, PLAN_META } from "../../../convex/billingLimits";
+import { BILLING_ENABLED, PLAN_META, formatRecordingTime } from "../../../convex/billingLimits";
 import { API_URL } from "~/lib/config";
 import { C, themed, useThemeScrollKeeper } from "~/lib/theme";
 import { EASE, REDUCE_MOTION, useReduceMotion } from "~/lib/motion";
@@ -201,8 +201,9 @@ export default function SettingsScreen() {
       : periodEnd
         ? t("settingsAuthNav.renewsOn", { date: formatDate(periodEnd) })
         : t("settingsAuthNav.activeSubscription");
-    const showUsage =
-      !isPro && plan && plan.sessionsLimit !== null && plan.summariesLimit !== null;
+    // Every metered tier sees its recording time (Pro has 3h too); the
+    // summaries part only where that cap is finite (Free). Web parity.
+    const showUsage = plan && plan.recordingSecondsLimit !== null;
 
     return (
       <>
@@ -316,12 +317,17 @@ export default function SettingsScreen() {
               {showUsage ? (
                 <Animated.View key="usage" entering={autoAdd} exiting={autoRemove} layout={billingLayout(reduce)}>
                   <Text style={[styles.hint, text]}>
-                    {t("settingsAuthNav.usageLine", {
-                      su: plan.sessionsUsed,
-                      sl: plan.sessionsLimit ?? 0,
-                      mu: plan.summariesUsed,
-                      ml: plan.summariesLimit ?? 0,
-                    })}
+                    {plan.summariesLimit !== null
+                      ? t("settingsAuthNav.hoursUsageLine", {
+                          hu: formatRecordingTime(plan.recordingSecondsUsed),
+                          hl: formatRecordingTime(plan.recordingSecondsLimit ?? 0),
+                          mu: plan.summariesUsed,
+                          ml: plan.summariesLimit,
+                        })
+                      : t("settingsAuthNav.hoursOnlyUsageLine", {
+                          hu: formatRecordingTime(plan.recordingSecondsUsed),
+                          hl: formatRecordingTime(plan.recordingSecondsLimit ?? 0),
+                        })}
                   </Text>
                 </Animated.View>
               ) : null}

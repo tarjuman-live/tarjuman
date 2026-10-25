@@ -75,7 +75,6 @@ export const JA = {
   // record
   "record.starting": "開始中…",
   "record.startRecording": "録音を開始",
-  "record.sessionsUsage": "今月 {used}/{limit} セッション",
   "record.recent": "最近",
   "record.untitled": "無題のセッション",
   "record.notSavingTitle": "保存されません",
@@ -129,9 +128,13 @@ export const JA = {
   "record.micFailedTitle": "録音を開始できませんでした",
   "record.micFailedBody": "問題が発生しました。もう一度お試しください。",
   "record.limitTitle": "今月の上限に達しました",
-  "record.limitBody":
-    "今月の無料セッション{limit}回をすべて使いました。Tarjuman Pro にアップグレードすると無制限に録音できます。",
   "record.upgrade": "アップグレード",
+  "record.hoursUsage": "今月の録音時間 {used}/{limit} を使用",
+  "record.hoursLimitUpgrade": "今月の録音時間 {limit} を使い切りました。Tarjuman Pro にアップグレードすると毎月 {pro} 録音できます。",
+  "record.hoursLimitReset": "今月の録音時間 {limit} を使い切りました。{date} にリセットされます。",
+  "record.timeLeftTitle": "今月の録音時間は残り {min} 分",
+  "record.timeLeftBody": "月間の録音時間がなくなると、録音は停止して保存されます。",
+  "record.stoppedAtLimit": "停止しました — 今月の録音時間に達しました。文字起こしは保存されています。",
   "record.summaryLimitTitle": "要約の上限に達しました",
   "record.summaryLimitBody":
     "今月の無料要約{limit}回をすべて使いました。Tarjuman Pro にアップグレードすると AI 要約が無制限になります。",
@@ -251,7 +254,8 @@ export const JA = {
   "settingsAuthNav.complimentaryUntil": "無料提供 · {date}まで",
   "settingsAuthNav.upgrade": "アップグレード",
   "settingsAuthNav.upgradeSub": "{price} · すべてのプランを見る",
-  "settingsAuthNav.usageLine": "今月の使用量: セッション {su}/{sl} · 要約 {mu}/{ml}",
+  "settingsAuthNav.hoursUsageLine": "今月の使用量: 録音 {hu}/{hl} · 要約 {mu}/{ml}",
+  "settingsAuthNav.hoursOnlyUsageLine": "今月の使用量: 録音 {hu}/{hl}",
   "settingsAuthNav.focusSpeakerDesc": "複数の話者が検出されたとき、他の声を除外します。",
   "settingsAuthNav.tipsResetDone": "次回の録音時にヒントが表示されます。",
   "settingsAuthNav.tipsResetSub": "マイクの位置ガイドを再表示します。",

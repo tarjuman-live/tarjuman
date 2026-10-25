@@ -62,6 +62,11 @@ export default defineSchema({
     // so completeSession/sweep can derive a title without loading segments.
     firstSegmentText: v.optional(v.string()),
     duration: v.number(),
+    // Seconds of this session already added to the recordingUsage ledger.
+    // completeSession can run more than once for one session (Stop, the
+    // exit-flush, a crashed-tab mirror replay); metering only the delta above
+    // this keeps the monthly allowance exact. Optional: undefined = 0.
+    meteredSeconds: v.optional(v.number()),
     summary: v.optional(v.string()),
     summaryLanguage: v.optional(v.string()),
     // When the AI summary was generated (ms). Drives the per-month summary
@@ -270,6 +275,17 @@ export default defineSchema({
     .index("by_month_and_user", ["month", "userId"])
     .index("by_month_and_cost", ["month", "costMicroUsd"])
     .index("by_user", ["userId"]),
+
+  // Recording seconds per user per calendar month (UTC "YYYY-MM") — the meter
+  // behind the plan allowance (billingLimits.ts: Free 1h · Pro 3h · Scholar 4h).
+  // A ledger rather than a sum over sessions, so deleting a session never
+  // refunds its hours. Written by sessions.ts:meterSession; one row per
+  // user-month, so getMyUsageThisMonth is a single indexed read.
+  recordingUsage: defineTable({
+    userId: v.id("users"),
+    month: v.string(),
+    seconds: v.number(),
+  }).index("by_userId_and_month", ["userId", "month"]),
 
   // Small singletons for the admin machinery: the dashboard-refresh lease
   // (key "refresh") and alert state (key "alerts").

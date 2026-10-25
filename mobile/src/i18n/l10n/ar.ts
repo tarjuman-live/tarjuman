@@ -76,7 +76,6 @@ export const AR = {
   // record
   "record.starting": "جارٍ البدء…",
   "record.startRecording": "بدء التسجيل",
-  "record.sessionsUsage": "{used} من {limit} جلسات هذا الشهر",
   "record.recent": "الأحدث",
   "record.untitled": "جلسة بلا عنوان",
   "record.notSavingTitle": "لا يتم الحفظ",
@@ -130,9 +129,14 @@ export const AR = {
   "record.micFailedTitle": "تعذّر بدء التسجيل",
   "record.micFailedBody": "حدث خطأ ما. يُرجى المحاولة مرة أخرى.",
   "record.limitTitle": "تم بلوغ الحد الشهري",
-  "record.limitBody":
-    "استخدمت جميع الجلسات المجانية ({limit}) لهذا الشهر. رقِّ إلى Tarjuman Pro لتسجيل غير محدود.",
   "record.upgrade": "ترقية",
+  "record.hoursUsage": "استُخدم {used} من {limit} من وقت التسجيل هذا الشهر",
+  "record.hoursLimitUpgrade":
+    "استخدمت {limit} من وقت التسجيل هذا الشهر. رقِّ إلى Tarjuman Pro للحصول على {pro} شهريًا.",
+  "record.hoursLimitReset": "استخدمت {limit} من وقت التسجيل هذا الشهر. يتجدد في {date}.",
+  "record.timeLeftTitle": "تبقّى {min} دقيقة من التسجيل هذا الشهر",
+  "record.timeLeftBody": "يتوقف التسجيل ويُحفظ عند نفاد وقتك الشهري.",
+  "record.stoppedAtLimit": "توقف التسجيل — بلغت وقت التسجيل المتاح لهذا الشهر. تم حفظ النص.",
   "record.summaryLimitTitle": "تم بلوغ حد الملخصات",
   "record.summaryLimitBody":
     "استخدمت جميع الملخصات المجانية ({limit}) لهذا الشهر. رقِّ إلى Tarjuman Pro لملخصات غير محدودة بالذكاء الاصطناعي.",
@@ -252,7 +256,8 @@ export const AR = {
   "settingsAuthNav.complimentaryUntil": "مجاني · حتى {date}",
   "settingsAuthNav.upgrade": "ترقية",
   "settingsAuthNav.upgradeSub": "{price} · عرض جميع الخطط",
-  "settingsAuthNav.usageLine": "{su} من {sl} جلسات · {mu} من {ml} ملخصات مستخدمة هذا الشهر.",
+  "settingsAuthNav.hoursUsageLine": "{hu} من {hl} تسجيل · {mu} من {ml} ملخصات مستخدمة هذا الشهر.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} من {hl} تسجيل مستخدمة هذا الشهر.",
   "settingsAuthNav.focusSpeakerDesc": "تجاهل الأصوات الأخرى عند اكتشاف عدة متحدثين.",
   "settingsAuthNav.tipsResetDone": "ستظهر النصائح في المرة القادمة التي تسجّل فيها.",
   "settingsAuthNav.tipsResetSub": "إعادة عرض دليل وضع الميكروفون.",

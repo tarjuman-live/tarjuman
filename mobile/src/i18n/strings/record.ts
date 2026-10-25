@@ -14,7 +14,6 @@ export const RECORD_STRINGS = {
   // Idle
   "record.starting": { en: "Starting…" },
   "record.startRecording": { en: "Start recording" },
-  "record.sessionsUsage": { en: "{used} of {limit} sessions this month" },
   "record.recent": { en: "Recent" },
   "record.untitled": { en: "Untitled session" },
   "record.notSavingTitle": { en: "Not saving" },
@@ -87,10 +86,17 @@ export const RECORD_STRINGS = {
 
   // Upgrade card
   "record.limitTitle": { en: "Monthly limit reached" },
-  "record.limitBody": {
-    en: "You've used all {limit} free sessions this month. Upgrade to Tarjuman Pro for unlimited recording.",
-  },
   "record.upgrade": { en: "Upgrade" },
+  "record.hoursUsage": { en: "{used} of {limit} recording used this month" },
+  "record.hoursLimitUpgrade": {
+    en: "You've used your {limit} of recording this month. Upgrade to Tarjuman Pro for {pro} a month.",
+  },
+  "record.hoursLimitReset": { en: "You've used your {limit} of recording this month. It resets on {date}." },
+  "record.timeLeftTitle": { en: "{min} min of recording left this month" },
+  "record.timeLeftBody": { en: "Recording stops and saves when your monthly time runs out." },
+  "record.stoppedAtLimit": {
+    en: "Stopped — you've reached this month's recording time. Your transcript is saved.",
+  },
   // Session screen summary cap (web session-body.tsx, hard-coded English there)
   "record.summaryLimitTitle": { en: "Summary limit reached" },
   "record.summaryLimitBody": {

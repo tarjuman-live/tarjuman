@@ -74,7 +74,6 @@ export const UK = {
   // record
   "record.starting": "Запуск…",
   "record.startRecording": "Почати запис",
-  "record.sessionsUsage": "{used} з {limit} сесій цього місяця",
   "record.recent": "Нещодавні",
   "record.untitled": "Сесія без назви",
   "record.notSavingTitle": "Не зберігається",
@@ -128,9 +127,14 @@ export const UK = {
   "record.micFailedTitle": "Не вдалося почати запис",
   "record.micFailedBody": "Щось пішло не так. Спробуйте ще раз.",
   "record.limitTitle": "Місячний ліміт вичерпано",
-  "record.limitBody":
-    "Ви використали всі {limit} безкоштовних сесій цього місяця. Перейдіть на Tarjuman Pro, щоб записувати без обмежень.",
   "record.upgrade": "Покращити",
+  "record.hoursUsage": "Цього місяця використано {used} з {limit} запису",
+  "record.hoursLimitUpgrade":
+    "Ви використали {limit} запису цього місяця. Перейдіть на Tarjuman Pro, щоб мати {pro} на місяць.",
+  "record.hoursLimitReset": "Ви використали {limit} запису цього місяця. Ліміт оновиться {date}.",
+  "record.timeLeftTitle": "Залишилось {min} хв запису цього місяця",
+  "record.timeLeftBody": "Запис зупиниться й збережеться, коли скінчиться місячний час.",
+  "record.stoppedAtLimit": "Зупинено — ви вичерпали час запису на цей місяць. Розшифровку збережено.",
   "record.summaryLimitTitle": "Ліміт підсумків вичерпано",
   "record.summaryLimitBody":
     "Ви використали всі {limit} безкоштовних підсумків цього місяця. Перейдіть на Tarjuman Pro для необмежених AI-підсумків.",
@@ -250,7 +254,8 @@ export const UK = {
   "settingsAuthNav.complimentaryUntil": "Безкоштовно · до {date}",
   "settingsAuthNav.upgrade": "Покращити",
   "settingsAuthNav.upgradeSub": "{price} · усі плани",
-  "settingsAuthNav.usageLine": "Цього місяця використано {su} з {sl} сесій · {mu} з {ml} підсумків.",
+  "settingsAuthNav.hoursUsageLine": "Цього місяця використано {hu} з {hl} запису · {mu} з {ml} підсумків.",
+  "settingsAuthNav.hoursOnlyUsageLine": "Цього місяця використано {hu} з {hl} запису.",
   "settingsAuthNav.focusSpeakerDesc": "Відкидати інші голоси, коли виявлено кількох мовців.",
   "settingsAuthNav.tipsResetDone": "Поради з'являться під час наступного запису.",
   "settingsAuthNav.tipsResetSub": "Знову показати посібник із розташування мікрофона.",

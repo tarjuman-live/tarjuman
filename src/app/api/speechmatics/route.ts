@@ -5,6 +5,7 @@ import {
   checkRateLimit,
   getUsageFromHeader,
 } from "@/lib/api-auth";
+import { recordingLimitMessage } from "../../../../convex/billingLimits";
 
 /**
  * Mints a short-lived Speechmatics JWT so the browser can open the realtime
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
   if (usage && !usage.canStartSession) {
     return NextResponse.json(
       {
-        error: `You've used all ${usage.sessionsLimit} free sessions this month. Upgrade to Tarjuman Pro for unlimited recording.`,
+        error: recordingLimitMessage(usage.plan, Date.now()),
         code: "limit_reached",
       },
       { status: 402 },

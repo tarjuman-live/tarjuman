@@ -5,16 +5,22 @@ import { COLORS } from "@/lib/constants";
 import { Icon } from "@/components/shared/icon";
 
 /**
- * Shown when a free user hits a monthly limit (record sessions / summaries).
+ * Shown when a user hits a monthly limit (recording time / summaries).
  * A calm, on-brand nudge — restrained, not a hard paywall wall — that routes to
- * Settings where Checkout lives. Reused by the record page + SessionBody.
+ * /plans where Checkout lives. Reused by the record page + SessionBody.
+ *
+ * `showUpgrade={false}` drops the button for a user with nothing to buy yet
+ * (Pro out of hours while Scholar is "coming soon") — the message carries the
+ * reset date instead of a dead-end CTA.
  */
 export function UpgradeCard({
   title,
   message,
+  showUpgrade = true,
 }: {
   title: string;
   message: string;
+  showUpgrade?: boolean;
 }) {
   return (
     <div
@@ -31,22 +37,24 @@ export function UpgradeCard({
         </span>
       </div>
       <p
-        className="text-[12.5px] leading-relaxed mb-3"
+        className={`text-[12.5px] leading-relaxed ${showUpgrade ? "mb-3" : ""}`}
         style={{ color: COLORS.t3 }}
       >
         {message}
       </p>
-      <Link
-        href="/plans"
-        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-bold transition-transform active:scale-[0.98]"
-        style={{
-          background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDk})`,
-          color: "#0A0F1C",
-        }}
-      >
-        Upgrade
-        <Icon name="chevron" size={14} color="#0A0F1C" />
-      </Link>
+      {showUpgrade && (
+        <Link
+          href="/plans"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-bold transition-transform active:scale-[0.98]"
+          style={{
+            background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.accentDk})`,
+            color: "#0A0F1C",
+          }}
+        >
+          Upgrade
+          <Icon name="chevron" size={14} color="#0A0F1C" />
+        </Link>
+      )}
     </div>
   );
 }

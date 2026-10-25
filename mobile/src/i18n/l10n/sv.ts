@@ -74,7 +74,6 @@ export const SV = {
   // record
   "record.starting": "Startar…",
   "record.startRecording": "Starta inspelning",
-  "record.sessionsUsage": "{used} av {limit} sessioner den här månaden",
   "record.recent": "Senaste",
   "record.untitled": "Namnlös session",
   "record.notSavingTitle": "Sparas inte",
@@ -128,9 +127,16 @@ export const SV = {
   "record.micFailedTitle": "Kunde inte starta inspelningen",
   "record.micFailedBody": "Något gick fel. Försök igen.",
   "record.limitTitle": "Månadsgränsen är nådd",
-  "record.limitBody":
-    "Du har använt alla {limit} gratissessioner den här månaden. Uppgradera till Tarjuman Pro för obegränsad inspelning.",
   "record.upgrade": "Uppgradera",
+  "record.hoursUsage": "{used} av {limit} inspelningstid använd den här månaden",
+  "record.hoursLimitUpgrade":
+    "Du har använt dina {limit} inspelningstid den här månaden. Uppgradera till Tarjuman Pro för {pro} i månaden.",
+  "record.hoursLimitReset":
+    "Du har använt dina {limit} inspelningstid den här månaden. Den återställs {date}.",
+  "record.timeLeftTitle": "{min} min inspelningstid kvar den här månaden",
+  "record.timeLeftBody": "Inspelningen stoppas och sparas när din månadstid tar slut.",
+  "record.stoppedAtLimit":
+    "Stoppad — du har nått den här månadens inspelningstid. Din transkription är sparad.",
   "record.summaryLimitTitle": "Gränsen för sammanfattningar är nådd",
   "record.summaryLimitBody":
     "Du har använt alla {limit} gratis sammanfattningar den här månaden. Uppgradera till Tarjuman Pro för obegränsade AI-sammanfattningar.",
@@ -250,7 +256,9 @@ export const SV = {
   "settingsAuthNav.complimentaryUntil": "Gratis · till {date}",
   "settingsAuthNav.upgrade": "Uppgradera",
   "settingsAuthNav.upgradeSub": "{price} · se alla planer",
-  "settingsAuthNav.usageLine": "{su} av {sl} sessioner · {mu} av {ml} sammanfattningar använda den här månaden.",
+  "settingsAuthNav.hoursUsageLine":
+    "{hu} av {hl} inspelningstid · {mu} av {ml} sammanfattningar använda den här månaden.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} av {hl} inspelningstid använd den här månaden.",
   "settingsAuthNav.focusSpeakerDesc": "Hoppa över andra röster när flera talare upptäcks.",
   "settingsAuthNav.tipsResetDone": "Tipsen visas nästa gång du spelar in.",
   "settingsAuthNav.tipsResetSub": "Visa guiden för mikrofonplacering igen.",

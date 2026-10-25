@@ -74,7 +74,6 @@ export const NO = {
   // record
   "record.starting": "Starter…",
   "record.startRecording": "Start opptak",
-  "record.sessionsUsage": "{used} av {limit} økter denne måneden",
   "record.recent": "Nylige",
   "record.untitled": "Økt uten navn",
   "record.notSavingTitle": "Lagres ikke",
@@ -128,9 +127,14 @@ export const NO = {
   "record.micFailedTitle": "Kunne ikke starte opptaket",
   "record.micFailedBody": "Noe gikk galt. Prøv igjen.",
   "record.limitTitle": "Månedsgrensen er nådd",
-  "record.limitBody":
-    "Du har brukt alle {limit} gratis økter denne måneden. Oppgrader til Tarjuman Pro for ubegrenset opptak.",
   "record.upgrade": "Oppgrader",
+  "record.hoursUsage": "{used} av {limit} opptakstid brukt denne måneden",
+  "record.hoursLimitUpgrade":
+    "Du har brukt {limit} opptakstid denne måneden. Oppgrader til Tarjuman Pro for {pro} i måneden.",
+  "record.hoursLimitReset": "Du har brukt {limit} opptakstid denne måneden. Den nullstilles {date}.",
+  "record.timeLeftTitle": "{min} min opptakstid igjen denne måneden",
+  "record.timeLeftBody": "Opptaket stopper og lagres når månedstiden din er brukt opp.",
+  "record.stoppedAtLimit": "Stoppet — du har nådd denne månedens opptakstid. Transkripsjonen er lagret.",
   "record.summaryLimitTitle": "Grensen for sammendrag er nådd",
   "record.summaryLimitBody":
     "Du har brukt alle {limit} gratis sammendrag denne måneden. Oppgrader til Tarjuman Pro for ubegrensede AI-sammendrag.",
@@ -250,7 +254,8 @@ export const NO = {
   "settingsAuthNav.complimentaryUntil": "Gratis · til {date}",
   "settingsAuthNav.upgrade": "Oppgrader",
   "settingsAuthNav.upgradeSub": "{price} · se alle planer",
-  "settingsAuthNav.usageLine": "{su} av {sl} økter · {mu} av {ml} sammendrag brukt denne måneden.",
+  "settingsAuthNav.hoursUsageLine": "{hu} av {hl} opptakstid · {mu} av {ml} sammendrag brukt denne måneden.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} av {hl} opptakstid brukt denne måneden.",
   "settingsAuthNav.focusSpeakerDesc": "Utelat andre stemmer når flere talere oppdages.",
   "settingsAuthNav.tipsResetDone": "Tipsene vises neste gang du tar opp.",
   "settingsAuthNav.tipsResetSub": "Vis veiledningen for mikrofonplassering igjen.",

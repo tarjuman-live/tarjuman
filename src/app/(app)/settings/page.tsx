@@ -8,7 +8,11 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { PLAN_META, BILLING_ENABLED } from "../../../../convex/billingLimits";
+import {
+  PLAN_META,
+  BILLING_ENABLED,
+  formatRecordingTime,
+} from "../../../../convex/billingLimits";
 import { COLORS, SHOW_PRICING } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { usePlan } from "@/hooks/use-plan";
@@ -410,16 +414,17 @@ export default function SettingsPage() {
             <Icon name="sparkle" size={16} color={COLORS.accent} />
           </Link>
         )}
-        {!isPro &&
-          plan &&
-          plan.sessionsLimit !== null &&
-          plan.summariesLimit !== null && (
-            <div className="text-[12px] mt-2" style={{ color: COLORS.t3 }}>
-              {plan.sessionsUsed} of {plan.sessionsLimit} sessions ·{" "}
-              {plan.summariesUsed} of {plan.summariesLimit} summaries used this
-              month.
-            </div>
-          )}
+        {/* Every metered tier sees its recording time (Pro has 3h too);
+            the summaries part only where that cap is finite (Free). */}
+        {plan && plan.recordingSecondsLimit !== null && (
+          <div className="text-[12px] mt-2" style={{ color: COLORS.t3 }}>
+            {formatRecordingTime(plan.recordingSecondsUsed)} of{" "}
+            {formatRecordingTime(plan.recordingSecondsLimit)} recording
+            {plan.summariesLimit !== null &&
+              ` · ${plan.summariesUsed} of ${plan.summariesLimit} summaries`}{" "}
+            used this month.
+          </div>
+        )}
       </div>
       )}
 

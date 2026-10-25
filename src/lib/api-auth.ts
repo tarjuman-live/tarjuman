@@ -1,6 +1,7 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import type { PlanUsageWire } from "../../convex/billingLimits";
 
 /**
  * Server-side helpers for the Next.js API routes.
@@ -67,7 +68,8 @@ void cachedClient;
 
 /**
  * Fetch the caller's this-month plan usage, for the cost gates on
- * /api/speechmatics + /api/deepgram (sessions) and /api/summarize (summaries).
+ * /api/speechmatics + /api/deepgram (recording time) and /api/summarize
+ * (summaries).
  * Returns null on any
  * failure (no bearer token, invalid token, query error) — callers FAIL OPEN:
  * a transient Convex hiccup must never lock a paying-or-free user out of the
@@ -76,15 +78,7 @@ void cachedClient;
  */
 export async function getUsageFromHeader(
   req: Request
-): Promise<{
-  plan: "free" | "pro";
-  sessionsUsed: number;
-  summariesUsed: number;
-  sessionsLimit: number | null;
-  summariesLimit: number | null;
-  canStartSession: boolean;
-  canSummarize: boolean;
-} | null> {
+): Promise<PlanUsageWire | null> {
   const header = req.headers.get("authorization");
   if (!header || !header.toLowerCase().startsWith("bearer ")) return null;
   const token = header.slice(7).trim();

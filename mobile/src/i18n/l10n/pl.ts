@@ -74,7 +74,6 @@ export const PL = {
   // record
   "record.starting": "Uruchamianie…",
   "record.startRecording": "Rozpocznij nagrywanie",
-  "record.sessionsUsage": "{used} z {limit} sesji w tym miesiącu",
   "record.recent": "Ostatnie",
   "record.untitled": "Sesja bez tytułu",
   "record.notSavingTitle": "Brak zapisu",
@@ -128,9 +127,15 @@ export const PL = {
   "record.micFailedTitle": "Nie udało się rozpocząć nagrywania",
   "record.micFailedBody": "Coś poszło nie tak. Spróbuj ponownie.",
   "record.limitTitle": "Osiągnięto miesięczny limit",
-  "record.limitBody":
-    "Wykorzystano wszystkie {limit} darmowe sesje w tym miesiącu. Przejdź na Tarjuman Pro, aby nagrywać bez limitu.",
   "record.upgrade": "Ulepsz",
+  "record.hoursUsage": "Wykorzystano {used} z {limit} nagrywania w tym miesiącu",
+  "record.hoursLimitUpgrade":
+    "Wykorzystano {limit} nagrywania w tym miesiącu. Przejdź na Tarjuman Pro, aby mieć {pro} miesięcznie.",
+  "record.hoursLimitReset": "Wykorzystano {limit} nagrywania w tym miesiącu. Limit odnowi się {date}.",
+  "record.timeLeftTitle": "Zostało {min} min nagrywania w tym miesiącu",
+  "record.timeLeftBody": "Nagrywanie zatrzyma się i zapisze, gdy skończy się miesięczny czas.",
+  "record.stoppedAtLimit":
+    "Zatrzymano — osiągnięto limit nagrywania na ten miesiąc. Transkrypcja została zapisana.",
   "record.summaryLimitTitle": "Osiągnięto limit podsumowań",
   "record.summaryLimitBody":
     "Wykorzystano wszystkie {limit} darmowe podsumowania w tym miesiącu. Przejdź na Tarjuman Pro, aby mieć nielimitowane podsumowania AI.",
@@ -250,7 +255,9 @@ export const PL = {
   "settingsAuthNav.complimentaryUntil": "Bezpłatnie · do {date}",
   "settingsAuthNav.upgrade": "Ulepsz",
   "settingsAuthNav.upgradeSub": "{price} · zobacz wszystkie plany",
-  "settingsAuthNav.usageLine": "Wykorzystano {su} z {sl} sesji · {mu} z {ml} podsumowań w tym miesiącu.",
+  "settingsAuthNav.hoursUsageLine":
+    "Wykorzystano {hu} z {hl} nagrywania · {mu} z {ml} podsumowań w tym miesiącu.",
+  "settingsAuthNav.hoursOnlyUsageLine": "Wykorzystano {hu} z {hl} nagrywania w tym miesiącu.",
   "settingsAuthNav.focusSpeakerDesc": "Pomijaj inne głosy, gdy wykryto kilku mówców.",
   "settingsAuthNav.tipsResetDone": "Wskazówki pojawią się przy następnym nagraniu.",
   "settingsAuthNav.tipsResetSub": "Pokaż ponownie przewodnik ustawienia mikrofonu.",

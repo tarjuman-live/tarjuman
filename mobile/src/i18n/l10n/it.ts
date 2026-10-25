@@ -76,7 +76,6 @@ export const IT = {
   // record
   "record.starting": "Avvio…",
   "record.startRecording": "Avvia registrazione",
-  "record.sessionsUsage": "{used} di {limit} sessioni questo mese",
   "record.recent": "Recenti",
   "record.untitled": "Sessione senza titolo",
   "record.notSavingTitle": "Non viene salvato",
@@ -130,9 +129,15 @@ export const IT = {
   "record.micFailedTitle": "Impossibile avviare la registrazione",
   "record.micFailedBody": "Qualcosa è andato storto. Riprova.",
   "record.limitTitle": "Limite mensile raggiunto",
-  "record.limitBody":
-    "Hai usato tutte le {limit} sessioni gratuite di questo mese. Passa a Tarjuman Pro per registrare senza limiti.",
   "record.upgrade": "Passa a Pro",
+  "record.hoursUsage": "{used} di {limit} di registrazione usati questo mese",
+  "record.hoursLimitUpgrade":
+    "Hai usato le tue {limit} di registrazione di questo mese. Passa a Tarjuman Pro per {pro} al mese.",
+  "record.hoursLimitReset": "Hai usato le tue {limit} di registrazione di questo mese. Si rinnova il {date}.",
+  "record.timeLeftTitle": "Restano {min} min di registrazione questo mese",
+  "record.timeLeftBody": "La registrazione si fermerà e verrà salvata quando finisce il tempo mensile.",
+  "record.stoppedAtLimit":
+    "Interrotta — hai raggiunto il tempo di registrazione di questo mese. La trascrizione è salvata.",
   "record.summaryLimitTitle": "Limite di riassunti raggiunto",
   "record.summaryLimitBody":
     "Hai usato tutti i {limit} riassunti gratuiti di questo mese. Passa a Tarjuman Pro per riassunti IA illimitati.",
@@ -252,7 +257,9 @@ export const IT = {
   "settingsAuthNav.complimentaryUntil": "Omaggio · fino al {date}",
   "settingsAuthNav.upgrade": "Passa a Pro",
   "settingsAuthNav.upgradeSub": "{price} · vedi tutti i piani",
-  "settingsAuthNav.usageLine": "{su} di {sl} sessioni · {mu} di {ml} riassunti usati questo mese.",
+  "settingsAuthNav.hoursUsageLine":
+    "{hu} di {hl} di registrazione · {mu} di {ml} riassunti usati questo mese.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} di {hl} di registrazione usati questo mese.",
   "settingsAuthNav.focusSpeakerDesc": "Escludi le altre voci quando vengono rilevati più oratori.",
   "settingsAuthNav.tipsResetDone": "I consigli verranno mostrati alla prossima registrazione.",
   "settingsAuthNav.tipsResetSub": "Mostra di nuovo la guida al posizionamento del microfono.",

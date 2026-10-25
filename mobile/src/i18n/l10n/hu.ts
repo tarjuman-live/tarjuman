@@ -74,7 +74,6 @@ export const HU = {
   // record
   "record.starting": "Indítás…",
   "record.startRecording": "Felvétel indítása",
-  "record.sessionsUsage": "{used} / {limit} munkamenet ebben a hónapban",
   "record.recent": "Legutóbbiak",
   "record.untitled": "Névtelen munkamenet",
   "record.notSavingTitle": "Nincs mentés",
@@ -128,9 +127,14 @@ export const HU = {
   "record.micFailedTitle": "Nem sikerült elindítani a felvételt",
   "record.micFailedBody": "Hiba történt. Kérjük, próbáld újra.",
   "record.limitTitle": "Elérted a havi korlátot",
-  "record.limitBody":
-    "Mind a(z) {limit} ingyenes munkamenetet felhasználtad ebben a hónapban. Válts Tarjuman Pro-ra a korlátlan felvételhez.",
   "record.upgrade": "Frissítés",
+  "record.hoursUsage": "{used} / {limit} felvételi idő felhasználva ebben a hónapban",
+  "record.hoursLimitUpgrade":
+    "Felhasználtad a havi {limit} felvételi idődet. Válts Tarjuman Pro-ra havi {pro} időért.",
+  "record.hoursLimitReset": "Felhasználtad a havi {limit} felvételi idődet. {date} napján újraindul.",
+  "record.timeLeftTitle": "Még {min} perc felvételi idő ebben a hónapban",
+  "record.timeLeftBody": "A felvétel leáll és mentésre kerül, amikor elfogy a havi idő.",
+  "record.stoppedAtLimit": "Leállt — elérted a havi felvételi időt. Az átirat mentve.",
   "record.summaryLimitTitle": "Elérted az összefoglaló-korlátot",
   "record.summaryLimitBody":
     "Mind a(z) {limit} ingyenes összefoglalót felhasználtad ebben a hónapban. Válts Tarjuman Pro-ra a korlátlan MI-összefoglalókért.",
@@ -250,7 +254,9 @@ export const HU = {
   "settingsAuthNav.complimentaryUntil": "Ingyenes · eddig: {date}",
   "settingsAuthNav.upgrade": "Frissítés",
   "settingsAuthNav.upgradeSub": "{price} · összes csomag",
-  "settingsAuthNav.usageLine": "Ebben a hónapban: {su} / {sl} munkamenet · {mu} / {ml} összefoglaló felhasználva.",
+  "settingsAuthNav.hoursUsageLine":
+    "Ebben a hónapban: {hu} / {hl} felvétel · {mu} / {ml} összefoglaló felhasználva.",
+  "settingsAuthNav.hoursOnlyUsageLine": "Ebben a hónapban: {hu} / {hl} felvétel felhasználva.",
   "settingsAuthNav.focusSpeakerDesc": "Más hangok kiszűrése, ha több beszélő észlelhető.",
   "settingsAuthNav.tipsResetDone": "A tippek a következő felvételnél megjelennek.",
   "settingsAuthNav.tipsResetSub": "A mikrofon-elhelyezési útmutató újbóli megjelenítése.",

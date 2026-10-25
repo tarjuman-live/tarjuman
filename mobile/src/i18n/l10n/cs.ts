@@ -74,7 +74,6 @@ export const CS = {
   // record
   "record.starting": "Spouštění…",
   "record.startRecording": "Spustit nahrávání",
-  "record.sessionsUsage": "{used} z {limit} relací tento měsíc",
   "record.recent": "Nedávné",
   "record.untitled": "Relace bez názvu",
   "record.notSavingTitle": "Neukládá se",
@@ -128,9 +127,14 @@ export const CS = {
   "record.micFailedTitle": "Nahrávání se nepodařilo spustit",
   "record.micFailedBody": "Něco se pokazilo. Zkuste to prosím znovu.",
   "record.limitTitle": "Měsíční limit vyčerpán",
-  "record.limitBody":
-    "Vyčerpali jste všech {limit} bezplatných relací tento měsíc. Přejděte na Tarjuman Pro a nahrávejte bez omezení.",
   "record.upgrade": "Upgradovat",
+  "record.hoursUsage": "Tento měsíc využito {used} z {limit} nahrávání",
+  "record.hoursLimitUpgrade":
+    "Vyčerpali jste {limit} nahrávání na tento měsíc. Přejděte na Tarjuman Pro a získejte {pro} měsíčně.",
+  "record.hoursLimitReset": "Vyčerpali jste {limit} nahrávání na tento měsíc. Obnoví se {date}.",
+  "record.timeLeftTitle": "Tento měsíc zbývá {min} min nahrávání",
+  "record.timeLeftBody": "Až měsíční čas vyprší, nahrávání se zastaví a uloží.",
+  "record.stoppedAtLimit": "Zastaveno — vyčerpali jste čas nahrávání na tento měsíc. Přepis je uložen.",
   "record.summaryLimitTitle": "Limit shrnutí vyčerpán",
   "record.summaryLimitBody":
     "Vyčerpali jste všech {limit} bezplatných shrnutí tento měsíc. Přejděte na Tarjuman Pro pro neomezená AI shrnutí.",
@@ -250,7 +254,8 @@ export const CS = {
   "settingsAuthNav.complimentaryUntil": "Zdarma · do {date}",
   "settingsAuthNav.upgrade": "Upgradovat",
   "settingsAuthNav.upgradeSub": "{price} · zobrazit všechny tarify",
-  "settingsAuthNav.usageLine": "Tento měsíc využito {su} z {sl} relací · {mu} z {ml} shrnutí.",
+  "settingsAuthNav.hoursUsageLine": "Tento měsíc využito {hu} z {hl} nahrávání · {mu} z {ml} shrnutí.",
+  "settingsAuthNav.hoursOnlyUsageLine": "Tento měsíc využito {hu} z {hl} nahrávání.",
   "settingsAuthNav.focusSpeakerDesc": "Vynechat ostatní hlasy, když je zjištěno více mluvčích.",
   "settingsAuthNav.tipsResetDone": "Tipy se zobrazí při příštím nahrávání.",
   "settingsAuthNav.tipsResetSub": "Znovu zobrazit průvodce umístěním mikrofonu.",

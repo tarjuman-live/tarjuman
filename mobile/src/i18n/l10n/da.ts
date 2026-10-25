@@ -74,7 +74,6 @@ export const DA = {
   // record
   "record.starting": "Starter…",
   "record.startRecording": "Start optagelse",
-  "record.sessionsUsage": "{used} af {limit} sessioner denne måned",
   "record.recent": "Seneste",
   "record.untitled": "Unavngivet session",
   "record.notSavingTitle": "Gemmes ikke",
@@ -128,9 +127,14 @@ export const DA = {
   "record.micFailedTitle": "Kunne ikke starte optagelsen",
   "record.micFailedBody": "Noget gik galt. Prøv igen.",
   "record.limitTitle": "Månedsgrænsen er nået",
-  "record.limitBody":
-    "Du har brugt alle {limit} gratis sessioner denne måned. Opgrader til Tarjuman Pro for ubegrænset optagelse.",
   "record.upgrade": "Opgrader",
+  "record.hoursUsage": "{used} af {limit} optagelse brugt denne måned",
+  "record.hoursLimitUpgrade":
+    "Du har brugt dine {limit} optagelse denne måned. Opgrader til Tarjuman Pro for {pro} om måneden.",
+  "record.hoursLimitReset": "Du har brugt dine {limit} optagelse denne måned. Den nulstilles {date}.",
+  "record.timeLeftTitle": "{min} min optagelse tilbage denne måned",
+  "record.timeLeftBody": "Optagelsen stopper og gemmes, når din månedlige tid er brugt.",
+  "record.stoppedAtLimit": "Stoppet — du har nået denne måneds optagetid. Din transskription er gemt.",
   "record.summaryLimitTitle": "Grænsen for resuméer er nået",
   "record.summaryLimitBody":
     "Du har brugt alle {limit} gratis resuméer denne måned. Opgrader til Tarjuman Pro for ubegrænsede AI-resuméer.",
@@ -250,7 +254,8 @@ export const DA = {
   "settingsAuthNav.complimentaryUntil": "Gratis · indtil {date}",
   "settingsAuthNav.upgrade": "Opgrader",
   "settingsAuthNav.upgradeSub": "{price} · se alle abonnementer",
-  "settingsAuthNav.usageLine": "{su} af {sl} sessioner · {mu} af {ml} resuméer brugt denne måned.",
+  "settingsAuthNav.hoursUsageLine": "{hu} af {hl} optagelse · {mu} af {ml} resuméer brugt denne måned.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} af {hl} optagelse brugt denne måned.",
   "settingsAuthNav.focusSpeakerDesc": "Udelad andre stemmer, når der registreres flere talere.",
   "settingsAuthNav.tipsResetDone": "Tippene vises næste gang, du optager.",
   "settingsAuthNav.tipsResetSub": "Vis guiden til mikrofonplacering igen.",

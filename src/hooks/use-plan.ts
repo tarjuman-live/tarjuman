@@ -2,6 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import type { PlanUsageWire } from "../../convex/billingLimits";
 
 /**
  * Reactive plan + this-month usage for the signed-in user. Backs the record and
@@ -9,17 +10,12 @@ import { api } from "../../convex/_generated/api";
  * other Convex hooks: `undefined` while loading OR unauthenticated (the query
  * returns null then), the usage object once resolved.
  *
- * `sessionsLimit` / `summariesLimit` are `null` when unlimited (Pro/Scholar).
+ * Limits are `null` when unlimited — and ALL of them are null while billing is
+ * off. `recordingSecondsRemaining` excludes the in-progress recording (it only
+ * reaches the ledger on completion), so the record page compares it straight
+ * against its live timer.
  */
-export interface PlanUsage {
-  plan: "free" | "pro";
-  sessionsUsed: number;
-  summariesUsed: number;
-  sessionsLimit: number | null;
-  summariesLimit: number | null;
-  canStartSession: boolean;
-  canSummarize: boolean;
-}
+export type PlanUsage = PlanUsageWire;
 
 export function usePlan(): PlanUsage | undefined {
   const usage = useQuery(api.subscriptions.getMyUsageThisMonth, {});

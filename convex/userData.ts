@@ -133,6 +133,12 @@ export async function deleteUserIdentity(
     .take(500)) {
     await ctx.db.delete("usageUserMonthly", m._id);
   }
+  for (const r of await ctx.db
+    .query("recordingUsage")
+    .withIndex("by_userId_and_month", (q) => q.eq("userId", userId))
+    .take(500)) {
+    await ctx.db.delete("recordingUsage", r._id);
+  }
 
   if (user) await ctx.db.delete("users", userId);
 

@@ -74,7 +74,6 @@ export const EL = {
   // record
   "record.starting": "Έναρξη…",
   "record.startRecording": "Έναρξη εγγραφής",
-  "record.sessionsUsage": "{used} από {limit} συνεδρίες αυτόν τον μήνα",
   "record.recent": "Πρόσφατες",
   "record.untitled": "Συνεδρία χωρίς τίτλο",
   "record.notSavingTitle": "Δεν αποθηκεύεται",
@@ -128,9 +127,15 @@ export const EL = {
   "record.micFailedTitle": "Δεν ήταν δυνατή η έναρξη εγγραφής",
   "record.micFailedBody": "Κάτι πήγε στραβά. Δοκιμάστε ξανά.",
   "record.limitTitle": "Συμπληρώθηκε το μηνιαίο όριο",
-  "record.limitBody":
-    "Χρησιμοποιήσατε και τις {limit} δωρεάν συνεδρίες αυτού του μήνα. Αναβαθμίστε σε Tarjuman Pro για απεριόριστη εγγραφή.",
   "record.upgrade": "Αναβάθμιση",
+  "record.hoursUsage": "{used} από {limit} εγγραφής αυτόν τον μήνα",
+  "record.hoursLimitUpgrade":
+    "Χρησιμοποιήσατε τις {limit} εγγραφής αυτού του μήνα. Αναβαθμίστε σε Tarjuman Pro για {pro} τον μήνα.",
+  "record.hoursLimitReset": "Χρησιμοποιήσατε τις {limit} εγγραφής αυτού του μήνα. Ανανεώνεται στις {date}.",
+  "record.timeLeftTitle": "Απομένουν {min} λεπτά εγγραφής αυτόν τον μήνα",
+  "record.timeLeftBody": "Η εγγραφή σταματά και αποθηκεύεται όταν εξαντληθεί ο μηνιαίος χρόνος σας.",
+  "record.stoppedAtLimit":
+    "Σταμάτησε — φτάσατε τον χρόνο εγγραφής αυτού του μήνα. Η απομαγνητοφώνηση αποθηκεύτηκε.",
   "record.summaryLimitTitle": "Συμπληρώθηκε το όριο περιλήψεων",
   "record.summaryLimitBody":
     "Χρησιμοποιήσατε και τις {limit} δωρεάν περιλήψεις αυτού του μήνα. Αναβαθμίστε σε Tarjuman Pro για απεριόριστες περιλήψεις AI.",
@@ -250,7 +255,8 @@ export const EL = {
   "settingsAuthNav.complimentaryUntil": "Δωρεάν · έως {date}",
   "settingsAuthNav.upgrade": "Αναβάθμιση",
   "settingsAuthNav.upgradeSub": "{price} · δείτε όλα τα πακέτα",
-  "settingsAuthNav.usageLine": "{su} από {sl} συνεδρίες · {mu} από {ml} περιλήψεις αυτόν τον μήνα.",
+  "settingsAuthNav.hoursUsageLine": "{hu} από {hl} εγγραφής · {mu} από {ml} περιλήψεις αυτόν τον μήνα.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} από {hl} εγγραφής αυτόν τον μήνα.",
   "settingsAuthNav.focusSpeakerDesc": "Παράλειψη άλλων φωνών όταν εντοπίζονται πολλοί ομιλητές.",
   "settingsAuthNav.tipsResetDone": "Οι συμβουλές θα εμφανιστούν στην επόμενη εγγραφή.",
   "settingsAuthNav.tipsResetSub": "Εμφάνιση ξανά του οδηγού τοποθέτησης μικροφώνου.",

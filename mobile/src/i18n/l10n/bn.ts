@@ -76,7 +76,6 @@ export const BN = {
   // record
   "record.starting": "শুরু হচ্ছে…",
   "record.startRecording": "রেকর্ডিং শুরু করুন",
-  "record.sessionsUsage": "এই মাসে {limit}টির মধ্যে {used}টি সেশন",
   "record.recent": "সাম্প্রতিক",
   "record.untitled": "শিরোনামহীন সেশন",
   "record.notSavingTitle": "সংরক্ষণ হচ্ছে না",
@@ -130,9 +129,15 @@ export const BN = {
   "record.micFailedTitle": "রেকর্ডিং শুরু করা যায়নি",
   "record.micFailedBody": "কিছু ভুল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
   "record.limitTitle": "মাসিক সীমা পূর্ণ",
-  "record.limitBody":
-    "আপনি এই মাসের সব {limit}টি বিনামূল্যের সেশন ব্যবহার করেছেন। সীমাহীন রেকর্ডিংয়ের জন্য Tarjuman Pro-তে আপগ্রেড করুন।",
   "record.upgrade": "আপগ্রেড",
+  "record.hoursUsage": "এই মাসে {limit}-এর মধ্যে {used} রেকর্ডিং ব্যবহৃত",
+  "record.hoursLimitUpgrade":
+    "আপনি এই মাসের {limit} রেকর্ডিং সময় ব্যবহার করে ফেলেছেন। মাসে {pro} পেতে Tarjuman Pro-তে আপগ্রেড করুন।",
+  "record.hoursLimitReset":
+    "আপনি এই মাসের {limit} রেকর্ডিং সময় ব্যবহার করে ফেলেছেন। এটি {date} তারিখে রিসেট হবে।",
+  "record.timeLeftTitle": "এই মাসে আর {min} মিনিট রেকর্ডিং বাকি",
+  "record.timeLeftBody": "মাসিক সময় শেষ হলে রেকর্ডিং থেমে সংরক্ষিত হবে।",
+  "record.stoppedAtLimit": "থেমে গেছে — এই মাসের রেকর্ডিং সময় শেষ। আপনার ট্রান্সক্রিপ্ট সংরক্ষিত হয়েছে।",
   "record.summaryLimitTitle": "সারসংক্ষেপের সীমা পূর্ণ",
   "record.summaryLimitBody":
     "আপনি এই মাসের সব {limit}টি বিনামূল্যের সারসংক্ষেপ ব্যবহার করেছেন। সীমাহীন এআই সারসংক্ষেপের জন্য Tarjuman Pro-তে আপগ্রেড করুন।",
@@ -252,7 +257,9 @@ export const BN = {
   "settingsAuthNav.complimentaryUntil": "বিনামূল্যে · {date} পর্যন্ত",
   "settingsAuthNav.upgrade": "আপগ্রেড",
   "settingsAuthNav.upgradeSub": "{price} · সব প্ল্যান দেখুন",
-  "settingsAuthNav.usageLine": "এই মাসে {sl}টির মধ্যে {su}টি সেশন · {ml}টির মধ্যে {mu}টি সারসংক্ষেপ ব্যবহৃত।",
+  "settingsAuthNav.hoursUsageLine":
+    "এই মাসে {hl}-এর মধ্যে {hu} রেকর্ডিং · {ml}টির মধ্যে {mu}টি সারসংক্ষেপ ব্যবহৃত।",
+  "settingsAuthNav.hoursOnlyUsageLine": "এই মাসে {hl}-এর মধ্যে {hu} রেকর্ডিং ব্যবহৃত।",
   "settingsAuthNav.focusSpeakerDesc": "একাধিক বক্তা শনাক্ত হলে অন্য কণ্ঠস্বর বাদ দিন।",
   "settingsAuthNav.tipsResetDone": "পরের বার রেকর্ড করলে টিপস দেখানো হবে।",
   "settingsAuthNav.tipsResetSub": "মাইক রাখার নির্দেশিকা আবার দেখান।",

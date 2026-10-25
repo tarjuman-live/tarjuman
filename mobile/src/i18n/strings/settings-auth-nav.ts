@@ -44,9 +44,10 @@ export const SETTINGS_AUTH_NAV_STRINGS = {
   "settingsAuthNav.complimentaryUntil": { en: "Complimentary · until {date}" },
   "settingsAuthNav.upgrade": { en: "Upgrade" },
   "settingsAuthNav.upgradeSub": { en: "{price} · see all plans" },
-  "settingsAuthNav.usageLine": {
-    en: "{su} of {sl} sessions · {mu} of {ml} summaries used this month.",
+  "settingsAuthNav.hoursUsageLine": {
+    en: "{hu} of {hl} recording · {mu} of {ml} summaries used this month.",
   },
+  "settingsAuthNav.hoursOnlyUsageLine": { en: "{hu} of {hl} recording used this month." },
   "settingsAuthNav.focusSpeakerDesc": { en: "Drop other voices when several speakers are detected." },
   "settingsAuthNav.tipsResetDone": { en: "Tips will show next time you record." },
   "settingsAuthNav.tipsResetSub": { en: "Re-show the mic positioning guide." },

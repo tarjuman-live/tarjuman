@@ -76,7 +76,6 @@ export const MS = {
   // record
   "record.starting": "Memulakan…",
   "record.startRecording": "Mula merakam",
-  "record.sessionsUsage": "{used} daripada {limit} sesi bulan ini",
   "record.recent": "Terkini",
   "record.untitled": "Sesi tanpa tajuk",
   "record.notSavingTitle": "Tidak disimpan",
@@ -130,9 +129,16 @@ export const MS = {
   "record.micFailedTitle": "Tidak dapat mula merakam",
   "record.micFailedBody": "Berlaku ralat. Sila cuba lagi.",
   "record.limitTitle": "Had bulanan dicapai",
-  "record.limitBody":
-    "Anda telah menggunakan kesemua {limit} sesi percuma bulan ini. Naik taraf ke Tarjuman Pro untuk rakaman tanpa had.",
   "record.upgrade": "Naik taraf",
+  "record.hoursUsage": "{used} daripada {limit} masa rakaman digunakan bulan ini",
+  "record.hoursLimitUpgrade":
+    "Anda telah menggunakan {limit} masa rakaman bulan ini. Naik taraf ke Tarjuman Pro untuk {pro} sebulan.",
+  "record.hoursLimitReset":
+    "Anda telah menggunakan {limit} masa rakaman bulan ini. Ia ditetapkan semula pada {date}.",
+  "record.timeLeftTitle": "Baki {min} min masa rakaman bulan ini",
+  "record.timeLeftBody": "Rakaman akan berhenti dan disimpan apabila masa bulanan anda habis.",
+  "record.stoppedAtLimit":
+    "Dihentikan — anda telah mencapai masa rakaman bulan ini. Transkrip anda telah disimpan.",
   "record.summaryLimitTitle": "Had ringkasan dicapai",
   "record.summaryLimitBody":
     "Anda telah menggunakan kesemua {limit} ringkasan percuma bulan ini. Naik taraf ke Tarjuman Pro untuk ringkasan AI tanpa had.",
@@ -252,7 +258,9 @@ export const MS = {
   "settingsAuthNav.complimentaryUntil": "Percuma · hingga {date}",
   "settingsAuthNav.upgrade": "Naik taraf",
   "settingsAuthNav.upgradeSub": "{price} · lihat semua pelan",
-  "settingsAuthNav.usageLine": "{su} daripada {sl} sesi · {mu} daripada {ml} ringkasan digunakan bulan ini.",
+  "settingsAuthNav.hoursUsageLine":
+    "{hu} daripada {hl} masa rakaman · {mu} daripada {ml} ringkasan digunakan bulan ini.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} daripada {hl} masa rakaman digunakan bulan ini.",
   "settingsAuthNav.focusSpeakerDesc": "Abaikan suara lain apabila beberapa penutur dikesan.",
   "settingsAuthNav.tipsResetDone": "Petua akan dipaparkan apabila anda merakam kali seterusnya.",
   "settingsAuthNav.tipsResetSub": "Paparkan semula panduan kedudukan mikrofon.",

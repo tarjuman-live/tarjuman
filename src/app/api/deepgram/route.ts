@@ -7,6 +7,7 @@ import {
   checkRateLimit,
   getUsageFromHeader,
 } from "@/lib/api-auth";
+import { recordingLimitMessage } from "../../../../convex/billingLimits";
 
 /**
  * Issues credentials for a browser → Deepgram realtime transcription session.
@@ -140,14 +141,14 @@ export async function GET(req: Request) {
     );
   }
 
-  // Plan cost gate: a free user who's used their monthly session quota can't
-  // mint a transcription token (this is what actually spends Deepgram budget).
+  // Plan cost gate: a user who's used their monthly recording time can't mint
+  // a transcription token (this is what actually spends Deepgram budget).
   // Fail open if usage can't be read — the reactive UI is the primary gate.
   const usage = await getUsageFromHeader(req);
   if (usage && !usage.canStartSession) {
     return NextResponse.json(
       {
-        error: `You've used all ${usage.sessionsLimit} free sessions this month. Upgrade to Tarjuman Pro for unlimited recording.`,
+        error: recordingLimitMessage(usage.plan, Date.now()),
         code: "limit_reached",
       },
       { status: 402 },

@@ -74,7 +74,6 @@ export const CA = {
   // record
   "record.starting": "Iniciant…",
   "record.startRecording": "Comença a gravar",
-  "record.sessionsUsage": "{used} de {limit} sessions aquest mes",
   "record.recent": "Recents",
   "record.untitled": "Sessió sense títol",
   "record.notSavingTitle": "No es desa",
@@ -128,9 +127,15 @@ export const CA = {
   "record.micFailedTitle": "No s'ha pogut iniciar la gravació",
   "record.micFailedBody": "Alguna cosa no ha anat bé. Torna-ho a provar.",
   "record.limitTitle": "Has arribat al límit mensual",
-  "record.limitBody":
-    "Has fet servir les {limit} sessions gratuïtes d'aquest mes. Passa a Tarjuman Pro per gravar sense límit.",
   "record.upgrade": "Millora",
+  "record.hoursUsage": "{used} de {limit} de gravació fets servir aquest mes",
+  "record.hoursLimitUpgrade":
+    "Has fet servir les teves {limit} de gravació d'aquest mes. Passa a Tarjuman Pro per tenir {pro} al mes.",
+  "record.hoursLimitReset": "Has fet servir les teves {limit} de gravació d'aquest mes. Es renova el {date}.",
+  "record.timeLeftTitle": "Queden {min} min de gravació aquest mes",
+  "record.timeLeftBody": "La gravació s'aturarà i es desarà quan s'acabi el temps mensual.",
+  "record.stoppedAtLimit":
+    "Aturada — has arribat al temps de gravació d'aquest mes. La transcripció s'ha desat.",
   "record.summaryLimitTitle": "Has arribat al límit de resums",
   "record.summaryLimitBody":
     "Has fet servir els {limit} resums gratuïts d'aquest mes. Passa a Tarjuman Pro per tenir resums d'IA il·limitats.",
@@ -250,7 +255,8 @@ export const CA = {
   "settingsAuthNav.complimentaryUntil": "Gratuït · fins al {date}",
   "settingsAuthNav.upgrade": "Millora",
   "settingsAuthNav.upgradeSub": "{price} · mira tots els plans",
-  "settingsAuthNav.usageLine": "{su} de {sl} sessions · {mu} de {ml} resums fets servir aquest mes.",
+  "settingsAuthNav.hoursUsageLine": "{hu} de {hl} de gravació · {mu} de {ml} resums fets servir aquest mes.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} de {hl} de gravació fets servir aquest mes.",
   "settingsAuthNav.focusSpeakerDesc": "Descarta altres veus quan es detecten diversos parlants.",
   "settingsAuthNav.tipsResetDone": "Els consells es mostraran la propera vegada que gravis.",
   "settingsAuthNav.tipsResetSub": "Torna a mostrar la guia de col·locació del micròfon.",

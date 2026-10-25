@@ -76,7 +76,6 @@ export const FR = {
   // record
   "record.starting": "Démarrage…",
   "record.startRecording": "Démarrer l'enregistrement",
-  "record.sessionsUsage": "{used} sur {limit} sessions ce mois-ci",
   "record.recent": "Récentes",
   "record.untitled": "Session sans titre",
   "record.notSavingTitle": "Non enregistré",
@@ -130,9 +129,17 @@ export const FR = {
   "record.micFailedTitle": "Impossible de démarrer l'enregistrement",
   "record.micFailedBody": "Une erreur s'est produite. Veuillez réessayer.",
   "record.limitTitle": "Limite mensuelle atteinte",
-  "record.limitBody":
-    "Vous avez utilisé vos {limit} sessions gratuites ce mois-ci. Passez à Tarjuman Pro pour enregistrer sans limite.",
   "record.upgrade": "Passer à Pro",
+  "record.hoursUsage": "{used} sur {limit} d'enregistrement utilisés ce mois-ci",
+  "record.hoursLimitUpgrade":
+    "Vous avez utilisé vos {limit} d'enregistrement ce mois-ci. Passez à Tarjuman Pro pour {pro} par mois.",
+  "record.hoursLimitReset":
+    "Vous avez utilisé vos {limit} d'enregistrement ce mois-ci. Le compteur repart le {date}.",
+  "record.timeLeftTitle": "Encore {min} min d'enregistrement ce mois-ci",
+  "record.timeLeftBody":
+    "L'enregistrement s'arrêtera et sera sauvegardé quand votre temps mensuel sera écoulé.",
+  "record.stoppedAtLimit":
+    "Arrêté — vous avez atteint votre temps d'enregistrement du mois. Votre transcription est enregistrée.",
   "record.summaryLimitTitle": "Limite de résumés atteinte",
   "record.summaryLimitBody":
     "Vous avez utilisé vos {limit} résumés gratuits ce mois-ci. Passez à Tarjuman Pro pour des résumés IA illimités.",
@@ -252,7 +259,9 @@ export const FR = {
   "settingsAuthNav.complimentaryUntil": "Offert · jusqu'au {date}",
   "settingsAuthNav.upgrade": "Passer à Pro",
   "settingsAuthNav.upgradeSub": "{price} · voir toutes les formules",
-  "settingsAuthNav.usageLine": "{su} sur {sl} sessions · {mu} sur {ml} résumés utilisés ce mois-ci.",
+  "settingsAuthNav.hoursUsageLine":
+    "{hu} sur {hl} d'enregistrement · {mu} sur {ml} résumés utilisés ce mois-ci.",
+  "settingsAuthNav.hoursOnlyUsageLine": "{hu} sur {hl} d'enregistrement utilisés ce mois-ci.",
   "settingsAuthNav.focusSpeakerDesc": "Ignorer les autres voix quand plusieurs intervenants sont détectés.",
   "settingsAuthNav.tipsResetDone": "Les conseils s'afficheront au prochain enregistrement.",
   "settingsAuthNav.tipsResetSub": "Réafficher le guide de positionnement du micro.",
