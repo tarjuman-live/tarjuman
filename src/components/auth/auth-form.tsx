@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { COLORS } from "@/lib/constants";
+import { convexErrorText } from "@/lib/convex-error";
 import { Icon } from "@/components/shared/icon";
 
 interface AuthFormProps {
@@ -33,7 +34,10 @@ const MIN_PASSWORD = 8;
  *
  * Critical context: @convex-dev/auth throws plain `Error(...)` (NOT
  * ConvexError) for every failure — "Account X already exists",
- * "InvalidSecret", "InvalidAccountId", etc. A production Convex deployment
+ * "InvalidSecret", "InvalidAccountId", etc. — except the lockout, which
+ * convex/auth.ts rethrows as ConvexError("TooManyFailedAttempts") so it
+ * reaches the browser everywhere (`convexErrorText` folds in its `.data`).
+ * For the plain Errors, a production Convex deployment
  * redacts plain Error messages to a literal "Server Error" before they reach
  * the browser, so there `raw` holds no cause at all. A dev deployment sends
  * "Server Error" followed by the real code (e.g. "Uncaught Error:
@@ -58,8 +62,10 @@ function friendlyError(raw: string, mode: "signIn" | "signUp"): string {
       ? "Email or password is incorrect."
       : "Could not create account. Try again or use Google sign-in.";
   }
+  // Locked out: 10 failures an hour, refilling about one try every 6 minutes.
+  // Forgot? still works — a password reset signs the user straight in.
   if (m.includes("toomanyfailedattempts")) {
-    return "Too many attempts. Wait a minute and try again.";
+    return "Too many wrong passwords — sign-in is paused for a few minutes. Wait and try again, or use Forgot? to reset your password.";
   }
 
   // Prod's redacted "Server Error" — by far the most common path for auth
@@ -149,7 +155,7 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
         router.push("/start");
       }
     } catch (e) {
-      const raw = e instanceof Error ? e.message : String(e);
+      const raw = convexErrorText(e);
       setTopError(friendlyError(raw, mode));
     } finally {
       setSubmitting(false);
@@ -161,7 +167,7 @@ export function AuthForm({ mode, onSwitchMode }: AuthFormProps) {
     try {
       await signIn("google", { redirectTo: "/start" });
     } catch (e) {
-      const raw = e instanceof Error ? e.message : String(e);
+      const raw = convexErrorText(e);
       setTopError(friendlyError(raw, mode));
     }
   };

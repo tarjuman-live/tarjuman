@@ -23,6 +23,22 @@ describe("isExpectedAuthFailure", () => {
     }
   });
 
+  it("matches a sign-up with an already-registered email", () => {
+    expect(
+      isExpectedAuthFailure(
+        "[CONVEX A(auth:signIn)] [Request ID: x] Server Error\nUncaught Error: Account someone@example.com already exists",
+      ),
+    ).toBe(true);
+  });
+
+  it("matches the lockout rethrown as a ConvexError", () => {
+    expect(
+      isExpectedAuthFailure(
+        "[CONVEX A(auth:signIn)] [Request ID: x] Server Error\nUncaught ConvexError: TooManyFailedAttempts",
+      ),
+    ).toBe(true);
+  });
+
   it("leaves a redacted prod failure as an error", () => {
     expect(isExpectedAuthFailure(PROD_REDACTED)).toBe(false);
   });

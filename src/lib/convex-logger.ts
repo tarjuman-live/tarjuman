@@ -23,8 +23,10 @@ export interface ConvexLogger {
 }
 
 /**
- * The plain-Error codes @convex-dev/auth throws for a bad password, an unknown
- * email, a locked-out account (too many failures) or a bad OTP code.
+ * The codes @convex-dev/auth throws for a bad password, an unknown email, a
+ * locked-out account (too many failures — a ConvexError, see convex/auth.ts),
+ * a bad OTP code, or a sign-up with an already-registered email
+ * ("Account <email> already exists").
  */
 const EXPECTED_AUTH_FAILURES = [
   "InvalidSecret",
@@ -33,6 +35,7 @@ const EXPECTED_AUTH_FAILURES = [
   "Invalid credentials",
   "Invalid code",
   "Could not verify code",
+  "already exists",
 ];
 
 /** True for a Convex error log line that is a user's bad credentials, not a bug. */

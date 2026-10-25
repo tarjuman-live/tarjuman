@@ -61,6 +61,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { convexErrorText } from "@shared/convex-error";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
@@ -206,7 +207,7 @@ export default function SignIn() {
       // On success the auth gate swaps this modal for the app.
       await signIn("password", { email: email.trim(), password, flow: mode });
     } catch (e) {
-      const raw = e instanceof Error ? e.message : String(e);
+      const raw = convexErrorText(e);
       setTopError(friendlyError(raw, mode, t));
     } finally {
       setSubmitting(false);
