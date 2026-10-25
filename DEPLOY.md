@@ -52,10 +52,13 @@ This requires `CONVEX_DEPLOY_KEY` in Vercel's env (see below).
 
 > **Footgun:** scope `CONVEX_DEPLOY_KEY` to the **Production**
 > environment only. If it's available to Preview builds, every preview
-> branch will deploy its `convex/` code to PROD Convex. Preview deploys
-> will fail without a key — that's the safe default. (Convex preview
-> deployments exist if you ever want working previews, but they need a
-> separate preview deploy key.)
+> branch will deploy its `convex/` code to PROD Convex. Without a key a
+> preview build can't succeed — so `vercel.json` turns branch deploys off
+> entirely (`git.deploymentEnabled`: `"**": false, "main": true`); only
+> `main` builds. Changes are tested on localhost before merging instead.
+> (Convex preview deployments exist if you ever want working previews:
+> they need a separate Preview-scoped deploy key, and Google sign-in won't
+> work on preview URLs. Drop the `"**": false` rule if you add them.)
 
 ## One-time setup
 
@@ -63,8 +66,9 @@ This requires `CONVEX_DEPLOY_KEY` in Vercel's env (see below).
 
 Vercel dashboard → **Add New → Project** → import
 `abdullah-diallo/live-transcribe--tarjuman-`. Framework preset:
-Next.js. Build command: leave default (`bun run build`). No
-`vercel.json` is needed.
+Next.js. Build command: leave default (`bun run build`). The committed
+`vercel.json` only limits automatic deploys to `main` (see the footgun
+above).
 
 **Package manager.** Vercel picks it from the committed lockfile. This repo
 ships `bun.lock` and no `package-lock.json`, so Vercel installs with
@@ -190,9 +194,9 @@ Open https://tarjuman.live and try:
 ## Subsequent deploys
 
 Push to `main`. Vercel builds and deploys automatically; the build step
-also deploys `convex/` to prod. Branch pushes get preview URLs (but see
-the `CONVEX_DEPLOY_KEY` footgun above — previews build against whatever
-Convex URL they can resolve, and fail without a deploy key).
+also deploys `convex/` to prod. Branch pushes do NOT deploy
+(`vercel.json` → `git.deploymentEnabled`) — see the `CONVEX_DEPLOY_KEY`
+footgun above for why.
 
 There is no Vercel CLI installed locally and none is required. If you
 want one: `npm i -g vercel`, then `vercel link` in the project root.
