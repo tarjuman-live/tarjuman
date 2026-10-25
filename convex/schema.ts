@@ -301,4 +301,12 @@ export default defineSchema({
       ),
     ),
   }).index("by_key", ["key"]),
+
+  // Pre-launch waitlist — the landing page's "Join the waitlist". Email only
+  // (trimmed + lowercased, one row per address); `locale` is the UI language
+  // the visitor joined in, so the invite can be sent in it.
+  waitlist: defineTable({
+    email: v.string(),
+    locale: v.optional(v.string()),
+  }).index("by_email", ["email"]),
 });

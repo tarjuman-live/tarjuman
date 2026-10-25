@@ -31,6 +31,7 @@ import type * as usage from "../usage.js";
 import type * as usageShared from "../usageShared.js";
 import type * as userData from "../userData.js";
 import type * as users from "../users.js";
+import type * as waitlist from "../waitlist.js";
 
 import type {
   ApiFromModules,
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   usageShared: typeof usageShared;
   userData: typeof userData;
   users: typeof users;
+  waitlist: typeof waitlist;
 }>;
 
 /**
