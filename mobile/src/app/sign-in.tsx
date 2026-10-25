@@ -98,17 +98,19 @@ const OVERLAY_BLUR = 50;
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 /**
- * auth-form.tsx friendlyError, verbatim logic. Convex redacts plain auth
- * Errors to "Server Error", so that case maps to the most likely cause for the
- * current mode.
+ * auth-form.tsx friendlyError, verbatim logic. A dev deployment sends the real
+ * code after "Server Error", so the codes are checked first; prod redacts plain
+ * auth Errors to a bare "Server Error", which maps to the most likely cause for
+ * the current mode.
  */
 function friendlyError(raw: string, mode: Mode, t: TFunction): string {
   const m = raw.toLowerCase();
-  if (m.includes("server error")) {
-    return mode === "signUp" ? t("settingsAuthNav.errSignUpServer") : t("settingsAuthNav.errSignInServer");
-  }
   if (m.includes("invalidaccountid") || m.includes("invalidsecret") || m.includes("invalid credentials")) {
     return mode === "signIn" ? t("settingsAuthNav.errBadCredentials") : t("settingsAuthNav.errSignUpFailed");
+  }
+  if (m.includes("toomanyfailedattempts")) return t("settingsAuthNav.errTooMany");
+  if (m.includes("server error")) {
+    return mode === "signUp" ? t("settingsAuthNav.errSignUpServer") : t("settingsAuthNav.errSignInServer");
   }
   if (m.includes("already exists") || m.includes("duplicate")) return t("settingsAuthNav.errAlreadyExists");
   if (m.includes("invalid email") || m.includes("malformed")) return t("settingsAuthNav.errInvalidEmail");

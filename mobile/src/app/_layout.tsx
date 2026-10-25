@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
+import { createConvexLogger } from "@shared/convex-logger";
 import { CONVEX_URL } from "~/lib/config";
 import {
   C,
@@ -38,8 +39,12 @@ SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ fade: true, duration: 200 });
 
 // Same Convex deployment as the web app — sessions recorded on the phone show
-// up on tarjuman.live and vice versa.
-const convex = new ConvexReactClient(CONVEX_URL, { unsavedChangesWarning: false });
+// up on tarjuman.live and vice versa. The shared logger keeps a mistyped
+// password from raising a red LogBox toast.
+const convex = new ConvexReactClient(CONVEX_URL, {
+  unsavedChangesWarning: false,
+  logger: createConvexLogger(),
+});
 
 // Auth tokens live in the iOS Keychain, not plain AsyncStorage.
 const secureStorage = {

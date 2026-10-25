@@ -3,6 +3,7 @@
 import { ConvexReactClient } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ReactNode, useMemo } from "react";
+import { createConvexLogger } from "@/lib/convex-logger";
 
 /**
  * Wraps the app in the Convex client + Convex Auth provider.
@@ -28,7 +29,7 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
       }
       return null;
     }
-    return new ConvexReactClient(url);
+    return new ConvexReactClient(url, { logger: createConvexLogger() });
   }, []);
 
   if (!client) return <>{children}</>;

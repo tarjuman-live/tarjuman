@@ -33,21 +33,37 @@ const MIN_PASSWORD = 8;
  *
  * Critical context: @convex-dev/auth throws plain `Error(...)` (NOT
  * ConvexError) for every failure — "Account X already exists",
- * "InvalidSecret", "InvalidAccountId", etc. Convex's server redacts plain
- * Error messages to literal "Server Error" before they reach the browser.
- * So the underlying-cause strings (`already exists`, `invalid credentials`,
- * etc.) NEVER appear in `raw` for auth failures — only the redacted
- * "Server Error". The Convex deployment logs still hold the real error
- * for postmortem.
+ * "InvalidSecret", "InvalidAccountId", etc. A production Convex deployment
+ * redacts plain Error messages to a literal "Server Error" before they reach
+ * the browser, so there `raw` holds no cause at all. A dev deployment sends
+ * "Server Error" followed by the real code (e.g. "Uncaught Error:
+ * InvalidSecret"). The Convex deployment logs always hold the real error for
+ * postmortem.
  *
- * We therefore translate "Server Error" into the most-likely cause for the
- * current form mode. Not deterministic, but actionable.
+ * So the specific codes are checked first (dev), and a bare "Server Error"
+ * (prod) falls through to the most-likely cause for the current form mode.
+ * Not deterministic, but actionable.
  */
 function friendlyError(raw: string, mode: "signIn" | "signUp"): string {
   const m = raw.toLowerCase();
 
-  // Convex's redacted "Server Error" surface — by far the most common
-  // path for auth failures since the library throws plain Error.
+  // Wrong password and unknown email get the same message on purpose — telling
+  // them apart would reveal which emails have accounts.
+  if (
+    m.includes("invalidsecret") ||
+    m.includes("invalidaccountid") ||
+    m.includes("invalid credentials")
+  ) {
+    return mode === "signIn"
+      ? "Email or password is incorrect."
+      : "Could not create account. Try again or use Google sign-in.";
+  }
+  if (m.includes("toomanyfailedattempts")) {
+    return "Too many attempts. Wait a minute and try again.";
+  }
+
+  // Prod's redacted "Server Error" — by far the most common path for auth
+  // failures since the library throws plain Error.
   if (m.includes("server error")) {
     return mode === "signUp"
       ? "Couldn't create your account. The email may already be registered — try signing in instead, or use a different email."
@@ -57,11 +73,6 @@ function friendlyError(raw: string, mode: "signIn" | "signUp"): string {
   // The cases below are kept for the rare situations where Convex Auth
   // returns a friendly error (e.g., explicit ConvexError thrown by an
   // OAuth provider) or for client-side network errors.
-  if (m.includes("invalidaccountid") || m.includes("invalid credentials")) {
-    return mode === "signIn"
-      ? "Email or password is incorrect."
-      : "Could not create account. Try again or use Google sign-in.";
-  }
   if (m.includes("already exists") || m.includes("duplicate")) {
     return "An account with that email already exists. Sign in instead.";
   }
