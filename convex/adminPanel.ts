@@ -11,7 +11,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { isAdminId, requireAdmin } from "./adminAuth";
 import { getEffectivePlan, isGrantActive } from "./entitlements";
 import { isTestEmail } from "./admin";
-import { loadSegments, segmentCountOf } from "./sessions";
+import { segmentCountOf } from "./sessions";
 import { deleteUserIdentity } from "./userData";
 import { DASHBOARD_SCHEMA_VERSION, sessionSeconds } from "./adminMetrics";
 import { monthKey, REPORT_TZ_OFFSET_MS } from "./reporting";
@@ -22,13 +22,11 @@ import { BILLING_ENABLED } from "./billingLimits";
  * server-side gate (ADMIN_USER_IDS allowlist, see adminAuth.ts). The web
  * page's notFound() for non-admins is cosmetic; this is the real lock.
  *
- * List views return session METADATA only — title, languages, duration,
- * counts. (A title is often auto-derived from the first transcript line, up to
- * ~60 chars; the privacy policy says operators can see session metadata.) The
- * transcript body and summary are returned ONLY by `openSessionForAdmin`,
- * which is a MUTATION precisely so the access is written to adminAuditLog in
- * the same transaction — "opening a transcript is logged" can't be skipped by
- * a UI that forgets to log.
+ * Operators NEVER see what anyone recorded. Session data leaves this file as
+ * METADATA only — owner, languages, length, segment count, status, dates.
+ * No transcript text, no summary, and no title (titles are auto-derived from
+ * the first transcript line). There is deliberately no function that opens a
+ * session; don't add one, and don't add `title` back to `sessionRow`.
  */
 
 /** Byte budget for paginated session lists (legacy docs carry inline text). */
@@ -74,13 +72,15 @@ async function providersOf(ctx: QueryCtx, userId: Id<"users">) {
   return accounts.map((a) => a.provider);
 }
 
-/** Compact, transcript-free session row for lists. */
+/**
+ * Compact, CONTENT-FREE session row: metadata only. No title — it's usually
+ * the first line of the transcript — and no text or summary.
+ */
 function sessionRow(s: Doc<"sessions">) {
   const segmentCount = segmentCountOf(s);
   return {
     id: s._id,
     userId: s.userId ?? null,
-    title: s.title ?? null,
     status: s.status,
     sourceLanguage: s.sourceLanguage,
     targetLanguage: s.targetLanguage,
@@ -230,23 +230,6 @@ export const recentSignups = query({
         isTest: isTestEmail(u.email),
       })),
     );
-  },
-});
-
-export const recentSessions = query({
-  args: {},
-  handler: async (ctx) => {
-    await requireAdmin(ctx);
-    const cache = new Map<string, UserBrief | null>();
-    const out = [];
-    let scanned = 0;
-    for await (const s of ctx.db.query("sessions").order("desc")) {
-      if (++scanned > 300) break;
-      if (segmentCountOf(s) === 0) continue;
-      out.push({ ...sessionRow(s), owner: await userBrief(ctx, s.userId, cache) });
-      if (out.length >= 15) break;
-    }
-    return out;
   },
 });
 
@@ -505,36 +488,6 @@ export const listUserSessions = query({
   },
 });
 
-export const listSessions = query({
-  args: {
-    paginationOpts: paginationOptsValidator,
-    status: v.optional(
-      v.union(
-        v.literal("recording"),
-        v.literal("paused"),
-        v.literal("completed"),
-      ),
-    ),
-  },
-  handler: async (ctx, { paginationOpts, status }) => {
-    await requireAdmin(ctx);
-    const opts = { ...paginationOpts, maximumBytesRead: SESSION_PAGE_BYTES };
-    const res = status
-      ? await ctx.db
-          .query("sessions")
-          .withIndex("by_status_updated", (q) => q.eq("status", status))
-          .order("desc")
-          .paginate(opts)
-      : await ctx.db.query("sessions").order("desc").paginate(opts);
-    const cache = new Map<string, UserBrief | null>();
-    const page = [];
-    for (const s of res.page) {
-      page.push({ ...sessionRow(s), owner: await userBrief(ctx, s.userId, cache) });
-    }
-    return { ...res, page };
-  },
-});
-
 // ─── System ─────────────────────────────────────────────────────────────────
 
 export const getSystemInfo = query({
@@ -604,36 +557,6 @@ export const getSystemInfo = query({
 });
 
 // ─── Mutations (each one writes the audit log) ──────────────────────────────
-
-/**
- * Open a user's session — metadata, owner, transcript, summary — and record
- * the access in adminAuditLog IN THE SAME TRANSACTION. A mutation (not a
- * query) so logging can't be skipped. Returns null for a bad/missing id.
- */
-export const openSessionForAdmin = mutation({
-  args: { sessionId: v.string() },
-  handler: async (ctx, args) => {
-    const admin = await requireAdmin(ctx);
-    const sessionId = ctx.db.normalizeId("sessions", args.sessionId);
-    if (!sessionId) return null;
-    const session = await ctx.db.get("sessions", sessionId);
-    if (!session) return null;
-    await audit(ctx, admin._id, "view_session", {
-      targetSessionId: sessionId,
-      ...(session.userId ? { targetUserId: session.userId } : {}),
-    });
-    return {
-      session: {
-        ...sessionRow(session),
-        summary: session.summary ?? null,
-        summaryLanguage: session.summaryLanguage ?? null,
-        summaryGeneratedAt: session.summaryGeneratedAt ?? null,
-      },
-      owner: await userBrief(ctx, session.userId),
-      segments: await loadSegments(ctx, session),
-    };
-  },
-});
 
 export const grantPro = mutation({
   args: {

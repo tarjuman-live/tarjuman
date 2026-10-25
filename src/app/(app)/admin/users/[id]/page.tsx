@@ -581,7 +581,7 @@ function SessionsCard({ userId }: { userId: Id<"users"> }) {
   return (
     <Card
       title="Sessions"
-      subtitle="Newest first. Dimmed rows never transcribed anything (a /record tab that warmed the mic)."
+      subtitle="Newest first · metadata only — what was said is never shown here. Dimmed rows never transcribed anything (a /record tab that warmed the mic)."
     >
       {status === "LoadingFirstPage" ? (
         <div className="flex flex-col gap-2 animate-in fade-in duration-200 motion-reduce:animate-none">
@@ -597,18 +597,13 @@ function SessionsCard({ userId }: { userId: Id<"users"> }) {
             const empty = s.segmentCount === 0;
             return (
               <li key={s.id}>
-                <Link
-                  href={`/admin/sessions/${s.id}`}
-                  className="flex flex-col gap-1 px-2 py-2.5 rounded-lg transition-[background-color,opacity] duration-200 hover:bg-white/[0.03] hover:opacity-100!"
+                <div
+                  className="flex flex-col gap-1 px-2 py-2.5"
                   style={{ opacity: empty ? 0.5 : 1 }}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span
-                      className="text-[13px] font-semibold truncate min-w-0"
-                      dir="auto"
-                      style={{ color: s.title ? COLORS.w : COLORS.t3 }}
-                    >
-                      {s.title ?? "Untitled"}
+                    <span className="text-[13px] font-semibold truncate min-w-0" style={{ color: COLORS.w }}>
+                      {pairName(`${s.sourceLanguage}→${s.targetLanguage}`)}
                     </span>
                     <span className="text-[11.5px] tabular-nums shrink-0" style={{ color: COLORS.t4 }}>
                       {dateTime(s.createdAt)}
@@ -616,8 +611,8 @@ function SessionsCard({ userId }: { userId: Id<"users"> }) {
                   </div>
                   <div className="flex items-center justify-between gap-x-3 gap-y-1 flex-wrap">
                     <span className="text-[11.5px] tabular-nums" style={{ color: COLORS.t3 }}>
-                      {pairName(`${s.sourceLanguage}→${s.targetLanguage}`)} · {duration(s.seconds)} ·{" "}
-                      {int(s.segmentCount)} {s.segmentCount === 1 ? "segment" : "segments"}
+                      {duration(s.seconds)} · {int(s.segmentCount)}{" "}
+                      {s.segmentCount === 1 ? "segment" : "segments"}
                     </span>
                     <span className="inline-flex items-center gap-1 flex-wrap">
                       {empty && <Badge>empty</Badge>}
@@ -626,7 +621,7 @@ function SessionsCard({ userId }: { userId: Id<"users"> }) {
                       {s.platform && <Badge>{platformLabel(s.platform)}</Badge>}
                     </span>
                   </div>
-                </Link>
+                </div>
               </li>
             );
           })}
@@ -720,7 +715,7 @@ function AuditCard({ d, now }: { d: Detail; now: number }) {
     easing: "cubic-bezier(0.22, 1, 0.36, 1)",
   });
   return (
-    <Card title="Admin actions on this user" subtitle="Grants, revokes and every transcript an admin opened">
+    <Card title="Admin actions on this user" subtitle="Plan grants, revokes and other admin changes">
       {d.audit.length === 0 ? (
         <EmptyHint>No admin actions yet.</EmptyHint>
       ) : (
@@ -824,7 +819,7 @@ function kindLabel(kind: string): string {
 }
 
 const AUDIT_LABEL: Record<string, string> = {
-  view_session: "Opened a session",
+  view_session: "Opened a session (old feature, removed)",
   grant_pro: "Granted Pro",
   revoke_pro: "Revoked Pro",
   delete_user: "Deleted user",

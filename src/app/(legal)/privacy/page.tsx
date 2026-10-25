@@ -24,7 +24,7 @@ export default function PrivacyPage() {
   return (
     <>
       <h1 style={styles.h1}>Privacy Policy</h1>
-      <div style={styles.meta}>Last updated: 2026-10-21</div>
+      <div style={styles.meta}>Last updated: 2026-10-25</div>
 
       <p style={styles.p}>
         This Privacy Policy explains how Tarjuman (&quot;Tarjuman&quot;,
@@ -51,11 +51,11 @@ export default function PrivacyPage() {
           <strong>Transcripts, translations &amp; summaries:</strong> the
           source-language text from your recordings, the translations, and any
           AI summaries you generate. These are stored in our database and are
-          visible to your authenticated account. A small number of authorized
-          Tarjuman operators can see account and session details (such as
-          session titles, languages and length) and, only when needed to
-          provide support, investigate abuse, or fix a problem, open a
-          transcript — every transcript they open is logged.
+          visible to your authenticated account. Our admin tools are built so
+          operators never see what you recorded: they show account details
+          and basic session information (such as languages, length and
+          dates) — not your transcripts, translations, session titles or
+          summaries.
         </li>
         <li>
           <strong>Preferences:</strong> your default languages and display
@@ -184,10 +184,10 @@ export default function PrivacyPage() {
       <h2 style={styles.h2}>Security</h2>
       <p style={styles.p}>
         Data is encrypted in transit (HTTPS/WSS). Your transcripts are
-        accessible through your authenticated account; operator access is
-        limited to named administrators, used only for support, abuse
-        investigation, or fixing problems, and every transcript an operator
-        opens is recorded in an audit log. No system is perfectly secure, but we use reputable
+        accessible through your authenticated account. Admin access is
+        limited to named administrators and to account and session details
+        — the admin tools never show the content of your recordings — and
+        every admin action is recorded in an audit log. No system is perfectly secure, but we use reputable
         infrastructure providers and limit access to your data.
       </p>
 

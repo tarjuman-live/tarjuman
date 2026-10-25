@@ -12,7 +12,6 @@ import { timeAgo } from "./format";
 const TABS = [
   { href: "/admin", label: "Overview", exact: true },
   { href: "/admin/users", label: "Users" },
-  { href: "/admin/sessions", label: "Sessions" },
   { href: "/admin/usage", label: "AI & costs" },
   { href: "/admin/system", label: "System" },
 ] as const;
