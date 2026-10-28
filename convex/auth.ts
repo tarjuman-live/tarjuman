@@ -3,6 +3,7 @@ import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials"
 import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
 import { PasswordResetEmail } from "./passwordReset";
+import { withVisibleLockout } from "./passwordLockout";
 import { internal } from "./_generated/api";
 
 /** Constant-time string compare (the Convex runtime has no timingSafeEqual). */
@@ -55,7 +56,7 @@ const DevBypass = ConvexCredentials({
  */
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
-    Password({ reset: PasswordResetEmail }),
+    withVisibleLockout(Password({ reset: PasswordResetEmail })),
     Google,
     DevBypass,
   ],

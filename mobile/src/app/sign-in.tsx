@@ -61,6 +61,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { convexErrorText } from "@shared/convex-error";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
@@ -98,17 +99,19 @@ const OVERLAY_BLUR = 50;
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 /**
- * auth-form.tsx friendlyError, verbatim logic. Convex redacts plain auth
- * Errors to "Server Error", so that case maps to the most likely cause for the
- * current mode.
+ * auth-form.tsx friendlyError, verbatim logic. A dev deployment sends the real
+ * code after "Server Error", so the codes are checked first; prod redacts plain
+ * auth Errors to a bare "Server Error", which maps to the most likely cause for
+ * the current mode.
  */
 function friendlyError(raw: string, mode: Mode, t: TFunction): string {
   const m = raw.toLowerCase();
-  if (m.includes("server error")) {
-    return mode === "signUp" ? t("settingsAuthNav.errSignUpServer") : t("settingsAuthNav.errSignInServer");
-  }
   if (m.includes("invalidaccountid") || m.includes("invalidsecret") || m.includes("invalid credentials")) {
     return mode === "signIn" ? t("settingsAuthNav.errBadCredentials") : t("settingsAuthNav.errSignUpFailed");
+  }
+  if (m.includes("toomanyfailedattempts")) return t("settingsAuthNav.errTooMany");
+  if (m.includes("server error")) {
+    return mode === "signUp" ? t("settingsAuthNav.errSignUpServer") : t("settingsAuthNav.errSignInServer");
   }
   if (m.includes("already exists") || m.includes("duplicate")) return t("settingsAuthNav.errAlreadyExists");
   if (m.includes("invalid email") || m.includes("malformed")) return t("settingsAuthNav.errInvalidEmail");
@@ -204,7 +207,7 @@ export default function SignIn() {
       // On success the auth gate swaps this modal for the app.
       await signIn("password", { email: email.trim(), password, flow: mode });
     } catch (e) {
-      const raw = e instanceof Error ? e.message : String(e);
+      const raw = convexErrorText(e);
       setTopError(friendlyError(raw, mode, t));
     } finally {
       setSubmitting(false);
