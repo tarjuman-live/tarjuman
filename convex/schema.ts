@@ -288,6 +288,17 @@ export default defineSchema({
     seconds: v.number(),
   }).index("by_userId_and_month", ["userId", "month"]),
 
+  // One row per auth code emailed (passwordless sign-in or password reset) —
+  // the send log behind authThrottle.ts's per-address limit. `identifier` is
+  // the email address. Rows older than a day are pruned daily, and an account
+  // deletion clears its own address's rows.
+  authCodeSends: defineTable({
+    identifier: v.string(),
+    sentAt: v.number(),
+  })
+    .index("by_identifier_and_sentAt", ["identifier", "sentAt"])
+    .index("by_sentAt", ["sentAt"]),
+
   // Small singletons for the admin machinery: the dashboard-refresh lease
   // (key "refresh") and alert state (key "alerts").
   adminState: defineTable({

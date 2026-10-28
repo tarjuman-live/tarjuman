@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvex } from "convex/react";
+import { ConvexError } from "convex/values";
 import { api } from "../../../convex/_generated/api";
 import { COLORS } from "@/lib/constants";
 import { Icon } from "@/components/shared/icon";
@@ -33,7 +34,7 @@ function friendlyError(raw: string): string {
 
 /** Message shown when no email/password account exists for the entered email. */
 const NO_PASSWORD_ACCOUNT_MSG =
-  "We couldn't find an email-and-password account for that email. If you signed up with “Continue with Google”, go back to sign in and use that instead.";
+  "We couldn't find an email-and-password account for that email. If you signed up with “Continue with Google” or an email code, go back to sign in and use that instead.";
 
 /**
  * Errors from the "request code" step. By the time this runs we've already
@@ -122,8 +123,9 @@ export function ForgotPasswordForm() {
         return;
       }
       // Convex Auth's reset flow: triggers the configured `reset` provider
-      // (Loops OTP) to email the user a 6-digit code. The promise resolves
-      // when the email is queued — not when the user receives it.
+      // (Resend OTP, convex/passwordReset.ts) to email the user a 6-digit
+      // code. The promise resolves when the email is queued — not when the
+      // user receives it.
       await signIn("password", {
         email: email.trim(),
         flow: "reset",
@@ -131,7 +133,16 @@ export function ForgotPasswordForm() {
       setStage("verify");
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
-      setTopError(requestStageError(raw));
+      // The per-address send limit (convex/authThrottle.ts) is a ConvexError,
+      // which survives production redaction — the one cause we can name.
+      const tooMany =
+        e instanceof ConvexError &&
+        (e.data as { code?: string } | null)?.code === "too_many_codes";
+      setTopError(
+        tooMany
+          ? "Too many codes sent to this email. Wait 15 minutes, then try again."
+          : requestStageError(raw)
+      );
     } finally {
       setSubmitting(false);
     }

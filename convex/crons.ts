@@ -32,4 +32,13 @@ crons.interval(
   {}
 );
 
+// Email-code housekeeping: prune the code send log and remove sign-ups that
+// were abandoned before the code was entered. See convex/authThrottle.ts.
+crons.interval(
+  "prune auth codes",
+  { hours: 24 },
+  internal.authThrottle.pruneAuthCodes,
+  {}
+);
+
 export default crons;

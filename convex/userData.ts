@@ -82,6 +82,16 @@ export async function deleteUserIdentity(
     for (const l of limits) await ctx.db.delete("authRateLimits", l._id);
   }
 
+  // Email-code send log (authThrottle.ts) — keyed by the email address.
+  if (user?.email) {
+    const email = user.email;
+    const sends = await ctx.db
+      .query("authCodeSends")
+      .withIndex("by_identifier_and_sentAt", (q) => q.eq("identifier", email))
+      .take(100);
+    for (const s of sends) await ctx.db.delete("authCodeSends", s._id);
+  }
+
   // Auth sessions + the refresh tokens hanging off them, via the sessionId
   // index (never a whole-table scan — authRefreshTokens grows with global auth
   // activity), so a surviving refresh token can't mint access tokens for the
