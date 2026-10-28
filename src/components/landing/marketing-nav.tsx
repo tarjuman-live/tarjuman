@@ -36,9 +36,9 @@ const LINKS: { href: string; key: MessageKey }[] = [
  * waitlist" (no public Sign in / Get started); signed-in visitors get "Open
  * recorder". Sign-in itself still works via the /?auth=signin deep link —
  * that's where the (app) guard sends anyone who opens /record or /admin while
- * signed out, so operators can always get in. The bar is transparent at the
- * top of the page and gains a frosted background + border once scrolled, so it
- * never fights the hero on load.
+ * signed out, so operators can always get in. At the top of the page there is
+ * no bar at all — the brand, links and buttons float over the hero — and the
+ * frosted glass tile fades in behind them once the visitor starts scrolling.
  */
 export function MarketingNav() {
   const { isAuthenticated } = useConvexAuth();
@@ -88,26 +88,29 @@ export function MarketingNav() {
   const preloadWaitlist = () => setWaitlistMounted(true);
 
   return (
-    // Floating "island" tile — translucent glass, detached from the edges. The
-    // outer header is just a sticky, click-through spacer; the tile itself is
-    // the interactive surface.
+    // Floating "island" nav, detached from the edges. The outer header is just a
+    // sticky, click-through spacer; the nav itself is the interactive surface.
     <header className="sticky top-0 z-50 px-3 pt-3 pointer-events-none">
-      <nav
-        className="pointer-events-auto mx-auto max-w-5xl rounded-2xl px-3.5 sm:px-5 h-14 flex items-center justify-between gap-4 transition-all duration-300"
-        style={{
-          background: scrolled ? "rgba(14,21,37,0.7)" : "rgba(14,21,37,0.42)",
-          backdropFilter: "blur(18px) saturate(160%)",
-          WebkitBackdropFilter: "blur(18px) saturate(160%)",
-          borderWidth: 1,
-          borderStyle: "solid",
-          borderColor: scrolled
-            ? "var(--color-border-light)"
-            : "var(--color-border-faint)",
-          boxShadow: scrolled
-            ? "0 12px 34px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)"
-            : "0 6px 20px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.05)",
-        }}
-      >
+      <nav className="pointer-events-auto relative isolate mx-auto max-w-5xl rounded-2xl px-3.5 sm:px-5 h-14 flex items-center justify-between gap-4">
+        {/* The glass tile — invisible at the top of the page, fades in once
+            scrolled. Its own layer so only opacity/scale animate; transitioning
+            the backdrop blur itself is janky. `isolate` on the nav keeps -z-10
+            behind the contents but inside the header. */}
+        <span
+          aria-hidden="true"
+          className={`absolute inset-0 -z-10 rounded-2xl pointer-events-none transition-[opacity,scale] duration-300 ease-out motion-reduce:scale-100 ${
+            scrolled ? "opacity-100 scale-100" : "opacity-0 scale-[0.98]"
+          }`}
+          style={{
+            background: "rgba(14,21,37,0.7)",
+            backdropFilter: "blur(18px) saturate(160%)",
+            WebkitBackdropFilter: "blur(18px) saturate(160%)",
+            border: "1px solid var(--color-border-light)",
+            boxShadow:
+              "0 12px 34px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+          }}
+        />
+
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
           <span className="w-9 h-9 rounded-xl bg-[var(--color-accent)] grid place-items-center shadow-[0_0_24px_rgba(46,204,113,0.4)] transition-transform group-hover:scale-105">
